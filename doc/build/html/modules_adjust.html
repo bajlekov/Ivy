@@ -1,0 +1,905 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Adjust modules &mdash; ImageFloat 0.0-alpha documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Enhance modules" href="modules_enhance.html" />
+    <link rel="prev" title="Modules" href="modules.html" /> 
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="index.html" class="icon icon-home"> ImageFloat
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="intro.html">Introduction</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">Modules</a><ul class="current">
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Adjust modules</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#brightness">Brightness</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#contrast">Contrast</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#vibrance">Vibrance</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#saturation">Saturation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#temperature">Temperature</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#curve-modules">Curve Modules</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#parametric-curve">Parametric Curve</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#curve-l">Curve L</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#curve-y">Curve Y</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#advanced-curve-modules">Advanced Curve modules</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#mask-curve-modules">Mask Curve Modules</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="modules_enhance.html">Enhance modules</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="colorspaces.html">Color Spaces</a></li>
+<li class="toctree-l1"><a class="reference internal" href="support.html">Support</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">ImageFloat</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="modules.html">Modules</a> &raquo;</li>
+        
+      <li>Adjust modules</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/modules_adjust.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="adjust-modules">
+<span id="adjust"></span><h1>Adjust modules<a class="headerlink" href="#adjust-modules" title="Permalink to this headline">¶</a></h1>
+<p>These modules offer the basic tools for global adjustments of the image being processed. All operations are pixel-wise.</p>
+<div class="contents local topic" id="list-of-modules">
+<p class="topic-title first">List of Modules</p>
+<ul class="simple">
+<li><a class="reference internal" href="#brightness" id="id2">Brightness</a></li>
+<li><a class="reference internal" href="#contrast" id="id3">Contrast</a></li>
+<li><a class="reference internal" href="#vibrance" id="id4">Vibrance</a></li>
+<li><a class="reference internal" href="#saturation" id="id5">Saturation</a></li>
+<li><a class="reference internal" href="#temperature" id="id6">Temperature</a></li>
+</ul>
+</div>
+<div class="section" id="brightness">
+<h2><a class="toc-backref" href="#id2">Brightness</a><a class="headerlink" href="#brightness" title="Permalink to this headline">¶</a></h2>
+<img alt="_images/node.png" src="_images/node.png" />
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Brightness:</th><td class="field-body">Modifies image brightness</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Preserve Hue:</th><td class="field-body">Preserves input image hue in LCH space</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Group:</th><td class="field-body"><a class="reference internal" href="#adjust">Adjust</a></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Color Space:</th><td class="field-body"><a class="reference internal" href="colorspaces.html#lrgb"><span class="std std-ref">LRGB</span></a></td>
+</tr>
+</tbody>
+</table>
+<p>This module changes the brightness of the image by adjusting the slope at <span class="math notranslate nohighlight">\(0.0\)</span> with the <code class="docutils literal notranslate"><span class="pre">Brightness</span></code> parameter, and preserves the white point by compressing the curve toward <span class="math notranslate nohighlight">\(1.0\)</span> <a class="reference internal" href="#equation-brightness-function">(1)</a>. The <code class="docutils literal notranslate"><span class="pre">Preserve</span> <span class="pre">Hue</span></code> parameter applies the hue of the input image to that of the output image in LCH space <a class="reference internal" href="#equation-brightness-hue-function">(2)</a>.</p>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">The module is intended to preserve the brightened image’s black point and white point. However, color channels might be pushed out of gamut when <code class="docutils literal notranslate"><span class="pre">Preserve</span> <span class="pre">Hue</span></code> is enabled.</p>
+</div>
+<table border="1" class="colwidths-given docutils align-center">
+<colgroup>
+<col width="9%" />
+<col width="45%" />
+<col width="45%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head stub">Brightness</th>
+<th class="head">Preserve Hue: On</th>
+<th class="head">Preserve Hue: Off</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><th class="stub">-1.0</th>
+<td><img alt="_images/-1_V.png" class="first last" src="_images/-1_V.png" />
+</td>
+<td><img alt="_images/-1_X.png" class="first last" src="_images/-1_X.png" />
+</td>
+</tr>
+<tr class="row-odd"><th class="stub">+0.0</th>
+<td><img alt="_images/0.png" class="first last" src="_images/0.png" />
+</td>
+<td><img alt="_images/0.png" class="first last" src="_images/0.png" />
+</td>
+</tr>
+<tr class="row-even"><th class="stub">+1.0</th>
+<td><img alt="_images/+1_V.png" class="first last" src="_images/+1_V.png" />
+</td>
+<td><img alt="_images/+1_X.png" class="first last" src="_images/+1_X.png" />
+</td>
+</tr>
+</tbody>
+</table>
+<img alt="_images/plot.png" class="align-center" src="_images/plot.png" />
+<div class="math notranslate nohighlight" id="equation-brightness-function">
+<span class="eqno">(1)<a class="headerlink" href="#equation-brightness-function" title="Permalink to this equation">¶</a></span>\[\begin{split}\begin{align}
+        B &amp; =  Brightness + 1 \\
+        Output_{RGB} &amp; = (1-B) \cdot Input_{RGB}^2 + B \cdot Input_{RGB}
+\end{align}\end{split}\]</div>
+<div class="math notranslate nohighlight" id="equation-brightness-hue-function">
+<span class="eqno">(2)<a class="headerlink" href="#equation-brightness-hue-function" title="Permalink to this equation">¶</a></span>\[Output_H = Input_H\]</div>
+</div>
+<hr class="docutils" />
+<div class="section" id="contrast">
+<h2><a class="toc-backref" href="#id3">Contrast</a><a class="headerlink" href="#contrast" title="Permalink to this headline">¶</a></h2>
+<img alt="_images/node1.png" src="_images/node1.png" />
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Contrast:</th><td class="field-body">Modifies image mid-tone contrast</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Saturation:</th><td class="field-body">Preserves image saturation instead of chroma</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Group:</th><td class="field-body"><a class="reference internal" href="#adjust">Adjust</a></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Color Space:</th><td class="field-body"><a class="reference internal" href="colorspaces.html#lab"><span class="std std-ref">LAB</span></a></td>
+</tr>
+</tbody>
+</table>
+<p>This module changes the contrast of the image by adjusting the LAB lightness slope at <span class="math notranslate nohighlight">\(0.5\)</span> with the <code class="docutils literal notranslate"><span class="pre">Contrast</span></code> parameter, and preserves the black point and white point by compressing the extremes <a class="reference internal" href="#equation-contrast-function">(3)</a>. The <code class="docutils literal notranslate"><span class="pre">Saturation</span></code> parameter enables scaling of the chroma channel to preserve constant saturation instead of constant chroma when the lightness channel is modified <a class="reference internal" href="#equation-contrast-function">(3)</a>.</p>
+<p>This module does not account for changes in saturation perception due to a change in scene luminance contrast, as this is very much scene-dependent. A perceived decrease in saturation when increasing contrast and vice versa is observable. This can be corrected appropriately with the <a class="reference internal" href="#vibrance">Vibrance</a> or <a class="reference internal" href="#saturation">Saturation</a> module.</p>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">The luminance black point and white point are preserved. Color channels may be pushed out of gamut.</p>
+</div>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Setting the <code class="docutils literal notranslate"><span class="pre">Contrast</span></code> parameter to <span class="math notranslate nohighlight">\(0.0\)</span> creates a contrast curve with a slope of <span class="math notranslate nohighlight">\(0.0\)</span> in the mid-tones. This results in a very flat output image.</p>
+</div>
+<table border="1" class="colwidths-given docutils align-center">
+<colgroup>
+<col width="9%" />
+<col width="45%" />
+<col width="45%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head stub">Contrast</th>
+<th class="head">Saturation: On</th>
+<th class="head">Saturation: Off</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><th class="stub">-1.0</th>
+<td><img alt="_images/-1_V1.png" class="first last" src="_images/-1_V1.png" />
+</td>
+<td><img alt="_images/-1_X1.png" class="first last" src="_images/-1_X1.png" />
+</td>
+</tr>
+<tr class="row-odd"><th class="stub">+0.0</th>
+<td><img alt="_images/01.png" class="first last" src="_images/01.png" />
+</td>
+<td><img alt="_images/01.png" class="first last" src="_images/01.png" />
+</td>
+</tr>
+<tr class="row-even"><th class="stub">+1.0</th>
+<td><img alt="_images/+1_V1.png" class="first last" src="_images/+1_V1.png" />
+</td>
+<td><img alt="_images/+1_X1.png" class="first last" src="_images/+1_X1.png" />
+</td>
+</tr>
+</tbody>
+</table>
+<table border="1" class="colwidths-given docutils align-center">
+<colgroup>
+<col width="9%" />
+<col width="45%" />
+<col width="45%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head stub">Contrast</th>
+<th class="head">Saturation: On</th>
+<th class="head">Saturation: Off</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><th class="stub">-1.0</th>
+<td><img alt="_images/-1_V2.png" class="first last" src="_images/-1_V2.png" />
+</td>
+<td><img alt="_images/-1_X2.png" class="first last" src="_images/-1_X2.png" />
+</td>
+</tr>
+<tr class="row-odd"><th class="stub">+0.0</th>
+<td><img alt="_images/02.png" class="first last" src="_images/02.png" />
+</td>
+<td><img alt="_images/02.png" class="first last" src="_images/02.png" />
+</td>
+</tr>
+<tr class="row-even"><th class="stub">+1.0</th>
+<td><img alt="_images/+1_V2.png" class="first last" src="_images/+1_V2.png" />
+</td>
+<td><img alt="_images/+1_X2.png" class="first last" src="_images/+1_X2.png" />
+</td>
+</tr>
+</tbody>
+</table>
+<img alt="_images/plot1.png" class="align-center" src="_images/plot1.png" />
+<div class="math notranslate nohighlight" id="equation-contrast-function">
+<span class="eqno">(3)<a class="headerlink" href="#equation-contrast-function" title="Permalink to this equation">¶</a></span>\[\begin{split}\begin{align}
+        C &amp;= Contrast + 1 \\
+        I &amp;= 2 \cdot Input_L - 1 \\
+        O &amp;= \left\{
+                \begin{array}{rl}
+                        (C-1) \cdot I^2 + I \cdot C &amp; I &lt; 0 \\
+                        (1-C) \cdot I^2 + I \cdot C &amp; I &gt; 0
+                \end{array}
+        \right. \\
+        Output_L &amp;= \frac{O + 1}{2} \\
+\end{align}\end{split}\]</div>
+<div class="math notranslate nohighlight" id="equation-contrast-saturation-function">
+<span class="eqno">(4)<a class="headerlink" href="#equation-contrast-saturation-function" title="Permalink to this equation">¶</a></span>\[Output_{AB} = Input_{AB} \cdot (Output_L - Input_L)\]</div>
+</div>
+<hr class="docutils" />
+<div class="section" id="vibrance">
+<h2><a class="toc-backref" href="#id4">Vibrance</a><a class="headerlink" href="#vibrance" title="Permalink to this headline">¶</a></h2>
+<img alt="_images/node2.png" src="_images/node2.png" />
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Vibrance:</th><td class="field-body">Increases color saturation, mainly in less saturated areas</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Group:</th><td class="field-body"><a class="reference internal" href="#adjust">Adjust</a></td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Color Space:</th><td class="field-body"><a class="reference internal" href="colorspaces.html#lch"><span class="std std-ref">LCH</span></a></td>
+</tr>
+</tbody>
+</table>
+<p>This module changes the color saturation such that less saturated colors are boosted. It adjusts the LCH chroma channel slope at <span class="math notranslate nohighlight">\(0.0\)</span> with the <code class="docutils literal notranslate"><span class="pre">Vibrance</span></code> parameter, and preserves the saturation point by compressing the curve toward <span class="math notranslate nohighlight">\(1.0\)</span> <a class="reference internal" href="#equation-vibrance-function">(5)</a>. The <code class="docutils literal notranslate"><span class="pre">Vibrance</span></code> effect is modulated with the image’s lightness channel, such that the effect decreases linearly for darker colors. In addition, the output image lightness is decreased proportional to the increase in chroma <span class="math notranslate nohighlight">\(\times 0.2\)</span> to further enhance color perception.</p>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">While chroma in the LCH space is limited to <span class="math notranslate nohighlight">\(1.0\)</span>, the resulting colors at this limit are still outside the sRGB gamut. This module does not necessarily prevent oversaturation.</p>
+</div>
+<table border="1" class="colwidths-given docutils align-center">
+<colgroup>
+<col width="9%" />
+<col width="45%" />
+<col width="45%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head stub">Value</th>
+<th class="head">Vibrance</th>
+<th class="head"><a class="reference internal" href="#saturation">Saturation</a> <span class="math notranslate nohighlight">\(\times 0.5\)</span></th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><th class="stub">-1.0</th>
+<td><img alt="_images/-1.png" class="first last" src="_images/-1.png" />
+</td>
+<td><img alt="_images/-0.5.png" class="first last" src="_images/-0.5.png" />
+</td>
+</tr>
+<tr class="row-odd"><th class="stub">+0.0</th>
+<td><img alt="_images/03.png" class="first last" src="_images/03.png" />
+</td>
+<td><img alt="_images/04.png" class="first last" src="_images/04.png" />
+</td>
+</tr>
+<tr class="row-even"><th class="stub">+1.0</th>
+<td><img alt="_images/+1.png" class="first last" src="_images/+1.png" />
+</td>
+<td><img alt="_images/+0.5.png" class="first last" src="_images/+0.5.png" />
+</td>
+</tr>
+</tbody>
+</table>
+<div class="math notranslate nohighlight" id="equation-vibrance-function">
+<span class="eqno">(5)<a class="headerlink" href="#equation-vibrance-function" title="Permalink to this equation">¶</a></span>\[\begin{split}\begin{align}
+        V &amp;= Vibrance \cdot Input_L + 1 \\
+        Output_C &amp;= (1-V) \cdot Input_C^2 + V \cdot Input_C \\
+        Output_L &amp;= Input_L \cdot (1 - 0.2 \cdot (Output_C - Input_C))
+\end{align}\end{split}\]</div>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">The chroma curve for the <a class="reference internal" href="#vibrance">Vibrance</a> module is equivalent to the <a class="reference internal" href="#brightness">Brightness</a> module curve. However, the strength of the <code class="docutils literal notranslate"><span class="pre">Vibrance</span></code> parameter is in addition modulated by the input image lightness, making the curve dependent on both lightness and chroma.</p>
+</div>
+</div>
+<hr class="docutils" />
+<div class="section" id="saturation">
+<h2><a class="toc-backref" href="#id5">Saturation</a><a class="headerlink" href="#saturation" title="Permalink to this headline">¶</a></h2>
+<img alt="_images/node3.png" src="_images/node3.png" />
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Saturation:</th><td class="field-body">Increases color saturation linearly</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Group:</th><td class="field-body"><a class="reference internal" href="#adjust">Adjust</a></td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Color Space:</th><td class="field-body"><a class="reference internal" href="colorspaces.html#lch"><span class="std std-ref">LCH</span></a></td>
+</tr>
+</tbody>
+</table>
+<p>This module changes the LCH chroma linearly with the <code class="docutils literal notranslate"><span class="pre">Saturation</span></code> parameter as multiplication factor <a class="reference internal" href="#equation-saturation-function">(6)</a>. It allows for full desaturation of the input image, as well as unbounded oversaturation.</p>
+<table border="1" class="colwidths-given docutils align-center">
+<colgroup>
+<col width="17%" />
+<col width="83%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head stub">Value</th>
+<th class="head">Saturation</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><th class="stub">-1.0</th>
+<td><img alt="_images/-11.png" class="first last" src="_images/-11.png" />
+</td>
+</tr>
+<tr class="row-odd"><th class="stub">-0.5</th>
+<td><img alt="_images/-0.5.png" class="first last" src="_images/-0.5.png" />
+</td>
+</tr>
+<tr class="row-even"><th class="stub">+0.0</th>
+<td><img alt="_images/04.png" class="first last" src="_images/04.png" />
+</td>
+</tr>
+<tr class="row-odd"><th class="stub">+0.5</th>
+<td><img alt="_images/+0.5.png" class="first last" src="_images/+0.5.png" />
+</td>
+</tr>
+<tr class="row-even"><th class="stub">+1.0</th>
+<td><img alt="_images/+11.png" class="first last" src="_images/+11.png" />
+</td>
+</tr>
+</tbody>
+</table>
+<div class="math notranslate nohighlight" id="equation-saturation-function">
+<span class="eqno">(6)<a class="headerlink" href="#equation-saturation-function" title="Permalink to this equation">¶</a></span>\[Output_C = Input_C \cdot Saturation\]</div>
+</div>
+<hr class="docutils" />
+<div class="section" id="temperature">
+<h2><a class="toc-backref" href="#id6">Temperature</a><a class="headerlink" href="#temperature" title="Permalink to this headline">¶</a></h2>
+<img alt="_images/node4.png" src="_images/node4.png" />
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Temperature:</th><td class="field-body">Source correlated color temperature (K)</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Tint:</th><td class="field-body">Green tint</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Group:</th><td class="field-body"><a class="reference internal" href="#adjust">Adjust</a></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Color Space:</th><td class="field-body"><a class="reference internal" href="colorspaces.html#xyz"><span class="std std-ref">XYZ</span></a></td>
+</tr>
+</tbody>
+</table>
+<p>This module corrects color cast due to the difference in scene illuminants compared to the white point of the viewing environment. The <code class="docutils literal notranslate"><span class="pre">Temperature</span></code> parameter indicates the correlated color temperature of the illuminant of the scene. The source color temperature is converted to a source white reference <span class="math notranslate nohighlight">\(RefSource_{LMS}\)</span> <a class="reference internal" href="#equation-temperature-cct-daylight">(8)</a>. The <code class="docutils literal notranslate"><span class="pre">Tint</span></code> parameter additionally scales the source white reference Y to correct a green cast. The destination white reference <span class="math notranslate nohighlight">\(RefDest_{LMS}\)</span> is computed for <span class="math notranslate nohighlight">\(T = 6500\,K\)</span> illuminant to match the D65 standard illuminant of sRGB. Chromatic adaptation is performed using the Von Kries transform in LMS space <a class="reference internal" href="#equation-temperature-chromatic-adaptation">(9)</a>. A Bradford matrix <a class="reference internal" href="#equation-temperature-bradford-matrix">(7)</a> is used for the conversion from XYZ to LMS.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">The conversion from correlated color temperature to chromaticity is performed using the daylight locus as reference instead of the black body locus. This should be more appropriate for naturally occurring light.</p>
+</div>
+<table border="1" class="colwidths-given docutils align-center">
+<colgroup>
+<col width="6%" />
+<col width="31%" />
+<col width="31%" />
+<col width="31%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head stub">Temperature</th>
+<th class="head">Tint: 0.9</th>
+<th class="head">Tint: 1.0</th>
+<th class="head">Tint: 1.1</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><th class="stub">3800 K</th>
+<td><img alt="_images/3800_0.9.png" class="first last" src="_images/3800_0.9.png" />
+</td>
+<td><img alt="_images/3800_1.png" class="first last" src="_images/3800_1.png" />
+</td>
+<td><img alt="_images/3800_1.1.png" class="first last" src="_images/3800_1.1.png" />
+</td>
+</tr>
+<tr class="row-odd"><th class="stub">4700K</th>
+<td><img alt="_images/4700_0.9.png" class="first last" src="_images/4700_0.9.png" />
+</td>
+<td><img alt="_images/4700_1.png" class="first last" src="_images/4700_1.png" />
+</td>
+<td><img alt="_images/4700_1.1.png" class="first last" src="_images/4700_1.1.png" />
+</td>
+</tr>
+<tr class="row-even"><th class="stub">5600K</th>
+<td><img alt="_images/5600_0.9.png" class="first last" src="_images/5600_0.9.png" />
+</td>
+<td><img alt="_images/5600_1.png" class="first last" src="_images/5600_1.png" />
+</td>
+<td><img alt="_images/5600_1.1.png" class="first last" src="_images/5600_1.1.png" />
+</td>
+</tr>
+<tr class="row-odd"><th class="stub">6500K</th>
+<td><img alt="_images/6500_0.9.png" class="first last" src="_images/6500_0.9.png" />
+</td>
+<td><img alt="_images/6500_1.png" class="first last" src="_images/6500_1.png" />
+</td>
+<td><img alt="_images/6500_1.1.png" class="first last" src="_images/6500_1.1.png" />
+</td>
+</tr>
+<tr class="row-even"><th class="stub">8300K</th>
+<td><img alt="_images/8300_0.9.png" class="first last" src="_images/8300_0.9.png" />
+</td>
+<td><img alt="_images/8300_1.png" class="first last" src="_images/8300_1.png" />
+</td>
+<td><img alt="_images/8300_1.1.png" class="first last" src="_images/8300_1.1.png" />
+</td>
+</tr>
+<tr class="row-odd"><th class="stub">11000K</th>
+<td><img alt="_images/11000_0.9.png" class="first last" src="_images/11000_0.9.png" />
+</td>
+<td><img alt="_images/11000_1.png" class="first last" src="_images/11000_1.png" />
+</td>
+<td><img alt="_images/11000_1.1.png" class="first last" src="_images/11000_1.1.png" />
+</td>
+</tr>
+<tr class="row-even"><th class="stub">15500K</th>
+<td><img alt="_images/15500_0.9.png" class="first last" src="_images/15500_0.9.png" />
+</td>
+<td><img alt="_images/15500_1.png" class="first last" src="_images/15500_1.png" />
+</td>
+<td><img alt="_images/15500_1.1.png" class="first last" src="_images/15500_1.1.png" />
+</td>
+</tr>
+</tbody>
+</table>
+<div class="math notranslate nohighlight" id="equation-temperature-bradford-matrix">
+<span class="eqno">(7)<a class="headerlink" href="#equation-temperature-bradford-matrix" title="Permalink to this equation">¶</a></span>\[\begin{split}M_{Bradford} = \left[
+\begin{array}{rrr}
+0.8951 &amp; 0.2664 &amp; 0.1614 \\
+-0.7502 &amp; 1.7135 &amp; 0.0367 \\
+0.0389 &amp; 0.0685 &amp; 1.0296
+\end{array}
+\right]\end{split}\]</div>
+<div class="math notranslate nohighlight" id="equation-temperature-cct-daylight">
+<span class="eqno">(8)<a class="headerlink" href="#equation-temperature-cct-daylight" title="Permalink to this equation">¶</a></span>\[\begin{split}\begin{align}
+T &amp;=  Temperature \\
+x &amp;=  \left\{\begin{array}{rl}
+        \frac{0.27475E9}{T^3} - \frac{0.98598E6}{T^2} + \frac{1.17444E3}{T} + 0.145986 &amp; T &lt; 4000 \\
+        \frac{-4.6070E9}{T^3} + \frac{2.9678E6}{T^2}  + \frac{0.09911E3}{T} + 0.244063 &amp; 4000 &lt; T &lt; 7000 \\
+        \frac{-2.0064E9}{T^3} + \frac{1.9018E6}{T^2}  + \frac{0.24748E3}{T} + 0.237040 &amp; 7000 &lt; T
+\end{array}\right. \\
+y &amp;=  -3 \cdot x^2 + 2.87 \cdot x - 0.275 \\
+\left[ \begin{array}{c} L \\ M \\ S \end{array} \right] &amp;=
+M \cdot \left[ \begin{array}{c} X \\ Y \\ Z \end{array} \right] =
+M \cdot \left[ \begin{array}{c} \frac{x}{y} \\ Tint \\ \frac{1-x-y}{y} \end{array} \right]
+\end{align}\end{split}\]</div>
+<div class="math notranslate nohighlight" id="equation-temperature-chromatic-adaptation">
+<span class="eqno">(9)<a class="headerlink" href="#equation-temperature-chromatic-adaptation" title="Permalink to this equation">¶</a></span>\[\begin{split}Output_{XYZ} = M^{-1} \cdot
+\left[ \begin{array}{ccc}
+        \frac{RefDest_L}{RefSource_L} &amp; 0 &amp; 0 \\
+        0 &amp; \frac{RefDest_M}{RefSource_M} &amp; 0 \\
+        0 &amp; 0 &amp; \frac{RefDest_S}{RefSource_S}
+\end{array} \right]
+\cdot M \cdot Input_{XYZ}\end{split}\]</div>
+<hr class="docutils" />
+</div>
+</div>
+<div class="section" id="curve-modules">
+<span id="adjust-curves"></span><h1>Curve Modules<a class="headerlink" href="#curve-modules" title="Permalink to this headline">¶</a></h1>
+<p>The curve modules allow fine control of image adjustments. They define a mapping between one parameter and another specified as a user-defined function. The output of the mapping function can either set an absolute value, or offset or modulate the original value.</p>
+<div class="contents local topic" id="id1">
+<p class="topic-title first">List of Modules</p>
+<ul class="simple">
+<li><a class="reference internal" href="#parametric-curve" id="id7">Parametric Curve</a></li>
+<li><a class="reference internal" href="#curve-l" id="id8">Curve L</a></li>
+<li><a class="reference internal" href="#curve-y" id="id9">Curve Y</a></li>
+<li><a class="reference internal" href="#advanced-curve-modules" id="id10">Advanced Curve modules</a></li>
+<li><a class="reference internal" href="#mask-curve-modules" id="id11">Mask Curve Modules</a></li>
+</ul>
+</div>
+<hr class="docutils" />
+<div class="section" id="parametric-curve">
+<h2><a class="toc-backref" href="#id7">Parametric Curve</a><a class="headerlink" href="#parametric-curve" title="Permalink to this headline">¶</a></h2>
+<img alt="_images/node5.png" src="_images/node5.png" />
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Shadows:</th><td class="field-body">Adjustment of the shadows</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Darks:</th><td class="field-body">Adjustment of the dark tones</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Lights:</th><td class="field-body">Adjustment of the light tones</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Highlights:</th><td class="field-body">Adjustment of the highlights</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Group:</th><td class="field-body"><a class="reference internal" href="#adjust-curves">Adjust &gt; Curves</a></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Color Space:</th><td class="field-body"><a class="reference internal" href="colorspaces.html#lab"><span class="std std-ref">LAB</span></a></td>
+</tr>
+</tbody>
+</table>
+<p>This module adjusts the lightness L in four tonal regions. The overall adjustment is a brightness offset factor <span class="math notranslate nohighlight">\(F_{Tone}\)</span> for each region <a class="reference internal" href="#equation-parametric-brightness-function">(10)</a>, where <span class="math notranslate nohighlight">\(V_{Tone}\)</span> is one of the <code class="docutils literal notranslate"><span class="pre">Shadows</span></code>, <code class="docutils literal notranslate"><span class="pre">Darks</span></code>, <code class="docutils literal notranslate"><span class="pre">Lights</span></code>, or <code class="docutils literal notranslate"><span class="pre">Highlights</span></code> parameters. These curves are scaled and linearly modulated depending on the tonal range. They are combined in <a class="reference internal" href="#equation-parametric-full-function">(11)</a>, where  <span class="math notranslate nohighlight">\(F_{Shadows}\)</span> and <span class="math notranslate nohighlight">\(F_{Highlights}\)</span> are modulated with the headroom remaining after <span class="math notranslate nohighlight">\(F_{Darks} + F_{Lights}\)</span> is applied. The saturation is preserved in the AB components <a class="reference internal" href="#equation-parametric-saturation-function">(12)</a>.</p>
+<table border="1" class="colwidths-given docutils align-center">
+<colgroup>
+<col width="9%" />
+<col width="45%" />
+<col width="45%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head stub">Tone</th>
+<th class="head">-1.0</th>
+<th class="head">+1.0</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><th class="stub">Shadows</th>
+<td><img alt="_images/S-1.png" class="first last" src="_images/S-1.png" />
+</td>
+<td><img alt="_images/S+1.png" class="first last" src="_images/S+1.png" />
+</td>
+</tr>
+<tr class="row-odd"><th class="stub">Darks</th>
+<td><img alt="_images/D-1.png" class="first last" src="_images/D-1.png" />
+</td>
+<td><img alt="_images/D+1.png" class="first last" src="_images/D+1.png" />
+</td>
+</tr>
+<tr class="row-even"><th class="stub">Lights</th>
+<td><img alt="_images/L-1.png" class="first last" src="_images/L-1.png" />
+</td>
+<td><img alt="_images/L+1.png" class="first last" src="_images/L+1.png" />
+</td>
+</tr>
+<tr class="row-odd"><th class="stub">Highlights</th>
+<td><img alt="_images/H-1.png" class="first last" src="_images/H-1.png" />
+</td>
+<td><img alt="_images/H+1.png" class="first last" src="_images/H+1.png" />
+</td>
+</tr>
+</tbody>
+</table>
+<div class="math notranslate nohighlight" id="equation-parametric-brightness-function">
+<span class="eqno">(10)<a class="headerlink" href="#equation-parametric-brightness-function" title="Permalink to this equation">¶</a></span>\[\begin{split}\begin{align}
+I &amp;= Input_L \\
+F_{Shadows} &amp;=
+        \left\{\begin{array}{rl}
+                V_{Shadows} \cdot I \cdot (2 \cdot I - 1)^2 &amp; I&lt;0.5 \\
+                0 &amp; I&gt;0.5
+        \end{array}\right. \\
+F_{Darks} &amp;= V_{Darks} \cdot (I - 1)^2 \cdot I \\
+F_{Lights} &amp;= -V_{Lights} \cdot (I - 1) \cdot I^2 \\
+F_{Highlights} &amp;=
+        \left\{\begin{array}{rl}
+        0 &amp; I&lt;0.5 \\
+        - V_{Highlights} \cdot (I-1) \cdot (2 \cdot I - 1)^2 &amp; I&gt;0.5
+        \end{array}\right.
+\end{align}\end{split}\]</div>
+<img alt="_images/plot2.png" class="align-center" src="_images/plot2.png" />
+<div class="math notranslate nohighlight" id="equation-parametric-full-function">
+<span class="eqno">(11)<a class="headerlink" href="#equation-parametric-full-function" title="Permalink to this equation">¶</a></span>\[\begin{split}\begin{align}
+        O &amp;= Input_L + F_{Darks} + F_{Lights} \\
+        Output_L &amp;= O + F_{Shadows} \cdot \frac{O}{Input_L} + F_{Highlights} \cdot \frac{1-O}{1-Input_L}
+\end{align}\end{split}\]</div>
+<div class="math notranslate nohighlight" id="equation-parametric-saturation-function">
+<span class="eqno">(12)<a class="headerlink" href="#equation-parametric-saturation-function" title="Permalink to this equation">¶</a></span>\[Output_{AB} = Input_{AB} \cdot (Output_L - Input_L)\]</div>
+</div>
+<hr class="docutils" />
+<div class="section" id="curve-l">
+<h2><a class="toc-backref" href="#id8">Curve L</a><a class="headerlink" href="#curve-l" title="Permalink to this headline">¶</a></h2>
+<img alt="_images/curve_L.png" src="_images/curve_L.png" />
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name" colspan="2">Preserve Saturation:</th></tr>
+<tr class="field-odd field"><td>&#160;</td><td class="field-body">Maintain constant saturation</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Group:</th><td class="field-body"><a class="reference internal" href="#adjust-curves">Adjust &gt; Curves</a></td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Color Space:</th><td class="field-body"><a class="reference internal" href="colorspaces.html#lab"><span class="std std-ref">LAB</span></a></td>
+</tr>
+</tbody>
+</table>
+<p>This module sets the output lightness L as function of the input lightness. The implementation is similar to that of the <a class="reference internal" href="#contrast">Contrast</a> module <a class="reference internal" href="#equation-l-curve-function">(13)</a>, but with a user-defined curve <span class="math notranslate nohighlight">\(f\)</span>.  The <code class="docutils literal notranslate"><span class="pre">Saturation</span></code> parameter enables scaling of the chroma channel to preserve constant saturation instead of constant chroma when the lightness channel is modified <a class="reference internal" href="#equation-l-curve-saturation-function">(14)</a>.</p>
+<div class="math notranslate nohighlight" id="equation-l-curve-function">
+<span class="eqno">(13)<a class="headerlink" href="#equation-l-curve-function" title="Permalink to this equation">¶</a></span>\[Output_L = f(Input_L)\]</div>
+<div class="math notranslate nohighlight" id="equation-l-curve-saturation-function">
+<span class="eqno">(14)<a class="headerlink" href="#equation-l-curve-saturation-function" title="Permalink to this equation">¶</a></span>\[Output_{AB} = Input_{AB} \cdot (Output_L - Input_L)\]</div>
+</div>
+<hr class="docutils" />
+<div class="section" id="curve-y">
+<h2><a class="toc-backref" href="#id9">Curve Y</a><a class="headerlink" href="#curve-y" title="Permalink to this headline">¶</a></h2>
+<img alt="_images/curve_Y.png" src="_images/curve_Y.png" />
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Preserve Hue:</th><td class="field-body">Preserves input image hue in LCH space</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Group:</th><td class="field-body"><a class="reference internal" href="#adjust-curves">Adjust &gt; Curves</a></td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Color Space:</th><td class="field-body"><a class="reference internal" href="colorspaces.html#xyz"><span class="std std-ref">XYZ</span></a></td>
+</tr>
+</tbody>
+</table>
+<p>This module sets the output luminance Y as function of the input luminance. The implementation is similar to that of the <a class="reference internal" href="#brightness">Brightness</a> module <a class="reference internal" href="#equation-y-curve-function">(15)</a>, but with a user-defined curve <span class="math notranslate nohighlight">\(f\)</span>. The <code class="docutils literal notranslate"><span class="pre">Preserve</span> <span class="pre">Hue</span></code> parameter applies the hue of the input image to that of the output image in LCH space <a class="reference internal" href="#equation-y-curve-hue-function">(16)</a>.</p>
+<div class="math notranslate nohighlight" id="equation-y-curve-function">
+<span class="eqno">(15)<a class="headerlink" href="#equation-y-curve-function" title="Permalink to this equation">¶</a></span>\[Output_Y = f(Input_Y)\]</div>
+<div class="math notranslate nohighlight" id="equation-y-curve-hue-function">
+<span class="eqno">(16)<a class="headerlink" href="#equation-y-curve-hue-function" title="Permalink to this equation">¶</a></span>\[Output_H = Input_H\]</div>
+<hr class="docutils" />
+</div>
+<div class="section" id="advanced-curve-modules">
+<span id="adjust-curves-advanced"></span><h2><a class="toc-backref" href="#id10">Advanced Curve modules</a><a class="headerlink" href="#advanced-curve-modules" title="Permalink to this headline">¶</a></h2>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Group:</th><td class="field-body"><a class="reference internal" href="#adjust-curves-advanced">Adjust &gt; Curves &gt; Advanced</a></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Color Space:</th><td class="field-body"><a class="reference internal" href="colorspaces.html#lch"><span class="std std-ref">LCH</span></a></td>
+</tr>
+</tbody>
+</table>
+<p>These curves map one component of the LCH color space against another in the following way, where <span class="math notranslate nohighlight">\(f\)</span> is the curve function:</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Curve L-L:</th><td class="field-body"><span class="math notranslate nohighlight">\(Output_L = f(Input_L)\)</span></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Curve L-C:</th><td class="field-body"><span class="math notranslate nohighlight">\(Output_C = Input_C \cdot f(Input_L)\)</span></td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Curve L-H:</th><td class="field-body"><span class="math notranslate nohighlight">\(Output_H = Input_H + f(Input_L)\)</span></td>
+</tr>
+</tbody>
+</table>
+<hr class="docutils" />
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Curve C-L:</th><td class="field-body"><span class="math notranslate nohighlight">\(Output_L = Input_L \cdot f(Input_C)\)</span></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Curve C-C:</th><td class="field-body"><span class="math notranslate nohighlight">\(Output_C = f(Input_C)\)</span></td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Curve C-H:</th><td class="field-body"><span class="math notranslate nohighlight">\(Output_H = Input_H + f(Input_C)\)</span></td>
+</tr>
+</tbody>
+</table>
+<hr class="docutils" />
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Curve H-L:</th><td class="field-body"><span class="math notranslate nohighlight">\(Output_L = Input_L \cdot ((f(Input_H)-1) \cdot Input_C + 1)\)</span></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Curve H-C:</th><td class="field-body"><span class="math notranslate nohighlight">\(Output_C = Input_C \cdot f(Input_H)\)</span></td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Curve H-H:</th><td class="field-body"><span class="math notranslate nohighlight">\(Output_H = Input_H + f(Input_H)\)</span></td>
+</tr>
+</tbody>
+</table>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">The H-L curve effect is modulated with chroma, such that low chroma input with noisy hue does not result in noisy lightness in the output.</p>
+</div>
+</div>
+<hr class="docutils" />
+<div class="section" id="mask-curve-modules">
+<h2><a class="toc-backref" href="#id11">Mask Curve Modules</a><a class="headerlink" href="#mask-curve-modules" title="Permalink to this headline">¶</a></h2>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Group:</th><td class="field-body"><a class="reference internal" href="#adjust-curves-advanced">Adjust &gt; Curves &gt; Advanced</a></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Color Space:</th><td class="field-body"><a class="reference internal" href="colorspaces.html#lch"><span class="std std-ref">LCH</span></a> &gt; <a class="reference internal" href="colorspaces.html#y"><span class="std std-ref">Y</span></a></td>
+</tr>
+</tbody>
+</table>
+<p>These curves create a single-channel mask output based on curve <span class="math notranslate nohighlight">\(f\)</span> applied to the input channel:</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Select L:</th><td class="field-body"><span class="math notranslate nohighlight">\(Output_Y = f(Input_L)\)</span></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Select C:</th><td class="field-body"><span class="math notranslate nohighlight">\(Output_Y = f(Input_C)\)</span></td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Select H:</th><td class="field-body"><span class="math notranslate nohighlight">\(Output_Y = f(Input_H)\)</span></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="modules_enhance.html" class="btn btn-neutral float-right" title="Enhance modules" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="modules.html" class="btn btn-neutral" title="Modules" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2018, Galin Bajlekov.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'./',
+            VERSION:'0.0-alpha',
+            LANGUAGE:'None',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="_static/jquery.js"></script>
+      <script type="text/javascript" src="_static/underscore.js"></script>
+      <script type="text/javascript" src="_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  <script type="text/javascript" src="_static/js/theme.js"></script>
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

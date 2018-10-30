@@ -1,0 +1,33 @@
+src
+  - main.lua
+  tools
+  ui
+  ops
+  lib         / supporting code for use of external libraries
+    sdl
+    opencl
+    julia
+    halide
+    imagemagick
+
+lib           / external dependencies
+  luajit
+    - luajit
+    - lualib
+    inc
+  imagemagick / C interface magickwand ... or use graphicsmagic?
+  libraw      / or rawspeed with own processing?
+  julia
+  halide
+res           / resources such as images and fonts
+bin          / released packages
+  linux64
+  linux32
+  win64
+  win32
+test
+  bench
+  unit
+doc
+util
+junk       / old test dir with random bits and pieces

@@ -1,0 +1,48 @@
+TODO: draw buffering!!!
+
+
+Frames:
+- empty (nested, default)
+- panel (default element container) TODO: nested panels
+- tabs (nested panels inside)
+- stack TODO: input/output stack elements
+- menu (separate layer when open)
+- toolbar (separate layer when open)
+- statusbar
+- node (stack of nodes on separate layer)
+
+
+
+
+frames containing element arrays:
+elem = {n = 0, ...elems}
+
+
+Elements:
+- label
+- text
+- float
+- int
+- bool
+- enum
+- custom:
+  - title ??
+  - swatch
+  - range etc.
+
+
+Input events:
+- mousePressed calls hit check functions
+- mouseMoved callback returned from mousePressed hit check function
+- mouseReleased callback returned from mouseMoved callback function
+
+Implement handling for frames > elements
+
+
+Events:
+- click
+- drag
+- draw
+
+
+frame draw -> elem draw

@@ -1,0 +1,84 @@
+raw processing pipeline:
+
+- non-uniformity (correct with flat-field image)
+  - local (pixel level non-uniformity)
+  - global (light fall-off model)
+    - light fall-off due to lens
+    - color shifts due to microlens array
+- stuck/dead pixel removal
+- dark floor subtraction
+  - dark levels from unexposed pixels
+  - long exposure dark noise subtraction
+
+- image combining for higher dynamic range
+  - exact match
+  - alignment
+
+- ADC linearity
+
+- Digital amplification
+
+- highlight clipping/reconstruction
+- denoising
+  - non-local means
+  - BM3D
+  - noise model
+    - photon shot noise (poisson)
+    - dark current noise, thermal noise, flicker
+    - read noise
+- debayering
+  - color artifact reduction
+  - RAW denoising
+
+- Color mapping
+- White balance
+  - automatic white balance adjustment
+- Gamma transformation for preview
+
+- film response curve
+- digital camera response curve
+
+- micro-contrast enhancement and sharpening
+
+- chromatic aberration correction
+- geometric distortion correction
+
+- statistics:
+  - histograms
+  - sharpness
+  - clipping
+
+- purple fringing correction/desaturation
+
+
+
+android pipeline:
+- hot pixel correction
+- demosaicing
+- noise reduction
+- shading correction
+- geometric correction
+- color conversion
+- tone curve adjustment
+- edge enhancement
+
+TI OMAP pipeline:
+- optical clamp (subtract live black levels)
+- remove bad pixels
+- lens shading compensation
+- dark frame subtraction
+- white balance
+- demosaicing
+- denoising, sharpening
+- color conversion
+
+TI DaVinci pipeline:
+- black level adjustment
+- noise reduction
+- white balance
+- demosaicing
+- color conversion
+- gamma correction
+- edge enhancement
+- contrast enhancement
+- false color suppression
