@@ -1,0 +1,7 @@
+hueTransfer.cl
+blownHighlights.cl
+brightness.cl
+contrast.cl
+edgeAware.cl
+snn.cl
+sobel.cl
