@@ -7,9 +7,8 @@ Image processing framework and user interface for definition and execution of fl
 
 Documentation
 -------------
-https://imagefloat.readthedocs.io/en/latest/
+[https://imagefloat.readthedocs.io/en/latest/](https://imagefloat.readthedocs.io/en/latest/)
 
 Releases
 --------
-
-https://github.com/bajlekov/ImageFloat/releases
+[https://github.com/bajlekov/ImageFloat/releases](https://github.com/bajlekov/ImageFloat/releases)
