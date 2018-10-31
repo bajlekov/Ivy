@@ -73,7 +73,7 @@ overlaySelect:addElem("addNode", 3, "Hue Select", {ops, "hueSelect"})
 overlaySelect:addElem("addNode", 4, "Chroma Select", {ops, "chromaSelect"})
 overlaySelect:addElem("addNode", 5, "Lightness Select", {ops, "lightnessSelect"})
 overlaySelect:addElem("addNode", 6, "Distance Select", {ops, "distanceSelect"})
-overlayMask:addElem("addNode", 2, "Select H", {ops, "selectH"})
+overlayMask:addElem("addNode", 2, "Hue Mask", {ops, "hueMask"})
 overlayMask:addElem("addNode", 3, "Mix", {ops, "mix"}) -- TODO: expand to many layer modes!
 
 local clutColor = {"Precisa", "Vista", "Astia", "Provia", "Sensia", "Superia", "Velvia", "Ektachrome", "Kodachrome", "Portra"}

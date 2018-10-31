@@ -18,7 +18,7 @@
 local proc = require "lib.opencl.process".new()
 
 local source = [[
-kernel void selectH(global float *I, global float *C, global float *O)
+kernel void hueMask(global float *I, global float *C, global float *O)
 {
   const int x = get_global_id(0);
   const int y = get_global_id(1);
@@ -42,7 +42,7 @@ kernel void selectH(global float *I, global float *C, global float *O)
 
 local function execute()
 	proc:getAllBuffers("I", "C", "O")
-	proc:executeKernel("selectH", proc:size2D("O"))
+	proc:executeKernel("hueMask", proc:size2D("O"))
 end
 
 local function init(d, c, q)

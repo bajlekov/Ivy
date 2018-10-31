@@ -297,22 +297,23 @@ return function(ops)
 
 
 
-	local function selectHProcess(self)
+	local function hueMaskProcess(self)
 		self.procType = "dev"
 		local i, c, o
 		i = t.inputSourceBlack(self, 0)
 		c = self.data.curve:toDevice()
 		o = t.autoOutput(self, 0, i:shape())
-		thread.ops.selectH({i, c, o}, self)
+		thread.ops.hueMask({i, c, o}, self)
 	end
 
-	function ops.selectH(x, y)
+	function ops.hueMask(x, y)
 		local n = node:new("Select H")
 		n:addPortIn(0, "LCH")
 		n:addPortOut(0, "Y")
-		n.process = selectHProcess
+		n.process = hueMaskProcess
 		n.data.curve = data:new(256, 1, 1)
 		require "ui.graph".curve(n, {{x = 0, y = 1}, {x = 1, y = 1}})
+		n.graph.background = background_HL
 		n:setPos(x, y)
 		return n
 	end
