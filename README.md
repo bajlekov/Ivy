@@ -14,3 +14,7 @@ _Work in progress_
 Releases
 --------
 [https://github.com/bajlekov/ImageFloat/releases](https://github.com/bajlekov/ImageFloat/releases)
+
+Source code
+-----------
+[https://github.com/bajlekov/ImageFloat](https://github.com/bajlekov/ImageFloat)
