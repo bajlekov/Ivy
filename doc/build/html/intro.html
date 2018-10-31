@@ -85,22 +85,25 @@
               <ul class="current">
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Introduction</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#user-interface">User Interface</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#menu-bar">Menu Bar</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#menu-bar">Menu Bar</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#file">File</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#process">Process</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#settings">Settings</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#help">Help</a></li>
+</ul>
+</li>
 <li class="toctree-l3"><a class="reference internal" href="#toolbox">Toolbox</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#image-panel">Image Panel</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#image-information-panel">Image Information Panel</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#histogram-panel">Histogram Panel</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#parameter-panel">Parameter Panel</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#status-bar">Status Bar</a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="#interaction">Interaction</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#processing-pipelines">Processing Pipelines</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#nodes">Nodes</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#parameters">Parameters</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#ports">Ports</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#links">Links</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#graphs">Graphs</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#processing-pipeline-execution">Processing Pipeline Execution</a></li>
@@ -175,53 +178,215 @@
             
   <div class="section" id="introduction">
 <h1>Introduction<a class="headerlink" href="#introduction" title="Permalink to this headline">¶</a></h1>
+<p>ImageFloat is a program for image processing. The main idea behind it is the creation of a processing pipeline in the form of a  <a class="reference external" href="https://en.wikipedia.org/wiki/Directed_acyclic_graph">directed acyclic graph</a>, which describes the processing steps performed from the initial input image to the final output image. This provides great flexibility in the processing pipelines and allows for a non-linear processing flow.</p>
+<img alt="_images/preview.png" src="_images/preview.png" />
+<p>Each node in the graph represents an image processing operation with specified inputs and outputs. In addition, nodes can have multiple parameters to tune their behavior. These nodes are the building blocks of the pipeline, ranging from simple math operations to advanced multi-scale processes. When arranged in a graph, these operations are executed to obtain the final output image.</p>
+<p>Within the editor nodes can be easily placed, connections between nodes created or removed, and parameters of nodes adjusted. With any change, the pipeline is updated, executed and the output is previewed. This allows for easy tuning across the whole pipeline and, depending on the complexity, real-time feedback on the adjustments made.</p>
 <div class="section" id="user-interface">
 <h2>User Interface<a class="headerlink" href="#user-interface" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="menu-bar">
 <h3>Menu Bar<a class="headerlink" href="#menu-bar" title="Permalink to this headline">¶</a></h3>
+<img alt="_images/menu.png" src="_images/menu.png" />
+<p>The menu bar contains the following commands:</p>
+<div class="section" id="file">
+<h4>File<a class="headerlink" href="#file" title="Permalink to this headline">¶</a></h4>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Load Image:</th><td class="field-body">Loads a new input image</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Save Image:</th><td class="field-body">Saves the processed output image</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="process">
+<h4>Process<a class="headerlink" href="#process" title="Permalink to this headline">¶</a></h4>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">New Process:</th><td class="field-body">Creates new processing pipeline</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Load Process:</th><td class="field-body">Loads an existing processing pipeline from file</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Save Process:</th><td class="field-body">Saves the current processing pipeline to file</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Append Process:</th><td class="field-body">Appends a processing pipeline from file to the currently open pipeline</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="settings">
+<span id="continuous-mode"></span><h4>Settings<a class="headerlink" href="#settings" title="Permalink to this headline">¶</a></h4>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">OpenCL Device:</th><td class="field-body">Select the OpenCL device that will be used for processing. Setting is applied at the next startup.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Continuous:</th><td class="field-body">Continuously execute pipeline independent of changes. Not recommended for normal use.</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="help">
+<h4>Help<a class="headerlink" href="#help" title="Permalink to this headline">¶</a></h4>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Documentation:</th><td class="field-body">Open this documentation.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">About:</th><td class="field-body">Displays license information.</td>
+</tr>
+</tbody>
+</table>
+</div>
 </div>
 <div class="section" id="toolbox">
-<h3>Toolbox<a class="headerlink" href="#toolbox" title="Permalink to this headline">¶</a></h3>
+<span id="auto-connect"></span><span id="color-picker"></span><span id="add-node"></span><h3>Toolbox<a class="headerlink" href="#toolbox" title="Permalink to this headline">¶</a></h3>
+<img alt="_images/toolbox.png" src="_images/toolbox.png" />
+<p>The toolbox offers the following functionality:</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Move Image:</th><td class="field-body">When this tool is selected, the image can be dragged with the left mouse button when zoomed in.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Color Picker:</th><td class="field-body">This tool allows color sampling from the output image with a left mouse click.</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Auto-connect:</th><td class="field-body">With this option is enabled, when placing and removing nodes the connections are automatically adjusted to accommodate for the changes.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Add Node:</th><td class="field-body">This drop-down menu is used to place new nodes. Right-clicking on the image preview shows the same menu.</td>
+</tr>
+</tbody>
+</table>
 </div>
 <div class="section" id="image-panel">
 <h3>Image Panel<a class="headerlink" href="#image-panel" title="Permalink to this headline">¶</a></h3>
+<p>The image panel Contains a preview of the currently processed output. It is the main area in which nodes can be positioned, however nodes can be moved outside of it across the whole window. Right-clicking on the image or the surrounding dark-gray area brings up the <a class="reference internal" href="#add-node">Add Node</a> menu.</p>
 </div>
 <div class="section" id="image-information-panel">
 <h3>Image Information Panel<a class="headerlink" href="#image-information-panel" title="Permalink to this headline">¶</a></h3>
+<img alt="_images/image_info.png" src="_images/image_info.png" />
+<p>The Image Information panel displays the properties of the currently selected input image.</p>
 </div>
 <div class="section" id="histogram-panel">
 <h3>Histogram Panel<a class="headerlink" href="#histogram-panel" title="Permalink to this headline">¶</a></h3>
-</div>
-<div class="section" id="parameter-panel">
-<h3>Parameter Panel<a class="headerlink" href="#parameter-panel" title="Permalink to this headline">¶</a></h3>
+<img alt="_images/histogram.png" src="_images/histogram.png" />
+<p>The Histogram panel shows a histogram of the output image values. The <code class="docutils literal notranslate"><span class="pre">Visibility</span></code> drop-down provides a selection of channels to display in the histogram:</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Red:</th><td class="field-body">The sRGB red channel.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Green:</th><td class="field-body">The sRGB green channel.</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Blue:</th><td class="field-body">The sRGB blue channel.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Lightness:</th><td class="field-body">The Lab lightness channel.</td>
+</tr>
+</tbody>
+</table>
+<img alt="_images/color_picker.png" src="_images/color_picker.png" />
+<p>The <a class="reference internal" href="#color-picker">Color Picker</a> selection is shown above the histogram, together with the corresponding sRGB values. These values are also indicated with vertical lines in the histogram.</p>
 </div>
 <div class="section" id="status-bar">
 <h3>Status Bar<a class="headerlink" href="#status-bar" title="Permalink to this headline">¶</a></h3>
+<p>The status bar at the bottom of the windows shows information about the program and the current pipeline.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">UI:</th><td class="field-body">Redraw frequency of the user interface.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Processing:</th><td class="field-body">Time elapsed while processing the full pipeline, followed by an indication of the processing device.</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Memory used:</th><td class="field-body">Amount of memory allocated in image buffers, together with the number of large buffers.</td>
+</tr>
+</tbody>
+</table>
 </div>
-</div>
-<div class="section" id="interaction">
-<h2>Interaction<a class="headerlink" href="#interaction" title="Permalink to this headline">¶</a></h2>
 </div>
 <div class="section" id="processing-pipelines">
 <h2>Processing Pipelines<a class="headerlink" href="#processing-pipelines" title="Permalink to this headline">¶</a></h2>
+<p>The main component of the user interface is the creation of processing pipelines, this is done in the Image panel. There are several elements that together define the process. Nodes are the basic processing blocks, containing parameters. Links connect the nodes and indicate the flow of data. Together the connected nodes form a graph which specifies the full processing pipeline to be executed.</p>
 <div class="section" id="nodes">
 <h3>Nodes<a class="headerlink" href="#nodes" title="Permalink to this headline">¶</a></h3>
+<img alt="_images/node.png" src="_images/node.png" />
+<p>A pipeline consists of nodes, at the very least one output node which determines the output of the pipeline. In this application, the input node has a special status too. Together with the output node they are always present in a process, and are used to define the input image to be processed and the output containing the processed image. In addition to these, there are a multitude of nodes, which can be added to the process.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Adding nodes:</th><td class="field-body">New nodes are accessed through the <a class="reference internal" href="#add-node">Add Node</a> menu, subdivided in multiple categories. For further information about the available nodes and their functionality, see the <a class="reference internal" href="modules.html#modules"><span class="std std-ref">Modules</span></a> section.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Moving nodes:</th><td class="field-body">Once a node is added, it can be moved around by dragging the node title with the left mouse button.</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Removing nodes:</th><td class="field-body">A node is removed by right-clicking the node title.</td>
+</tr>
+</tbody>
+</table>
+<p>The blue line above the node title indicates that this node is active: it is included in the processing pipeline. If a node is disconnected or otherwise does not contribute to the output, this line will be gray.</p>
+<p>Nodes contain <a class="reference internal" href="#parameters">parameters</a> which adjust the node functionality, and <a class="reference internal" href="#ports">ports</a> which represent the node’s inputs and outputs.</p>
 </div>
 <div class="section" id="parameters">
 <h3>Parameters<a class="headerlink" href="#parameters" title="Permalink to this headline">¶</a></h3>
+<p>A node’s parameters are always shown within the node and can be manipulated at any time. These parameters can have different forms:</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Value slider:</th><td class="field-body">These represent a floating point value in a pre-defined range. Dragging the slider left or right changes its value. Holding <code class="docutils literal notranslate"><span class="pre">Ctrl</span></code> while dragging enables stepped mode, in which the adjusted value is rounded to fixed increments. Holding <code class="docutils literal notranslate"><span class="pre">Shift</span></code> while dragging enables precise mode, in which the slider moves in smaller increments for accurate fine-tuning. These effects can be combined. Lastly, right-clicking on a value resets it to its default value.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Check-box:</th><td class="field-body">These toggle a parameter on or off, indicated by a filled or empty box. Right-clicking on a value resets it to its default value.</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Some check-boxes enable specific tools, such as a color picker. Such tools can be exclusively enabled, when enabling one tool, all others will be disabled. The check-boxes belonging to the same exclusive group will be momentarily highlighted when one of them is toggled.</p>
+</div>
+<p>Whenever a parameter is changed, the processing pipeline will be updated and output processed to represent the changed parameters.</p>
+<p>Often, parameters will allow to be driven by data from another node, this is indicated by <a class="reference internal" href="#ports">Ports</a> next to the parameter. When a parameter’s input port is connected, the manually entered value will be overridden by the value supplied via the port.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">A useful feature is driving a parameter with an array input (e.g. mask or image). The parameter will spatially vary according to the input data, allowing for local effects.</p>
+</div>
 </div>
 <div class="section" id="ports">
 <h3>Ports<a class="headerlink" href="#ports" title="Permalink to this headline">¶</a></h3>
+<p>Ports reside on the left and right edge of nodes. These are the inputs to (left) and outputs of (right) the node’s processing function. Each input port can be connected to an output port of a different node using <a class="reference internal" href="#links">links</a>, or left disconnected. When connected, the output of the output node will be transferred to the input of the input node, facilitating data flow between the processing functions. A disconnected port will use a default value.</p>
+<p>Ports can accept and generate data of varying size. In general, the data will be image data containing a 2D array of values across three channels. However, a port can also contain a single value, a single three-channel color, or a single channel 2D mask. These can be used interchangeably, the process will use the smallest possible data size while preserving its full content. When different data sizes are used, the process transparently converts the smaller data to fit the larger data.</p>
 </div>
 <div class="section" id="links">
 <h3>Links<a class="headerlink" href="#links" title="Permalink to this headline">¶</a></h3>
-</div>
-<div class="section" id="graphs">
-<h3>Graphs<a class="headerlink" href="#graphs" title="Permalink to this headline">¶</a></h3>
+<p>Links connect nodes, specifically, links connect output ports (right edge of node) to input ports (left edge of node).</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Creating links:</th><td class="field-body">Dragging from an output port creates a link, releasing the dragged link over an input port creates the link connection. An output port can have multiple outgoing links. An input port can have only one link, if a previous link exists it will be first removed before creating the new connection.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Removing links:</th><td class="field-body">Links can be removed by right-clicking on the port. Right-clicking an output port will remove all outgoing links.</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Rewiring links:</th><td class="field-body">Dragging from an input port with a connected link will disconnect the link from the input port, and allows to connect the link to a different input port by releasing the link end over that port. If the link is not released over an input port, the link will be removed.</td>
+</tr>
+</tbody>
+</table>
+<p>The <a class="reference internal" href="#auto-connect">Auto-connect</a> option will automatically connect newly placed nodes by splicing them into the link where they are placed. When nodes are removed, the links going through them will be patched to preserve the data flow across the removed node. This functionality is enabled only for the main ports (left/right of the title).</p>
 </div>
 </div>
 <div class="section" id="processing-pipeline-execution">
 <h2>Processing Pipeline Execution<a class="headerlink" href="#processing-pipeline-execution" title="Permalink to this headline">¶</a></h2>
+<p>The combination of nodes and links describes a graph. This graph represents the processing pipeline as it will be executed. The graph is manipulated by adding or removing nodes, or changing the links between them.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">A strictly acyclic graph is not able to represent iteration or recursion. However, the current implementation does not enforce this and cyclic graphs can be created and run in <a class="reference internal" href="#continuous-mode">Continuous mode</a>. While this is not advised, a converging loop could be useful in specific circumstances.</p>
+</div>
 </div>
 </div>
 

@@ -52,7 +52,7 @@ Internally, a linear light equivalent of the SRGB_ color space is used. It is us
 CIE Lab
 -------
 
-The LAB color space is designed to approximate human vision. It is perceptually uniform, and the L component matches the human perception of lightness. The A and B components represent the magenta-green axis and the yellow-blue axis respectively. While the definition of L has a range of :math:`[0, 100]` and AB a range of :math:`[0, 128]`, these are normalized to a range of :math:`[0, 1]` and :math:`[-1, 1]` respectively.
+The LAB color space is designed to approximate human vision. It is perceptually uniform, and the L component matches the human perception of lightness. The A and B components represent the magenta-green axis and the yellow-blue axis respectively. While the definition of L has a range of :math:`[0, 100]` and AB a range of :math:`[-128, 128]`, these are normalized to a range of :math:`[0, 1]` and :math:`[-1, 1]` respectively.
 
 :Internal name: LAB
 :Range: :math:`L \in [0, 1]; A, B \in [-1, 1]`
