@@ -307,7 +307,7 @@ return function(ops)
 	end
 
 	function ops.hueMask(x, y)
-		local n = node:new("Select H")
+		local n = node:new("Hue Mask")
 		n:addPortIn(0, "LCH")
 		n:addPortOut(0, "Y")
 		n.process = hueMaskProcess
