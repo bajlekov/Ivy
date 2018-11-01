@@ -25,6 +25,10 @@ local background_HL = love.graphics.newImage("res/Curve_HL.png")
 local background_HC = love.graphics.newImage("res/Curve_HC.png")
 local background_HH = love.graphics.newImage("res/Curve_HH.png")
 
+local background_L = love.graphics.newImage("res/Curve_L.png")
+local background_C = love.graphics.newImage("res/Curve_C.png")
+local background_H = love.graphics.newImage("res/Curve_H.png")
+
 local node = require "ui.node"
 local data = require "data"
 local thread = require "thread"
@@ -313,7 +317,50 @@ return function(ops)
 		n.process = hueMaskProcess
 		n.data.curve = data:new(256, 1, 1)
 		require "ui.graph".curve(n, {{x = 0, y = 1}, {x = 1, y = 1}})
-		n.graph.background = background_HL
+		n.graph.background = background_H
+		n:setPos(x, y)
+		return n
+	end
+
+	local function lightnessMaskProcess(self)
+		self.procType = "dev"
+		local i, c, o
+		i = t.inputSourceBlack(self, 0)
+		c = self.data.curve:toDevice()
+		o = t.autoOutput(self, 0, i:shape())
+		thread.ops.lightnessMask({i, c, o}, self)
+	end
+
+	function ops.lightnessMask(x, y)
+		local n = node:new("Lightness Mask")
+		n:addPortIn(0, "LCH")
+		n:addPortOut(0, "Y")
+		n.process = lightnessMaskProcess
+		n.data.curve = data:new(256, 1, 1)
+		require "ui.graph".curve(n, {{x = 0, y = 1}, {x = 1, y = 1}})
+		n.graph.background = background_L
+		n:setPos(x, y)
+		return n
+	end
+
+
+	local function chromaMaskProcess(self)
+		self.procType = "dev"
+		local i, c, o
+		i = t.inputSourceBlack(self, 0)
+		c = self.data.curve:toDevice()
+		o = t.autoOutput(self, 0, i:shape())
+		thread.ops.chromaMask({i, c, o}, self)
+	end
+
+	function ops.chromaMask(x, y)
+		local n = node:new("Chroma Mask")
+		n:addPortIn(0, "LCH")
+		n:addPortOut(0, "Y")
+		n.process = chromaMaskProcess
+		n.data.curve = data:new(256, 1, 1)
+		require "ui.graph".curve(n, {{x = 0, y = 1}, {x = 1, y = 1}})
+		n.graph.background = background_C
 		n:setPos(x, y)
 		return n
 	end
