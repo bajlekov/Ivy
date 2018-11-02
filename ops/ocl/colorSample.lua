@@ -22,8 +22,12 @@ kernel void colorSample(global float *I, global float *P, global float *S) {
   const int x = P[0];
   const int y = P[1];
 
-  float3 i = $I[x, y];
-  $S[0, 0] = i;
+  float3 s = (float3)0.0f;
+	for (int i = -2; i<=2; i++)
+		for (int j = -2; j<=2; j++)
+			s += $I[x+i, y+j];
+
+  $S[0, 0] = s/25.0f;
 }
 ]]
 
