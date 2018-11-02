@@ -1,2 +1,10 @@
 
 process\.lua
+
+lib/dcraw/Windows/dcraw\.exe
+
+lib/exiftool/Windows/exiftool\.exe
+
+lib/magick/magick\.exe
+
+lib/zenity/zenity\.exe
