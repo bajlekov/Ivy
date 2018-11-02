@@ -286,6 +286,39 @@ ops.tune = function(x, y)
 end
 --]]
 
+local function processAutoWB(self)
+	self.procType = "dev"
+	local i = t.inputSourceBlack(self, 0)
+	local o = t.autoOutputSink(self, 0, i:shape())
+
+	local ox, oy, update = self.data.tweak.getOrigin()
+	local p = t.autoTempBuffer(self, -1, 1, 1, 3) -- [x, y]
+	local s = t.autoTempBuffer(self, -2, 1, 1, 3) -- [r, g, b]
+	p:set(0, 0, 0, ox)
+	p:set(0, 0, 1, oy)
+	p:toDevice()
+
+	if update or self.elem[2].value then
+		thread.ops.colorSample({i, p, s}, self)
+		s:toHost()
+	end
+
+	thread.ops.autoWB({i, s, o}, self)
+end
+
+function ops.autoWB(x, y)
+	local n = node:new("Sample WB")
+	n.data.tweak = require "tools.tweak"(true)
+	n:addPortIn(0, "LRGB")
+	n:addPortOut(0, "LRGB")
+	n.data.tweak.toolButton(n, 1, "Sample WB")
+	n:addElem("bool", 2, "Resample pos.", false)
+	n.process = processAutoWB
+	n:setPos(x, y)
+	return n
+end
+
+
 local function processHueSelect(self)
 	self.procType = "dev"
 	local i = t.inputSourceBlack(self, 0)
