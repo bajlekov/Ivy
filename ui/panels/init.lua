@@ -257,7 +257,21 @@ do
 	end
 end
 
+do
+	local lowMemSelect = settingsMenu:addElem("bool", 6, "OCL low mem.", false)
+	local warning = Overlay:new("Warning!")
+	warning:addElem("text", 1, "Restart application to apply changes.")
+	warning:addElem("button", 2, "OK")
+	warning.w = 300
 
+	lowMemSelect.value = settings.openclLowMemory
+
+	lowMemSelect.action = function(e, m)
+		settings.openclLowMemory = e.value
+		warning:set(e.x, m.y)
+		warning.visible = true
+	end
+end
 
 
 
