@@ -314,6 +314,13 @@ function ops.autoWB(x, y)
 	n.data.tweak.toolButton(n, 1, "Sample WB")
 	n:addElem("bool", 2, "Resample pos.", false)
 	n.process = processAutoWB
+
+	local s = t.autoTempBuffer(n, -2, 1, 1, 3)
+	s:set(0, 0, 0, 1)
+	s:set(0, 0, 1, 1)
+	s:set(0, 0, 2, 1)
+	s:toDevice()
+
 	n:setPos(x, y)
 	return n
 end
