@@ -42,7 +42,9 @@ local function parse(parseType, device, context, queue)
 			end
 		end
 
-		local signature = s:match("kernel%W*void%W*"..name.."%W*(%b())"):sub(2, - 2)..","
+		local signature = s:match("kernel%W*void%W*"..name.."%W*(%b())")
+		assert(signature, "Custom kernel should have the same name as the file it is in: '"..name.."'!")
+		signature = signature:sub(2, - 2)..","
 		local args = {}
 		local argOut = nil
 		for a in signature:gmatch("global%W*float%W*%*%W*(%w+)%W*,") do
