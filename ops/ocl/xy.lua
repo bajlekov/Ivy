@@ -24,8 +24,8 @@ kernel void xy(global float *B, global float *W, global float *X, global float *
   const int y = get_global_id(1);
   const int z = get_global_id(2);
 
-  const int xmax = ${ math.max(X.x, Y.x) }$;
-  const int ymax = ${ math.max(X.y, Y.y) }$;
+  const int xmax = $$ math.max(X.x, Y.x) $$;
+  const int ymax = $$ math.max(X.y, Y.y) $$;
 
 	float fx = (float)x/xmax;
 	float fy = (float)y/ymax;

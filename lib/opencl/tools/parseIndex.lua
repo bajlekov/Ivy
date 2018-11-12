@@ -143,7 +143,16 @@ local function parseIndex(source, buffers)
 			env[k] = v
 		end
 		setfenv(f, env)
-		return tostring(f())
+		local ans = f()
+
+		if ans==true then ans = "1" end
+		if ans==false then ans = "0" end
+		if ans==nil then ans = "" end
+		if type(ans)=="number" then ans = tostring(ans) end
+
+		assert(type(ans)=="string")
+
+		return ans
 	end
 
 	-- for now out of bounds handling is strictly extend

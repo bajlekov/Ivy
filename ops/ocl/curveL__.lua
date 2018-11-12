@@ -19,13 +19,13 @@ kernel void curveL__(global float *I, global float *C, global float *A, global f
 
   $O[x, y, 0] = o;
 
-	#if ${O.cs == "LAB" and 1 or 0}$
+	#if $$ O.cs == "LAB" $$
 		float f = A[0]>0.5f ? o/i : 1.0f;
 		$O[x, y, 1] = $I[x, y, 1]*f;
 		$O[x, y, 2] = $I[x, y, 2]*f;
 	#endif
 
-	#if ${O.cs == "LCH" and 1 or 0}$
+	#if $$ O.cs == "LCH" $$
 		float f = A[0]>0.5f ? o/i : 1.0f;
 		$O[x, y, 1] = $I[x, y, 1]*f;
 		$O[x, y, 2] = $I[x, y, 2];
