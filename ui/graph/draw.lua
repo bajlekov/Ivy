@@ -117,30 +117,58 @@ function draw.equalizer(graph, x, y, w, h)
 	end
 	love.graphics.line(x + 5, y + 2.5 + math.round((h - 5) * 0.50), x + w - 5, y + 2.5 + math.round((h - 5) * 0.50))
 
-	love.graphics.setColor(style.gray5)
 	for ch = 1, #graph.pts do
 		if ch~=graph.channel then
+
+			love.graphics.setColor({0, 0, 0, 0.3})
+			love.graphics.setLineWidth(4)
 			love.graphics.line(x + 2, y + (1 - graph.pts[ch][1]) * 146 + 2, x + 0.5/8 * 146 + 2, y + (1 - graph.pts[ch][1]) * 146 + 2)
 			for i = 1, 7 do
 				love.graphics.line(x + (i-0.5)/8 * 146 + 2, y + (1 - graph.pts[ch][i]) * 146 + 2, x + (i+1-0.5)/8 * 146 + 2, y + (1 - graph.pts[ch][i+1]) * 146 + 2)
 			end
 			love.graphics.line(x + 146 + 2, y + (1 - graph.pts[ch][8]) * 146 + 2, x + 7.5/8 * 146 + 2, y + (1 - graph.pts[ch][8]) * 146 + 2)
 			for i = 1, 8 do
-				love.graphics.circle("fill", x + (i-0.5)/8 * 146 + 2, y + (1 - graph.pts[ch][i]) * 146 + 2, 2.5)
+				love.graphics.circle("fill", x + (i-0.5)/8 * 146 + 2, y + (1 - graph.pts[ch][i]) * 146 + 2, 4)
 			end
+
+			love.graphics.setColor(style.gray5)
+			love.graphics.setLineWidth(2)
+			love.graphics.line(x + 2, y + (1 - graph.pts[ch][1]) * 146 + 2, x + 0.5/8 * 146 + 2, y + (1 - graph.pts[ch][1]) * 146 + 2)
+			for i = 1, 7 do
+				love.graphics.line(x + (i-0.5)/8 * 146 + 2, y + (1 - graph.pts[ch][i]) * 146 + 2, x + (i+1-0.5)/8 * 146 + 2, y + (1 - graph.pts[ch][i+1]) * 146 + 2)
+			end
+			love.graphics.line(x + 146 + 2, y + (1 - graph.pts[ch][8]) * 146 + 2, x + 7.5/8 * 146 + 2, y + (1 - graph.pts[ch][8]) * 146 + 2)
+			for i = 1, 8 do
+				love.graphics.circle("fill", x + (i-0.5)/8 * 146 + 2, y + (1 - graph.pts[ch][i]) * 146 + 2, 3)
+			end
+
 		end
 	end
 
 	local ch = graph.channel
-	love.graphics.setColor(style.gray9)
+
+	love.graphics.setColor({0, 0, 0, 0.3})
+	love.graphics.setLineWidth(4)
 	love.graphics.line(x + 2, y + (1 - graph.pts[ch][1]) * 146 + 2, x + 0.5/8 * 146 + 2, y + (1 - graph.pts[ch][1]) * 146 + 2)
 	for i = 1, 7 do
 		love.graphics.line(x + (i-0.5)/8 * 146 + 2, y + (1 - graph.pts[ch][i]) * 146 + 2, x + (i+1-0.5)/8 * 146 + 2, y + (1 - graph.pts[ch][i+1]) * 146 + 2)
 	end
 	love.graphics.line(x + 146 + 2, y + (1 - graph.pts[ch][8]) * 146 + 2, x + 7.5/8 * 146 + 2, y + (1 - graph.pts[ch][8]) * 146 + 2)
 	for i = 1, 8 do
-		love.graphics.circle("fill", x + (i-0.5)/8 * 146 + 2, y + (1 - graph.pts[ch][i]) * 146 + 2, 2.5)
+		love.graphics.circle("fill", x + (i-0.5)/8 * 146 + 2, y + (1 - graph.pts[ch][i]) * 146 + 2, 3)
 	end
+
+	love.graphics.setColor(style.gray9)
+	love.graphics.setLineWidth(2)
+	love.graphics.line(x + 2, y + (1 - graph.pts[ch][1]) * 146 + 2, x + 0.5/8 * 146 + 2, y + (1 - graph.pts[ch][1]) * 146 + 2)
+	for i = 1, 7 do
+		love.graphics.line(x + (i-0.5)/8 * 146 + 2, y + (1 - graph.pts[ch][i]) * 146 + 2, x + (i+1-0.5)/8 * 146 + 2, y + (1 - graph.pts[ch][i+1]) * 146 + 2)
+	end
+	love.graphics.line(x + 146 + 2, y + (1 - graph.pts[ch][8]) * 146 + 2, x + 7.5/8 * 146 + 2, y + (1 - graph.pts[ch][8]) * 146 + 2)
+	for i = 1, 8 do
+		love.graphics.circle("fill", x + (i-0.5)/8 * 146 + 2, y + (1 - graph.pts[ch][i]) * 146 + 2, 3)
+	end
+
 end
 
 
