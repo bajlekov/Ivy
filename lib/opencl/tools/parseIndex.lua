@@ -125,6 +125,17 @@ local function parseIndex(source, buffers)
 		return ("("..buffers[b][p]..")")
 	end
 
+	local function parse1float(b)
+		assert(buffers[b], "No buffer '"..b.."' found in provided buffers list.")
+		if buffers[b].z==3 then
+			return "float3"
+		elseif buffers[b].z==1 then
+			return "float"
+		else
+			error("Buffer '"..b.."' has an unsupported number of channels: "..b.z)
+		end
+	end
+
 	local function parse1free(e)
 		local f = assert(loadstring("return "..e))
 		local env = {math = math, string = string, table = table}
