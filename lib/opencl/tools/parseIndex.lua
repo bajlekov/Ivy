@@ -22,8 +22,7 @@ local function parseIndex(source, buffers)
 	source = source:gsub("/%*(.-)%*/", "/* comment */")
 	source = source:gsub("//(.-)\n", "// comment \r\n") -- TODO: check if this works on linux
 
-
-
+	-- returns float, no out of bounds extending
 	local function parse3(b, x, y, z)
 		assert(buffers[b], "No buffer '"..b.."' found in provided buffers list.")
 		local sx = buffers[b].x == 1 and 0 or buffers[b].sx
@@ -33,7 +32,8 @@ local function parseIndex(source, buffers)
 		return str
 	end
 
-	-- FIXME: assignment to an out of bounds element gets turned into assignment to the edge of the original
+	-- returns float, out of bounds extending through clamping to known value
+	-- OOB loads work, OOB stores write to edge of image
 	local function parse3extend(b, x, y, z) -- extend boundaries on out of bounds indexing
 		assert(buffers[b], "No buffer '"..b.."' found in provided buffers list.")
 		local sx = buffers[b].x == 1 and 0 or buffers[b].sx
@@ -48,7 +48,7 @@ local function parseIndex(source, buffers)
 		return str
 	end
 
-	-- FIXME: can only be used as a RHS expression for indexing, not as a LHS expression for assignment
+	-- returns float, out of bounds returns 0 on load, RHS expression only!
 	local function parse3zero(b, x, y, z) -- return 0 on out of bounds indexing
 		assert(buffers[b], "No buffer '"..b.."' found in provided buffers list.")
 		local sx = buffers[b].x == 1 and 0 or buffers[b].sx
@@ -58,6 +58,7 @@ local function parseIndex(source, buffers)
 		return ("(((%s)<0|(%s)<0|(%s)<0|(%s)>=%i|(%s)>=%i|(%s)>=%i)? 0 : %s[((%s)*%i)+((%s)*%i)+((%s)*%i)])"):format(x, y, z, x, buffers[b].x, y, buffers[b].y, z, buffers[b].z, b, x, sx, y, sy, z, sz)
 	end
 
+	-- returns float or float3 accordingly
 	local function parse2extend_load(b, x, y) -- see notes for parse3extend
 		assert(buffers[b], "No buffer '"..b.."' found in provided buffers list.")
 		local sx = buffers[b].x == 1 and 0 or buffers[b].sx
@@ -77,6 +78,7 @@ local function parseIndex(source, buffers)
 	end
 
 	local includeCS = false
+	-- returns float or float3 accordingly, includes CS conversion when needed
 	local function parse2extend_load_cs(b, x, y, csOut) -- see notes for parse3extend
 		assert(buffers[b], "No buffer '"..b.."' found in provided buffers list.")
 		local csIn = buffers[b].cs
@@ -91,14 +93,14 @@ local function parseIndex(source, buffers)
 		includeCS = true
 		local csFunction = csIn.."to"..csOut
 
-		if csIn == "Y" or csIn == "L" then -- only the first
-			return ("( %s(%s[((%s)*%i)+((%s)*%i)]) )"):format(csFunction, b, bx, sx, by, sy)
+		if csIn == "Y" or csIn == "L" then
+			return ("( %s( %s[((%s)*%i)+((%s)*%i)] ) )"):format(csFunction, b, bx, sx, by, sy)
 		end
 
-		return ("( %s((float3)(%s[((%s)*%i)+((%s)*%i)], %s[((%s)*%i)+((%s)*%i)+1*%i], %s[((%s)*%i)+((%s)*%i)+2*%i])) )"):format(csFunction, b, bx, sx, by, sy, b, bx, sx, by, sy, sz, b, bx, sx, by, sy, sz)
+		return ("( %s( (float3)(%s[((%s)*%i)+((%s)*%i)], %s[((%s)*%i)+((%s)*%i)+1*%i], %s[((%s)*%i)+((%s)*%i)+2*%i]) ) )"):format(csFunction, b, bx, sx, by, sy, b, bx, sx, by, sy, sz, b, bx, sx, by, sy, sz)
 	end
 
-	-- TODO: properly recognise LHS and RHS statements and handle accordingly (based on "=", ";"...as an expression in "if" structures?)
+	-- stores a float3 into a 3ch buffer, or a float into a 1ch buffer
 	local function parse2extend_store(b, x, y, s) -- see notes for parse3extend
 		assert(buffers[b], "No buffer '"..b.."' found in provided buffers list.")
 		local sx = buffers[b].x == 1 and 0 or buffers[b].sx
