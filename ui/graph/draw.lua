@@ -108,6 +108,11 @@ function draw.equalizer(graph, x, y, w, h)
 
 	love.graphics.rectangle("fill", x, y, w, h, 3, 3)
 
+	if graph.background then
+		love.graphics.setColor(0.8, 0.8, 0.8, 1)
+		love.graphics.draw(graph.background, x+2, y+2, 0, 146/512, 146/512)
+	end
+
 	love.graphics.setLineWidth(0.7)
 	love.graphics.setColor(style.gray5)
 	love.graphics.rectangle("line", x + 2.5, y + 2.5, w - 5, h - 5)
