@@ -650,6 +650,67 @@ function ops.preview(x, y)
 end
 
 
+local function maximumProcess(self)
+	self.procType = "dev"
+	assert(self.portOut[0].link)
+	local i, o
+	i = t.inputSourceBlack(self, 0)
+	o = t.autoOutput(self, 0, 1, 1, i.z)
+	o.cs = i.cs
+	thread.ops.maximum({i, o}, self)
+end
+
+function ops.maximum(x, y)
+	local n = node:new("Maximum")
+	n:addPortIn(0, "Y__")
+	n:addPortOut(0)
+	n.process = maximumProcess
+	n.w = 75
+	n:setPos(x, y)
+	return n
+end
+
+local function minimumProcess(self)
+	self.procType = "dev"
+	assert(self.portOut[0].link)
+	local i, o
+	i = t.inputSourceBlack(self, 0)
+	o = t.autoOutput(self, 0, 1, 1, i.z)
+	o.cs = i.cs
+	thread.ops.minimum({i, o}, self)
+end
+
+function ops.minimum(x, y)
+	local n = node:new("Minimum")
+	n:addPortIn(0, "Y__")
+	n:addPortOut(0)
+	n.process = minimumProcess
+	n.w = 75
+	n:setPos(x, y)
+	return n
+end
+
+local function averageProcess(self)
+	self.procType = "dev"
+	assert(self.portOut[0].link)
+	local i, o
+	i = t.inputSourceBlack(self, 0)
+	o = t.autoOutput(self, 0, 1, 1, i.z)
+	o.cs = i.cs
+	thread.ops.average({i, o}, self)
+end
+
+function ops.average(x, y)
+	local n = node:new("Average")
+	n:addPortIn(0, "Y__")
+	n:addPortOut(0)
+	n.process = averageProcess
+	n.w = 75
+	n:setPos(x, y)
+	return n
+end
+
+
 local function exposureProcess(self)
 	self.procType = "dev"
 	assert(self.portOut[0].link)
