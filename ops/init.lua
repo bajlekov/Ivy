@@ -553,6 +553,7 @@ local function detailEQProcess(self)
 	thread.ops.detailEQ({i, p, o}, self)
 end
 
+local background_EQ = love.graphics.newImage("res/detail_eq.png")
 
 function ops.detailEQ(x, y)
 	local n = node:new("Detail EQ")
@@ -565,6 +566,8 @@ function ops.detailEQ(x, y)
 	n.graph.pts[4] = {0, 0, 0, 0, 0, 0, 0, 0}
 	n.graph.default[3] = 0
 	n.graph.default[4] = 0
+
+	n.graph.background = background_EQ
 
 	local bl = n:addElem("bool", 1, "Boost Lightness", true)
 	local bc = n:addElem("bool", 2, "Boost Chroma")
