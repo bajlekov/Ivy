@@ -111,10 +111,10 @@ local function parseIndex(source, buffers)
 		local by = ("clamp((int)(%s), (int)0, (int)%i)"):format(y, buffers[b].y - 1)
 
 		if buffers[b].z==3 then
-			local str = ("float3 __temp_float3__ = (float3)(%s); "):format(s)
+			local str = ("{ float3 __temp_float3__ = (float3)(%s); "):format(s)
 			str = str..("%s[((%s)*%i)+((%s)*%i)]      = __temp_float3__.x; "):format(b, bx, sx, by, sy)
 			str = str..("%s[((%s)*%i)+((%s)*%i)+1*%i] = __temp_float3__.y; "):format(b, bx, sx, by, sy, sz)
-			str = str..("%s[((%s)*%i)+((%s)*%i)+2*%i] = __temp_float3__.z; "):format(b, bx, sx, by, sy, sz)
+			str = str..("%s[((%s)*%i)+((%s)*%i)+2*%i] = __temp_float3__.z; }"):format(b, bx, sx, by, sy, sz)
 			return str
 		elseif buffers[b].z==1 then
 			return ("%s[((%s)*%i)+((%s)*%i)] = (%s); "):format(b, bx, sx, by, sy, s)
