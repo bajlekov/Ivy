@@ -122,6 +122,7 @@ local function parseIndex(source, buffers)
 	end
 
 	local function parse1prop(b, p)
+		assert(buffers[b], "No buffer '"..b.."' found in provided buffers list.")
 		return ("("..buffers[b][p]..")")
 	end
 
