@@ -102,14 +102,6 @@ local function parseIndex(source, buffers)
 			return ("( %s(%s[((%s)*%i)+((%s)*%i)]) )"):format(csFunction, b, bx, sx, by, sy)
 		end
 
-		if csIn == "ANY" then
-			if csOut == "Y" or csOut == "L" then -- only the first
-				return ("( %s[((%s)*%i)+((%s)*%i)] + %s[((%s)*%i)+((%s)*%i)+1*%i] + %s[((%s)*%i)+((%s)*%i)+2*%i] )"):format(b, bx, sx, by, sy, b, bx, sx, by, sy, sz, b, bx, sx, by, sy, sz)
-			else
-				csFunction = ""
-			end
-		end
-
 		return ("( %s((float3)(%s[((%s)*%i)+((%s)*%i)], %s[((%s)*%i)+((%s)*%i)+1*%i], %s[((%s)*%i)+((%s)*%i)+2*%i])) )"):format(csFunction, b, bx, sx, by, sy, b, bx, sx, by, sy, sz, b, bx, sx, by, sy, sz)
 	end
 

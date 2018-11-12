@@ -61,11 +61,11 @@ function data.initDev(c, q)
 	data.one = data:new()
 	data.one:set(0, 0, 0, 1)
 	data.one:toDevice()
-	data.one.cs = "ANY"
+	data.one.cs = "Y"
 	data.zero = data:new()
 	data.zero:set(0, 0, 0, 0)
 	data.zero:toDevice()
-	data.zero.cs = "ANY"
+	data.zero.cs = "Y"
 end
 
 function data:new(x, y, z) -- new image data
