@@ -25,22 +25,51 @@ overlayPreview:addElem("addNode", 3, "Split", {ops, "split"})
 
 local overlayAdjust = Overlay:new("Basic:")
 
--- TODO: Exposure
+--[[
+
+Structure:
+
+Adjust
+	- Curves
+	- Live Adjust [NYI]
+Enhance
+	- Detail
+Mask
+	- Live Select
+Blend
+Math
+	- Stats
+Generate
+CS
+	- Split
+	- Merge
+	- Convert
+	- Override
+Custom
+	- Multi-scale
+		- Pyramids
+		- Wavelets
+		- Bilateral grid
+Preview
+--]]
 
 overlayAdjust:addElem("addNode", 1, "Brightness", {ops, "brightness"})
 overlayAdjust:addElem("addNode", 2, "Contrast", {ops, "contrast"})
 overlayAdjust:addElem("addNode", 3, "Vibrance", {ops, "vibrance"})
 overlayAdjust:addElem("addNode", 4, "Exposure", {ops, "exposure"})
-overlayAdjust:addElem("addNode", 5, "Saturation", {ops, "saturation"})
-overlayAdjust:addElem("addNode", 6, "Temperature", {ops, "temperature"})
-overlayAdjust:addElem("addNode", 7, "Sample WB", {ops, "autoWB"})
+overlayAdjust:addElem("addNode", 5, "Gamma", {ops, "gamma"})
+overlayAdjust:addElem("addNode", 6, "Saturation", {ops, "saturation"})
+overlayAdjust:addElem("addNode", 7, "Temperature", {ops, "temperature"})
+overlayAdjust:addElem("addNode", 8, "Sample WB", {ops, "autoWB"})
 local overlayCurves = Overlay:new("Curves:")
-overlayAdjust:addElem("menu", 8, "Curves", overlayCurves)
-overlayCurves:addElem("addNode", 1, "Parametric", {ops, "parametric"})
-overlayCurves:addElem("addNode", 2, "Curve L", {ops, "curveL__"})
-overlayCurves:addElem("addNode", 3, "Curve Y", {ops, "curveY__"})
+overlayAdjust:addElem("menu", 9, "Curves", overlayCurves)
+overlayCurves:addElem("addNode", 1, "Levels", {ops, "levels"})
+overlayCurves:addElem("addNode", 2, "Parametric", {ops, "parametric"})
+overlayCurves:addElem("addNode", 3, "Curve L", {ops, "curveL__"})
+overlayCurves:addElem("addNode", 4, "Curve Y", {ops, "curveY__"})
+overlayCurves:addElem("addNode", 5, "Curve RGB", {ops, "curveRGB"})
 local overlayCurvesAdvanced = Overlay:new("Advanced:")
-overlayCurves:addElem("menu", 4, "Advanced", overlayCurvesAdvanced)
+overlayCurves:addElem("menu", 6, "Advanced", overlayCurvesAdvanced)
 overlayCurvesAdvanced:addElem("addNode", 1, "Curve L-L", {ops, "curveLL"})
 overlayCurvesAdvanced:addElem("addNode", 2, "Curve L-C", {ops, "curveLC"})
 overlayCurvesAdvanced:addElem("addNode", 3, "Curve L-H", {ops, "curveLH"})
@@ -64,6 +93,7 @@ overlayEnhance:addElem("menu", 3, "Detail", overlayDetail)
 overlayDetail:addElem("addNode", 1, "Sharpen", {ops, "sharpen"})
 overlayDetail:addElem("addNode", 2, "Bilateral", {ops, "bilateral"})
 overlayDetail:addElem("addNode", 3, "Denoise", {ops, "nlmeans"})
+overlayDetail:addElem("addNode", 4, "Detail EQ", {ops, "detailEQ"})
 
 local overlayMask = Overlay:new("Mask:")
 local overlaySelect = Overlay:new("Live Select:")
@@ -81,33 +111,34 @@ overlayMask:addElem("addNode", 5, "Mix", {ops, "mix"})
 
 local clutColor = {"Precisa", "Vista", "Astia", "Provia", "Sensia", "Superia", "Velvia", "Ektachrome", "Kodachrome", "Portra"}
 local clutBW = {"Neopan", "Delta", "Tri-X"}
-
 local overlayColor = Overlay:new("Color:")
 for k, v in ipairs(clutColor) do
 	overlayColor:addElem("addNode", k, v, {ops, "clut", v})
 end
-
 local overlayBW = Overlay:new("Black & White")
 for k, v in ipairs(clutBW) do
 	overlayBW:addElem("addNode", k, v, {ops, "clut", v})
 end
-
 local overlayCLUT = Overlay:new("Looks:")
 overlayCLUT:addElem("menu", 1, "Color", overlayColor)
 overlayCLUT:addElem("menu", 2, "Black & White", overlayBW)
 
-local overlayRGB = Overlay:new("RGB:")
-overlayRGB:addElem("addNode", 1, "Curve RGB", {ops, "curveRGB"})
-overlayRGB:addElem("addNode", 2, "Levels", {ops, "levels"})
-overlayRGB:addElem("addNode", 3, "Gamma", {ops, "gamma"})
 local overlayMath = Overlay:new("Math:")
-overlayRGB:addElem("menu", 4, "Math", overlayMath)
-overlayMath:addElem("addNode", 1, "Value", {ops, "math", "value"})
+overlayMath:addElem("addNode", 2, "Value", {ops, "math", "value"})
 for k, v in ipairs{"Add", "Subtract", "Multiply", "Divide", "Power", "Absolute", "Negative", "Invert", "Clamp", "Maximum", "Minimum"} do
-	overlayMath:addElem("addNode", k + 1, v, {ops, "math", v})
+	overlayMath:addElem("addNode", k + 2, v, {ops, "math", v})
 end
+local overlayStats = Overlay:new("Stats:")
+overlayMath:addElem("menu", 1, "Stats", overlayStats)
+overlayStats:addElem("addNode", 1, "Maximum", {ops, "stat", "maximum"})
+overlayStats:addElem("addNode", 2, "Minimum", {ops, "stat", "minimum"})
+overlayStats:addElem("addNode", 3, "Mean", {ops, "stat", "mean"})
+overlayStats:addElem("addNode", 4, "SSD", {ops, "stat", "SSD"})
+overlayStats:addElem("addNode", 5, "SAD", {ops, "stat", "SAD"})
+
+
+
 local overlayBlend = Overlay:new("Blend:")
-overlayRGB:addElem("menu", 5, "Blend Layers", overlayBlend)
 overlayBlend:addElem("addNode", 1, "Negate", {ops, "blend", "negate"})
 overlayBlend:addElem("addNode", 2, "Exclude", {ops, "blend", "exclude"})
 overlayBlend:addElem("addNode", 3, "Screen", {ops, "blend", "screen"})
@@ -121,9 +152,8 @@ overlayBlend:addElem("addNode", 10, "Soft Burn", {ops, "blend", "softburn"})
 overlayBlend:addElem("addNode", 11, "Linear Light", {ops, "blend", "linearlight"})
 overlayBlend:addElem("addNode", 12, "Vivid Light", {ops, "blend", "vividlight"})
 overlayBlend:addElem("addNode", 13, "Pin Light", {ops, "blend", "pinlight"})
-overlayRGB:addElem("addNode", 6, "Mix RGB", {ops, "mixRGB"})
 
-local overlayGenerate = Overlay:new("Generate")
+local overlayGenerate = Overlay:new("Generate:")
 overlayGenerate:addElem("addNode", 1, "X-Y", {ops, "xy"})
 overlayGenerate:addElem("addNode", 2, "Radial", {ops, "radial"})
 overlayGenerate:addElem("addNode", 3, "Linear", {ops, "linear"})
@@ -155,19 +185,21 @@ overlayMultiScale:addElem("addNode", 3, "PyrUp", {ops, "pyrUp"})
 
 local overlayCustom = Overlay:new("Custom:")
 overlayCustom:addElem("label", 1, "Experimental")
-overlayCustom:addElem("addNode", 2, "Detail EQ", {ops, "detailEQ"})
-overlayCustom:addElem("addNode", 3, "Load Image", {ops, "image"})
-overlayCustom:addElem("label", 4, "User-defined")
+overlayCustom:addElem("menu", 2, "Multi-Scale", overlayMultiScale)
+overlayCustom:addElem("addNode", 3, "Mix RGB", {ops, "mixRGB"})
+overlayCustom:addElem("addNode", 4, "Load Image", {ops, "image"})
+overlayCustom:addElem("label", 5, "User-defined")
+
 
 local overlay = Overlay:new("Add node:")
 overlay:addElem("menu", 1, "Adjust", overlayAdjust)
 overlay:addElem("menu", 2, "Enhance", overlayEnhance)
 overlay:addElem("menu", 3, "Looks", overlayCLUT)
 overlay:addElem("menu", 4, "Mask", overlayMask)
-overlay:addElem("menu", 5, "RGB", overlayRGB)
-overlay:addElem("menu", 6, "Generate", overlayGenerate)
-overlay:addElem("menu", 7, "Color Space", overlayCS)
-overlay:addElem("menu", 8, "Multi-Scale", overlayMultiScale)
+overlay:addElem("menu", 5, "Blend", overlayBlend)
+overlay:addElem("menu", 6, "Math", overlayMath)
+overlay:addElem("menu", 7, "Generate", overlayGenerate)
+overlay:addElem("menu", 8, "Color Space", overlayCS)
 overlay:addElem("menu", 9, "Custom", overlayCustom)
 overlay:addElem("menu", 10, "Preview", overlayPreview)
 
