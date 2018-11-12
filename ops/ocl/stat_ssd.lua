@@ -37,29 +37,30 @@ kernel void set_zero(global float *O) {
 	O[z] = 0.0f;
 }
 
-kernel void average(global float *I, global float *O) {
+kernel void ssd(global float *A, global float *B, global float *O) {
 	const int y = get_global_id(1);
 	const int z = get_global_id(2);
 
 	float s = 0.0f;
-	for (int x = 0; x<$I.x$; x++) {
-		s += $I[x, y, z];
+	for (int x = 0; x<$$math.max(A.x, B.x)$$; x++) {
+		s += pown($A[x, y, z] - $B[x, y, z], 2);
 	}
 
-	atomic_add_f(O + z, s/($I.x$*$I.y$));
+	atomic_add_f(O + z, s/($$math.max(A.x, B.x)$$ * $$math.max(A.y, B.y)$$));
 }
 ]]
 
 local function execute()
-	proc:getAllBuffers("I", "O")
-	proc.buffers.I.__write = false
+	proc:getAllBuffers("A", "B", "O")
+	proc.buffers.A.__write = false
+	proc.buffers.B.__write = false
 	proc.buffers.O.__read = false
 
-	local size = proc:size3D("I")
+	local size = proc:size3Dmax("A", "B")
 	size[1] = 1
 
 	proc:executeKernel("set_zero", proc:size3D("O"), {"O"})
-	proc:executeKernel("average", size)
+	proc:executeKernel("ssd", size)
 end
 
 local function init(d, c, q)

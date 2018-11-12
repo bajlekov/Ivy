@@ -650,66 +650,111 @@ function ops.preview(x, y)
 end
 
 
-local function maximumProcess(self)
-	self.procType = "dev"
-	assert(self.portOut[0].link)
-	local i, o
-	i = t.inputSourceBlack(self, 0)
-	o = t.autoOutput(self, 0, 1, 1, i.z)
-	o.cs = i.cs
-	thread.ops.maximum({i, o}, self)
-end
+ops.stat = {}
+do
 
-function ops.maximum(x, y)
-	local n = node:new("Maximum")
-	n:addPortIn(0, "Y__")
-	n:addPortOut(0)
-	n.process = maximumProcess
-	n.w = 75
-	n:setPos(x, y)
-	return n
-end
+	local function proc(self)
+		self.procType = "dev"
+		assert(self.portOut[0].link)
+		local i, o
+		i = t.inputSourceBlack(self, 0)
+		o = t.autoOutput(self, 0, 1, 1, i.z)
+		o.cs = i.cs
+		thread.ops.stat_maximum({i, o}, self)
+	end
+	function ops.stat.maximum(x, y)
+		local n = node:new("Maximum")
+		n:addPortIn(0, "Y__")
+		n:addPortOut(0)
+		n.process = proc
+		n.w = 75
+		n:setPos(x, y)
+		return n
+	end
 
-local function minimumProcess(self)
-	self.procType = "dev"
-	assert(self.portOut[0].link)
-	local i, o
-	i = t.inputSourceBlack(self, 0)
-	o = t.autoOutput(self, 0, 1, 1, i.z)
-	o.cs = i.cs
-	thread.ops.minimum({i, o}, self)
-end
+	local function proc(self)
+		self.procType = "dev"
+		assert(self.portOut[0].link)
+		local i, o
+		i = t.inputSourceBlack(self, 0)
+		o = t.autoOutput(self, 0, 1, 1, i.z)
+		o.cs = i.cs
+		thread.ops.stat_minimum({i, o}, self)
+	end
+	function ops.stat.minimum(x, y)
+		local n = node:new("Minimum")
+		n:addPortIn(0, "Y__")
+		n:addPortOut(0)
+		n.process = proc
+		n.w = 75
+		n:setPos(x, y)
+		return n
+	end
 
-function ops.minimum(x, y)
-	local n = node:new("Minimum")
-	n:addPortIn(0, "Y__")
-	n:addPortOut(0)
-	n.process = minimumProcess
-	n.w = 75
-	n:setPos(x, y)
-	return n
-end
+	local function proc(self)
+		self.procType = "dev"
+		assert(self.portOut[0].link)
+		local i, o
+		i = t.inputSourceBlack(self, 0)
+		o = t.autoOutput(self, 0, 1, 1, i.z)
+		o.cs = i.cs
+		thread.ops.stat_mean({i, o}, self)
+	end
+	function ops.stat.mean(x, y)
+		local n = node:new("Mean")
+		n:addPortIn(0, "Y__")
+		n:addPortOut(0)
+		n.process = proc
+		n.w = 75
+		n:setPos(x, y)
+		return n
+	end
 
-local function averageProcess(self)
-	self.procType = "dev"
-	assert(self.portOut[0].link)
-	local i, o
-	i = t.inputSourceBlack(self, 0)
-	o = t.autoOutput(self, 0, 1, 1, i.z)
-	o.cs = i.cs
-	thread.ops.average({i, o}, self)
-end
+	local function proc(self)
+		self.procType = "dev"
+		assert(self.portOut[0].link)
+		local a, b, o
+		a = t.inputSourceBlack(self, 1)
+		b = t.inputSourceBlack(self, 2)
+		local x, y, z = data.superSize(a, b)
+		o = t.autoOutput(self, 0, 1, 1, z)
+		o.cs = t.optCSsuperset(a, b)
+		thread.ops.stat_sad({a, b, o}, self)
+	end
+	function ops.stat.SAD(x, y)
+		local n = node:new("SAD")
+		n:addPortIn(1, "Y__"):addElem("text", 1, "A")
+		n:addPortIn(2, "Y__"):addElem("text", 2, "B")
+		n:addPortOut(0)
+		n.process = proc
+		n.w = 75
+		n:setPos(x, y)
+		return n
+	end
 
-function ops.average(x, y)
-	local n = node:new("Average")
-	n:addPortIn(0, "Y__")
-	n:addPortOut(0)
-	n.process = averageProcess
-	n.w = 75
-	n:setPos(x, y)
-	return n
-end
+	local function proc(self)
+		self.procType = "dev"
+		assert(self.portOut[0].link)
+		local a, b, o
+		a = t.inputSourceBlack(self, 1)
+		b = t.inputSourceBlack(self, 2)
+		local x, y, z = data.superSize(a, b)
+		o = t.autoOutput(self, 0, 1, 1, z)
+		o.cs = t.optCSsuperset(a, b)
+		thread.ops.stat_ssd({a, b, o}, self)
+	end
+	function ops.stat.SSD(x, y)
+		local n = node:new("SSD")
+		n:addPortIn(1, "Y__"):addElem("text", 1, "A")
+		n:addPortIn(2, "Y__"):addElem("text", 2, "B")
+		n:addPortOut(0)
+		n.process = proc
+		n.w = 75
+		n:setPos(x, y)
+		return n
+	end
 
+end
 
 local function exposureProcess(self)
 	self.procType = "dev"
