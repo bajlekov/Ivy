@@ -67,8 +67,13 @@ local function parseIndex(source, buffers)
 		local bx = ("clamp((int)(%s), (int)0, (int)%i)"):format(x, buffers[b].x - 1)
 		local by = ("clamp((int)(%s), (int)0, (int)%i)"):format(y, buffers[b].y - 1)
 
-		local str = ("((float3)(%s[((%s)*%i)+((%s)*%i)], %s[((%s)*%i)+((%s)*%i)+1*%i], %s[((%s)*%i)+((%s)*%i)+2*%i]))"):format(b, bx, sx, by, sy, b, bx, sx, by, sy, sz, b, bx, sx, by, sy, sz)
-		return str
+		if buffers[b].z==3 then
+			return ("( (float3)(%s[((%s)*%i)+((%s)*%i)], %s[((%s)*%i)+((%s)*%i)+1*%i], %s[((%s)*%i)+((%s)*%i)+2*%i]) )"):format(b, bx, sx, by, sy, b, bx, sx, by, sy, sz, b, bx, sx, by, sy, sz)
+		elseif buffers[b].z==1 then
+			return ("( %s[((%s)*%i)+((%s)*%i)] )"):format(b, bx, sx, by, sy)
+		else
+			error("Buffer '"..b.."' has an unsupported number of channels: "..b.z)
+		end
 	end
 
 	local includeCS = false
@@ -103,10 +108,17 @@ local function parseIndex(source, buffers)
 		local bx = ("clamp((int)(%s), (int)0, (int)%i)"):format(x, buffers[b].x - 1)
 		local by = ("clamp((int)(%s), (int)0, (int)%i)"):format(y, buffers[b].y - 1)
 
-		local str = ("%s[((%s)*%i)+((%s)*%i)] = (%s).x;\n"):format(b, bx, sx, by, sy, s)
-		str = str..("%s[((%s)*%i)+((%s)*%i)+1*%i] = (%s).y;\n"):format(b, bx, sx, by, sy, sz, s)
-		str = str..("%s[((%s)*%i)+((%s)*%i)+2*%i] = (%s).z;\n"):format(b, bx, sx, by, sy, sz, s)
-		return str
+		if buffers[b].z==3 then
+			local str = ("float3 __temp_float3__ = (float3)(%s); "):format(s)
+			str = str..("%s[((%s)*%i)+((%s)*%i)]      = __temp_float3__.x; "):format(b, bx, sx, by, sy)
+			str = str..("%s[((%s)*%i)+((%s)*%i)+1*%i] = __temp_float3__.y; "):format(b, bx, sx, by, sy, sz)
+			str = str..("%s[((%s)*%i)+((%s)*%i)+2*%i] = __temp_float3__.z; "):format(b, bx, sx, by, sy, sz)
+			return str
+		elseif buffers[b].z==1 then
+			return ("%s[((%s)*%i)+((%s)*%i)] = (%s); "):format(b, bx, sx, by, sy, s)
+		else
+			error("Buffer '"..b.."' has an unsupported number of channels: "..b.z)
+		end
 	end
 
 	local function parse1prop(b, p)
