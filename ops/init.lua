@@ -715,20 +715,20 @@ do
 
 	local function proc(self)
 		self.procType = "dev"
-		assert(self.portOut[0].link)
+		assert(self.portOut[1].link)
 		local a, b, o
 		a = t.inputSourceBlack(self, 1)
 		b = t.inputSourceBlack(self, 2)
 		local x, y, z = data.superSize(a, b)
-		o = t.autoOutput(self, 0, 1, 1, z)
+		o = t.autoOutput(self, 1, 1, 1, z)
 		o.cs = t.optCSsuperset(a, b)
 		thread.ops.stat_sad({a, b, o}, self)
 	end
 	function ops.stat.SAD(x, y)
 		local n = node:new("SAD")
-		n:addPortIn(1, "Y__"):addElem("text", 1, "A")
+		n:addPortIn(1, "Y__"):addElem("text", 1, "A", "∑|A-B| / N")
 		n:addPortIn(2, "Y__"):addElem("text", 2, "B")
-		n:addPortOut(0)
+		n:addPortOut(1)
 		n.process = proc
 		n.w = 75
 		n:setPos(x, y)
@@ -737,20 +737,20 @@ do
 
 	local function proc(self)
 		self.procType = "dev"
-		assert(self.portOut[0].link)
+		assert(self.portOut[1].link)
 		local a, b, o
 		a = t.inputSourceBlack(self, 1)
 		b = t.inputSourceBlack(self, 2)
 		local x, y, z = data.superSize(a, b)
-		o = t.autoOutput(self, 0, 1, 1, z)
+		o = t.autoOutput(self, 1, 1, 1, z)
 		o.cs = t.optCSsuperset(a, b)
 		thread.ops.stat_ssd({a, b, o}, self)
 	end
 	function ops.stat.SSD(x, y)
 		local n = node:new("SSD")
-		n:addPortIn(1, "Y__"):addElem("text", 1, "A")
+		n:addPortIn(1, "Y__"):addElem("text", 1, "A", "∑(A-B)² / N")
 		n:addPortIn(2, "Y__"):addElem("text", 2, "B")
-		n:addPortOut(0)
+		n:addPortOut(1)
 		n.process = proc
 		n.w = 75
 		n:setPos(x, y)
