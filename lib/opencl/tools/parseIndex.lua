@@ -55,19 +55,7 @@ local function parseIndex(source, buffers)
 		local sy = buffers[b].y == 1 and 0 or buffers[b].sy
 		local sz = buffers[b].z == 1 and 0 or buffers[b].sz
 
-		local str = ("(((%s)<0|(%s)<0|(%s)<0|(%s)>=%i|(%s)>=%i|(%s)>=%i)? 0 : %s[((%s)*%i)+((%s)*%i)+((%s)*%i)])"):format(x, y, z, x, buffers[b].x, y, buffers[b].y, z, buffers[b].z, b, x, sx, y, sy, z, sz)
-		return str
-	end
-
-	-- TODO: introduce syntax for choosing the desired out of bounds handling
-
-	local function parse2(b, x, y)
-		assert(buffers[b], "No buffer '"..b.."' found in provided buffers list.")
-		local sx = buffers[b].x == 1 and 0 or buffers[b].sx
-		local sy = buffers[b].y == 1 and 0 or buffers[b].sy
-		local sz = buffers[b].z == 1 and 0 or buffers[b].sz
-		local str = ("((float3)(%s[((%s)*%i)+((%s)*%i)], %s[((%s)*%i)+((%s)*%i)+1*%i], %s[((%s)*%i)+((%s)*%i)+2*%i]))"):format(b, x, sx, y, sy, b, x, sx, y, sy, sz, b, x, sx, y, sy, sz)
-		return str
+		return ("(((%s)<0|(%s)<0|(%s)<0|(%s)>=%i|(%s)>=%i|(%s)>=%i)? 0 : %s[((%s)*%i)+((%s)*%i)+((%s)*%i)])"):format(x, y, z, x, buffers[b].x, y, buffers[b].y, z, buffers[b].z, b, x, sx, y, sy, z, sz)
 	end
 
 	local function parse2extend_load(b, x, y) -- see notes for parse3extend
