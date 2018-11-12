@@ -158,13 +158,16 @@ local function parseIndex(source, buffers)
 	-- for now out of bounds handling is strictly extend
 
 	-- FIXME: no brackets or commas inside the index expression
-	source = source:gsub("%$([^{}%[%]%.%$%s]*)%.([^{}%[%]%.%$%s]*)%$", parse1prop)
-	source = source:gsub("%${([^{}%$]*)}%$", parse1free)
+	source = source:gsub("%$%$([^$]*)%$%$", parse1free)
+	source = source:gsub("%$float%((%w+)%)", parse1float)
+	source = source:gsub("%$(%w+)%.(%w+)%$", parse1prop)
 
-	source = source:gsub("%$([^%[]*)%[([^%],]*),([^%],]*),([^%],]*)%]", parse3extend)
-	source = source:gsub("%$([^%[]*)%[([^%],]*),([^%],]*)%]%s*=%s*([^;]*);", parse2extend_store)
-	source = source:gsub("%$([^%[]*)%[([^%],]*),([^%],]*)%](%u+)", parse2extend_load_cs)
-	source = source:gsub("%$([^%[]*)%[([^%],]*),([^%],]*)%]", parse2extend_load)
+	source = source:gsub("%$(%w+)%[([^%],]*),([^%],]*),([^%],]*)%]RAW", parse3)
+	source = source:gsub("%$(%w+)%[([^%],]*),([^%],]*),([^%],]*)%]ZERO", parse3zero)
+	source = source:gsub("%$(%w+)%[([^%],]*),([^%],]*),([^%],]*)%]", parse3extend)
+	source = source:gsub("%$(%w+)%[([^%],]*),([^%],]*)%]%s*=%s*([^;]*);", parse2extend_store)
+	source = source:gsub("%$(%w+)%[([^%],]*),([^%],]*)%](%u+)", parse2extend_load_cs)
+	source = source:gsub("%$(%w+)%[([^%],]*),([^%],]*)%]", parse2extend_load)
 
 	if includeCS then
 		return "#include \"cs.cl\"\n\n"..source
