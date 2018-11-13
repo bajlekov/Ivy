@@ -24,7 +24,7 @@ kernel void chromaMask(global float *I, global float *C, global float *O)
   const int y = get_global_id(1);
 
   float i = $I[x, y, 1];
-	i = i - floor(i);
+	i = clamp(i, 0.0f, 1.0f);
 
   int lowIdx = clamp(floor(i*255), 0.0f, 255.0f);
 	int highIdx = clamp(ceil(i*255), 0.0f, 255.0f);
