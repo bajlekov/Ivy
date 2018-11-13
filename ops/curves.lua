@@ -47,7 +47,7 @@ return function(ops)
 	end
 
 	function ops.curveLL(x, y)
-		local n = node:new("Curve L-L")
+		local n = node:new("Curve L(L)")
 		n:addPortIn(0, "LCH")
 		n:addPortOut(0, "LCH")
 		n.process = curveLLProcess
@@ -68,7 +68,7 @@ return function(ops)
 	end
 
 	function ops.curveLC(x, y)
-		local n = node:new("Curve L-C")
+		local n = node:new("Curve C(L)")
 		n:addPortIn(0, "LCH")
 		n:addPortOut(0, "LCH")
 		n.process = curveLCProcess
@@ -89,7 +89,7 @@ return function(ops)
 	end
 
 	function ops.curveLH(x, y)
-		local n = node:new("Curve L-H")
+		local n = node:new("Curve H(L)")
 		n:addPortIn(0, "LCH")
 		n:addPortOut(0, "LCH")
 		n.process = curveLHProcess
@@ -111,7 +111,7 @@ return function(ops)
 	end
 
 	function ops.curveCL(x, y)
-		local n = node:new("Curve C-L")
+		local n = node:new("Curve L(C)")
 		n:addPortIn(0, "LCH")
 		n:addPortOut(0, "LCH")
 		n.process = curveCLProcess
@@ -132,7 +132,7 @@ return function(ops)
 	end
 
 	function ops.curveCC(x, y)
-		local n = node:new("Curve C-C")
+		local n = node:new("Curve C(C)")
 		n:addPortIn(0, "LCH")
 		n:addPortOut(0, "LCH")
 		n.process = curveCCProcess
@@ -153,7 +153,7 @@ return function(ops)
 	end
 
 	function ops.curveCH(x, y)
-		local n = node:new("Curve C-H")
+		local n = node:new("Curve H(C)")
 		n:addPortIn(0, "LCH")
 		n:addPortOut(0, "LCH")
 		n.process = curveCHProcess
@@ -175,7 +175,7 @@ return function(ops)
 	end
 
 	function ops.curveHL(x, y)
-		local n = node:new("Curve H-L")
+		local n = node:new("Curve L(H)")
 		n:addPortIn(0, "LCH")
 		n:addPortOut(0, "LCH")
 		n.process = curveHLProcess
@@ -196,7 +196,7 @@ return function(ops)
 	end
 
 	function ops.curveHC(x, y)
-		local n = node:new("Curve H-C")
+		local n = node:new("Curve C(H)")
 		n:addPortIn(0, "LCH")
 		n:addPortOut(0, "LCH")
 		n.process = curveHCProcess
@@ -217,7 +217,7 @@ return function(ops)
 	end
 
 	function ops.curveHH(x, y)
-		local n = node:new("Curve H-H")
+		local n = node:new("Curve H(H)")
 		n:addPortIn(0, "LCH")
 		n:addPortOut(0, "LCH")
 		n.process = curveHHProcess
