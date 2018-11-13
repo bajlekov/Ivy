@@ -29,7 +29,7 @@ function raw.read(name)
 
 	local op
 	if not raw then
-		op = "-h -o 1 -6 -g 1 1 -w" -- TODO: -w for camera white balance, -W to preserve original brightness
+		op = "-h -o 1 -6 -g 1 1 -w -W" -- TODO: -w for camera white balance, -W to preserve original brightness
 	else
 		op = "-h -E -4"
 	end
