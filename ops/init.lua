@@ -24,6 +24,7 @@ local t = require "ops.tools"
 
 local ops = {}
 
+require "ops.adjust"(ops)
 require "ops.curves"(ops)
 require "ops.select"(ops)
 
