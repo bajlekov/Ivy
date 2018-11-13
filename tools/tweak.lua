@@ -32,11 +32,11 @@ local function tweak(continuous)
 	end
 	local function imageSampleDragCallback(mouse)
 		node.dirty = true
-		update = true
 		local shift = love.keyboard.isDown("lshift") or love.keyboard.isDown("rshift")
 		dx = dx + (shift and mouse.dx/10 or mouse.dx)
 		dy = dy + (shift and mouse.dy/10 or mouse.dy)
 		if continuous then
+			update = true
 			ox, oy = imageSample.coord(mouse.lx - mouse.ox + mouse.x, mouse.ly - mouse.oy + mouse.y)
 		end
 		return imageSampleReleaseCallback
