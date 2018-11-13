@@ -28,6 +28,8 @@ local background_HH = love.graphics.newImage("res/Curve_HH.png")
 local background_L = love.graphics.newImage("res/Curve_L.png")
 local background_C = love.graphics.newImage("res/Curve_C.png")
 local background_H = love.graphics.newImage("res/Curve_H.png")
+local background_A = love.graphics.newImage("res/Curve_A.png")
+local background_B = love.graphics.newImage("res/Curve_B.png")
 
 local node = require "ui.node"
 local data = require "data"
@@ -364,6 +366,52 @@ return function(ops)
 		n.data.curve = data:new(256, 1, 1)
 		require "ui.graph".curve(n, {{x = 0, y = 1}, {x = 1, y = 1}})
 		n.graph.background = background_C
+		n:setPos(x, y)
+		return n
+	end
+
+
+	local function blueYellowMaskProcess(self)
+		self.procType = "dev"
+		local i, c, o
+		i = t.inputSourceBlack(self, 0)
+		c = self.data.curve:toDevice()
+		local x, y, z = i:shape()
+		o = t.autoOutput(self, 0, x, y, 1)
+		thread.ops.blueYellowMask({i, c, o}, self)
+	end
+
+	function ops.blueYellowMask(x, y)
+		local n = node:new("Blue-Yellow Mask")
+		n:addPortIn(0, "LAB")
+		n:addPortOut(0, "Y")
+		n.process = blueYellowMaskProcess
+		n.data.curve = data:new(256, 1, 1)
+		require "ui.graph".curve(n, {{x = 0, y = 1}, {x = 1, y = 1}})
+		n.graph.background = background_B
+		n:setPos(x, y)
+		return n
+	end
+
+
+	local function greenRedMaskProcess(self)
+		self.procType = "dev"
+		local i, c, o
+		i = t.inputSourceBlack(self, 0)
+		c = self.data.curve:toDevice()
+		local x, y, z = i:shape()
+		o = t.autoOutput(self, 0, x, y, 1)
+		thread.ops.greenRedMask({i, c, o}, self)
+	end
+
+	function ops.greenRedMask(x, y)
+		local n = node:new("Green-Red Mask")
+		n:addPortIn(0, "LAB")
+		n:addPortOut(0, "Y")
+		n.process = greenRedMaskProcess
+		n.data.curve = data:new(256, 1, 1)
+		require "ui.graph".curve(n, {{x = 0, y = 1}, {x = 1, y = 1}})
+		n.graph.background = background_A
 		n:setPos(x, y)
 		return n
 	end
