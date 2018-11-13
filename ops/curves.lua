@@ -306,7 +306,8 @@ return function(ops)
 		local i, c, o
 		i = t.inputSourceBlack(self, 0)
 		c = self.data.curve:toDevice()
-		o = t.autoOutput(self, 0, i:shape())
+		local x, y, z = i:shape()
+		o = t.autoOutput(self, 0, x, y, 1)
 		thread.ops.hueMask({i, c, o}, self)
 	end
 
@@ -327,7 +328,8 @@ return function(ops)
 		local i, c, o
 		i = t.inputSourceBlack(self, 0)
 		c = self.data.curve:toDevice()
-		o = t.autoOutput(self, 0, i:shape())
+		local x, y, z = i:shape()
+		o = t.autoOutput(self, 0, x, y, 1)
 		thread.ops.lightnessMask({i, c, o}, self)
 	end
 
@@ -349,7 +351,8 @@ return function(ops)
 		local i, c, o
 		i = t.inputSourceBlack(self, 0)
 		c = self.data.curve:toDevice()
-		o = t.autoOutput(self, 0, i:shape())
+		local x, y, z = i:shape()
+		o = t.autoOutput(self, 0, x, y, 1)
 		thread.ops.chromaMask({i, c, o}, self)
 	end
 
