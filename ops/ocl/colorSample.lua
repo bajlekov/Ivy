@@ -27,7 +27,7 @@ kernel void colorSample(global float *I, global float *P, global float *S) {
 		for (int j = -2; j<=2; j++)
 			s += $I[x+i, y+j]XYZ;
 
-	s = XYZ_$$I.cs$$(s/25.0f);
+	s = XYZto$$I.cs$$(s/25.0f);
 
   $S[0, 0] = s;
 }
