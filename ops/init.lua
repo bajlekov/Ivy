@@ -302,7 +302,6 @@ local function processAutoWB(self)
 
 	if update or self.elem[2].value then
 		thread.ops.colorSample({i, p, s}, self)
-		s:toHost()
 	end
 
 	thread.ops.autoWB({i, s, o}, self)
