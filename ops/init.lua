@@ -689,6 +689,7 @@ function ops.mix(x, y)
 	n:addPortIn(3, "Y__"):addElem("float", 3, "Factor", 0, 1, 1)
 	n:addPortOut(0)
 	n.process = mixProcess
+	n.w = 75
 	n:setPos(x, y)
 	return n
 end
