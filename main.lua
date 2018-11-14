@@ -135,7 +135,7 @@ if not pcall(function() require "tools.process".load("process.lua") end) then
 	require "tools.process".new()
 end
 
-pipeline.output.data.histogram = data:new(256, 1, 4)
+pipeline.output.data.histogram = data:new(256, 1, 4):allocHost()
 
 local nodeDFS = require "ui.node.dfs"
 local cycles = nodeDFS(node)

@@ -273,6 +273,21 @@ do
 	end
 end
 
+do
+	local hostLowMemSelect = settingsMenu:addElem("bool", 7, "Low host mem.", false)
+	local warning = Overlay:new("Warning!")
+	warning:addElem("text", 1, "Restart application to apply changes.")
+	warning:addElem("button", 2, "OK")
+	warning.w = 300
+
+	hostLowMemSelect.value = settings.hostLowMemory or false
+
+	hostLowMemSelect.action = function(e, m)
+		settings.hostLowMemory = e.value
+		warning:set(e.x, m.y)
+		warning.visible = true
+	end
+end
 
 
 

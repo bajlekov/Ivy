@@ -74,7 +74,6 @@ function data:new(x, y, z) -- new image data
 	z = z or self.z or 1
 
 	local o = {
-		data = alloc.trace.float32(x * y * z), -- allocate data
 		x = x, y = y, z = z, -- set extents
 		sx = self.sx or 1, sy = self.sy or x, sz = self.sz or x * y, -- set strides
 		ox = self.ox or 0, oy = self.oy or 0, oz = self.oz or 0, -- set offsets
@@ -88,8 +87,11 @@ function data:new(x, y, z) -- new image data
 		__write = true,
 	}
 
-	o.data_u32 = ffi.cast("uint32_t*", o.data)
-	o.data_i32 = ffi.cast("int32_t*", o.data)
+	if not settings.hostLowMemory then
+		o.data = alloc.trace.float32(x * y * z)
+		o.data_u32 = ffi.cast("uint32_t*", o.data)
+		o.data_i32 = ffi.cast("int32_t*", o.data)
+	end
 
 	setmetatable(o, self.meta) -- inherit data methods
 	if not onDemandMemory then
@@ -97,6 +99,15 @@ function data:new(x, y, z) -- new image data
 	end
 
 	return o
+end
+
+function data:allocHost()
+	if not self.data then
+		self.data = alloc.trace.float32(self.x * self.y * self.z)
+		self.data_u32 = ffi.cast("uint32_t*", self.data)
+		self.data_i32 = ffi.cast("int32_t*", self.data)
+	end
+	return self
 end
 
 function data:allocDev(transfer)
@@ -131,6 +142,7 @@ function data:free()
 end
 
 function data:toDevice(blocking)
+	self:allocHost()
 	blocking = blocking or false
 	if queue and self.dataOCL then
 		if oclDebug then print(">>>", self.dataOCL, tostring(self), tonumber(ffi.cast("uintptr_t", self.data))) end
@@ -140,6 +152,7 @@ function data:toDevice(blocking)
 end
 
 function data:toHost(blocking)
+	self:allocHost()
 	blocking = blocking or false
 	if queue and self.dataOCL then
 		if oclDebug then print("<<<", self.dataOCL, tostring(self), tonumber(ffi.cast("uintptr_t", self.data))) end
@@ -282,26 +295,32 @@ end
 
 -- TODO: differentiate between idx functions
 function data:get(x, y, z)
+	self:allocHost()
 	return self.data[self:idx(x, y, z)]
 end
 
 function data:set(x, y, z, v)
+	self:allocHost()
 	self.data[self:idx(x, y, z)] = v
 end
 
 function data:get_i32(x, y, z)
+	self:allocHost()
 	return self.data_i32[self:idx(x, y, z)]
 end
 
 function data:set_i32(x, y, z, v)
+	self:allocHost()
 	self.data_i32[self:idx(x, y, z)] = v
 end
 
 function data:get_u32(x, y, z)
+	self:allocHost()
 	return self.data_u32[self:idx(x, y, z)]
 end
 
 function data:set_u32(x, y, z, v)
+	self:allocHost()
 	self.data_u32[self:idx(x, y, z)] = v
 end
 
