@@ -327,6 +327,55 @@ function ops.autoWB(x, y)
 end
 
 
+do
+	local function paint(self, p, ox, oy)
+		p:set(0, 0, 0, ox)
+		p:set(0, 0, 1, oy)
+		p:set(0, 0, 2, self.elem[1].value)
+		p:toDevice()
+		thread.ops.paint({self.mask, p}, self)
+	end
+
+	local function processPaintMask(self)
+		self.procType = "dev"
+		local link = self.portOut[0].link
+		assert(link)
+		link.data = self.mask
+		link:setData("Y", self.procType)
+
+		local ox, oy, update = self.data.tweak.getOrigin()
+		local p = t.autoTempBuffer(self, -1, 1, 1, 3) -- [x, y]
+
+		if update then
+			paint(self, p, ox, oy)
+		end
+	end
+
+	function ops.paintMask(x, y)
+		local n = node:new("[!] Paint mask")
+		n.data.tweak = require "tools.tweak"(true)
+
+		local sx, sy = t.imageShape()
+		n.mask = data:new(sx, sy, 1)
+		n:addPortOut(0, "Y")
+
+		for x = 0, sx-1 do
+			for y = 0, sy-1 do
+				n.mask:set(x, y, 0, 0)
+			end
+		end
+		n.mask:toDevice()
+
+		n:addElem("float", 1, "Value", 0, 1, 1)
+		n.data.tweak.toolButton(n, 2, "Paint")
+
+		n.process = processPaintMask
+		n:setPos(x, y)
+		return n
+	end
+end
+
+
 local function detailEQProcess(self)
 	self.procType = "dev"
 
