@@ -25,6 +25,7 @@ kernel void mixfactor(global float *p1, global float *p2, global float *p3, glob
   const int z = get_global_id(2);
 
   float f = $p3[x, y, z];
+  f = clamp(f, 0.0f, 1.0f);
 
   $p4[x, y, z] = $p1[x, y, z]*f + $p2[x, y, z]*(1.0f - f);
 }
