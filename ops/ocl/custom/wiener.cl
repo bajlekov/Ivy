@@ -1,6 +1,6 @@
 /*
 name = "Wiener filter"
-colorspace = XYZ
+colorspace = LAB
 P1 = {type = "float", name = "Noise", min = 0, max = 1, default = 0.2}
 */
 
