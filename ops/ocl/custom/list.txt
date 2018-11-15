@@ -9,3 +9,4 @@ median.cl
 area_clamp.cl
 erode.cl
 dilate.cl
+wiener.cl
