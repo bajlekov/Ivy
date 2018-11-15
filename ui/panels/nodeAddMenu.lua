@@ -21,7 +21,8 @@ local ops = require "ops"
 local overlayPreview = Overlay:new("Preview:")
 overlayPreview:addElem("addNode", 1, "Preview", {ops, "preview"})
 overlayPreview:addElem("addNode", 2, "Histogram", {ops, "histogram"})
-overlayPreview:addElem("addNode", 3, "Split", {ops, "split"})
+overlayPreview:addElem("addNode", 3, "Split L/R", {ops, "split_lr"})
+overlayPreview:addElem("addNode", 4, "Split U/D", {ops, "split_ud"})
 
 local overlayAdjust = Overlay:new("Basic:")
 

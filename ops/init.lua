@@ -32,7 +32,8 @@ require "ops.select"(ops)
 t.register(ops, "contrast")
 t.register(ops, "bilateral")
 t.register(ops, "custom2D")
-t.register(ops, "split")
+t.register(ops, "split_lr")
+t.register(ops, "split_ud")
 
 t.imageShapeSet(1, 1, 1)
 
