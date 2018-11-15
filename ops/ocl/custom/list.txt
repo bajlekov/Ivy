@@ -5,3 +5,6 @@ contrast.cl
 edgeAware.cl
 snn.cl
 sobel.cl
+area_clamp.cl
+erode.cl
+dilate.cl
