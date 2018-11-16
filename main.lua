@@ -166,9 +166,24 @@ function love.filedropped(file)
 	local fileName = type(file) == "string" and file or file:getFilename() or "-"
 	panels.info.elem[1].right = fileName:gsub("^(.*/)", ""):gsub("^(.*\\)", "")
 	panels.info.elem[2].right = exifData.Make or " - "
-	panels.info.elem[3].right = exifData.Model or " - "
+	panels.info.elem[3].right = exifData.CameraModelName or " - "
 	panels.info.elem[4].right = exifData.LensModel or " - "
 	panels.info.elem[5].right = (exifData.FocalLength or " - ").."mm"
+
+	local programModes = {
+		"Manual Exposure",
+		"Program AE",
+		"Aperture Priority AE",
+		"Shutter Priority AE",
+		"Creative",
+		"Action",
+		"Portrait",
+		"Landscape",
+		"Bulb",
+	}
+
+	panels.info.elem[6].right = exifData.ExposureProgram and programModes[tonumber(exifData.ExposureProgram)] or "-"
+	panels.info.elem[7].right = (exifData.ExposureCompensation or " -").." EV"
 
 	local shutter = tonumber(exifData.ShutterSpeed)
 	if shutter then
@@ -179,16 +194,16 @@ function love.filedropped(file)
 		end
 	end
 
-	panels.info.elem[6].right = (shutter or " - ").."s"
-	panels.info.elem[7].right = "f/"..(exifData.Aperture or " - ")
-	panels.info.elem[8].right = "ISO "..(exifData.ISO or " - ")
-	panels.info.elem[9].right = exifData.Date or " - "
-	panels.info.elem[10].right = ("%d X %d (%.1fMP)"):format(originalImage.x, originalImage.y, originalImage.x*originalImage.y*1e-6)
+	panels.info.elem[8].right = (shutter or " - ").."s"
+	panels.info.elem[9].right = "f/"..(exifData.Aperture or " - ")
+	panels.info.elem[10].right = "ISO "..(exifData.ISO or " - ")
+	panels.info.elem[11].right = exifData.Date or " - "
+	panels.info.elem[12].right = ("%d X %d (%.1fMP)"):format(originalImage.x, originalImage.y, originalImage.x*originalImage.y*1e-6)
 
 	imageOffset:set(0, 0, 0, 0) -- x offset
 	imageOffset:set(0, 0, 1, 0) -- y offset
 	imageOffset:set(0, 0, 2, 1) -- scale!!
-	local A, B, C = require("tools.lensfun")(exifData.LensModel == "-" and exifData.Model or exifData.LensModel, exifData.FocalLength)
+	local A, B, C = require("tools.lensfun")(exifData.LensModel or exifData.CameraModelName, exifData.FocalLength)
 	imageOffset:set(0, 0, 3, A) -- distortion correction
 	imageOffset:set(0, 0, 4, B) -- distortion correction
 	imageOffset:set(0, 0, 5, C) -- distortion correction

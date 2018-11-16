@@ -51,8 +51,14 @@ local function query(file, tags)
   local entries = {}
 
   for i = 1, #tags do
-    local value = stream:read("*l") or "-"
-    entries[tags[i]] = value:gsub("^(.-: )", "")
+    local str = stream:read("*l") or "-"
+
+    local p1, p2, tag, value = str:find("^(.-)%s*: (.*)$")
+    if p1 then
+      tag = tag:gsub("%s", "")
+      entries[tag] = value
+      print(tag, value)
+    end
   end
 
   stream:close()
@@ -65,7 +71,7 @@ function exif.read(fileName)
     fileName = fileName:getFilename()
   end
 
-  return query(fileName, {"Make", "Model", "ShutterSpeed", "Aperture", "ISO", "FocalLength", "LensModel"})
+  return query(fileName, {"Make", "Model", "ExposureProgram", "ExposureCompensation", "ShutterSpeed", "Aperture", "ISO", "FocalLength", "LensModel"})
 end
 
 
