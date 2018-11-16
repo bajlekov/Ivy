@@ -1525,6 +1525,8 @@ genMath2("Maximum", "_max", 0, 0, 1)
 genMath2("Minimum", "_min", 1, 0, 1)
 genMath2("Average", "average", 0, 0, 1)
 genMath2("Difference", "difference", 0, 0, 1)
+genMath2("Greater", "GT", 0.5, 0, 1)
+genMath2("Less", "LT", 0.5, 0, 1)
 
 local function processValue(self)
 	local o = t.autoOutput(self, 4, 1, 1, 1)

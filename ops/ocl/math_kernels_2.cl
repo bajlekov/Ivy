@@ -122,3 +122,27 @@ kernel void difference(
 
   $out[x, y, z] = fabs($in1[x, y, z] - $in2[x, y, z]);
 }
+
+kernel void GT(
+  global float *in1,
+  global float *in2,
+  global float *out)
+{
+  const int x = get_global_id(0);
+  const int y = get_global_id(1);
+  const int z = get_global_id(2);
+
+  $out[x, y, z] = $in1[x, y, z] > $in2[x, y, z] ? 1.0f : 0.0f;
+}
+
+kernel void LT(
+  global float *in1,
+  global float *in2,
+  global float *out)
+{
+  const int x = get_global_id(0);
+  const int y = get_global_id(1);
+  const int z = get_global_id(2);
+
+  $out[x, y, z] = $in1[x, y, z] < $in2[x, y, z] ? 1.0f : 0.0f;
+}

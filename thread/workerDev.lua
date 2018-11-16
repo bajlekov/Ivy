@@ -94,6 +94,8 @@ function ops.initDev(device, context, queue)
 	gen2("_max", "math_kernels_2.cl")
 	gen2("mean", "math_kernels_2.cl")
 	gen2("diff", "math_kernels_2.cl")
+	gen2("GT", "math_kernels_2.cl")
+	gen2("LT", "math_kernels_2.cl")
 
 	genCS("SRGB")
 	genCS("LRGB")

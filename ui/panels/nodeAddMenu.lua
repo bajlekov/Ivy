@@ -140,7 +140,7 @@ overlayCLUT:addElem("menu", 2, "Black & White", overlayBW)
 
 local overlayMath = Overlay:new("Math:")
 overlayMath:addElem("addNode", 2, "Value", {ops, "math", "value"})
-for k, v in ipairs{"Add", "Subtract", "Multiply", "Divide", "Power", "Absolute", "Negative", "Invert", "Clamp", "Maximum", "Minimum"} do
+for k, v in ipairs{"Add", "Subtract", "Multiply", "Divide", "Power", "Absolute", "Negative", "Invert", "Clamp", "Maximum", "Minimum", "Greater", "Less"} do
 	overlayMath:addElem("addNode", k + 2, v, {ops, "math", v})
 end
 local overlayStats = Overlay:new("Stats:")
