@@ -75,7 +75,7 @@ kernel void edgeAwareUp(
   const int y = get_global_id(1);
 
 	float3 boost = (float3)($P[lvl, 0, 0], $P[lvl, 1, 0], $P[lvl, 1, 0]) * 2.0f;
-	float3 threshold = (float3)($P[lvl, 2, 0], $P[lvl, 2, 0], $P[lvl, 2, 0]) * 0.01f;
+	float3 threshold = (float3)($P[lvl, 2, 0], $P[lvl, 3, 0], $P[lvl, 3, 0]) * 0.01f;
 
 	float3 d = $D[x, y];
 	d = copysign(max(0.0f, fabs(d) - threshold), d);
