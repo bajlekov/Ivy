@@ -1385,9 +1385,9 @@ end
 
 function ops.pyrDown(x, y)
 	local n = node:new("Pyramid Down")
-	n:addPortIn(0)
-	n:addPortOut(1):addElem("text", 1, "", "Laplacian")
-	n:addPortOut(2):addElem("text", 2, "", "Gaussian")
+	n:addPortIn(0, "LAB")
+	n:addPortOut(1, "LAB"):addElem("text", 1, "", "Laplacian")
+	n:addPortOut(2, "LAB"):addElem("text", 2, "", "Gaussian")
 	n.process = pyrDownProcess
 	n:setPos(x, y)
 	return n
@@ -1405,10 +1405,10 @@ end
 
 function ops.pyrUp(x, y)
 	local n = node:new("Pyramid Up")
-	n:addPortOut(0)
-	n:addPortIn(1):addElem("text", 1, "Laplacian", "")
-	n:addPortIn(2):addElem("text", 2, "Gaussian", "")
-	n:addPortIn(3):addElem("float", 3, "L mix factor", 0, 2, 1)
+	n:addPortOut(0, "LAB")
+	n:addPortIn(1, "LAB"):addElem("text", 1, "Laplacian", "")
+	n:addPortIn(2, "LAB"):addElem("text", 2, "Gaussian", "")
+	n:addPortIn(3, "Y"):addElem("float", 3, "L mix factor", 0, 2, 1)
 	n.process = pyrUpProcess
 	n:setPos(x, y)
 	return n
