@@ -118,6 +118,7 @@ local function interpolate(data, fl)
 end
 
 return function(lens, fl)
+	if not lens then return 0, 0, 0 end
 	fl = tonumber(fl)
 	assert(type(lens) == "string")
 	lens = lens:gsub("%c*$", "") -- remove embedded zeros
