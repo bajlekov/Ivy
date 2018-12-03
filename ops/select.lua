@@ -38,7 +38,7 @@ return function(ops)
 		p:toDevice()
 
 		if update or self.elem[3].value then
-			thread.ops.colorSample({i, p, s}, self)
+			thread.ops.colorSample5x5({i, p, s}, self)
 		end
 		thread.ops.hueSelect({i, r, s, o, m}, self)
 	end
@@ -71,7 +71,7 @@ return function(ops)
 		p:toDevice()
 
 		if update or self.elem[3].value then
-			thread.ops.colorSample({i, p, s}, self)
+			thread.ops.colorSample5x5({i, p, s}, self)
 		end
 		thread.ops.chromaSelect({i, r, s, o, m}, self)
 	end
@@ -105,7 +105,7 @@ return function(ops)
 		p:toDevice()
 
 		if update or self.elem[3].value then
-			thread.ops.colorSample({i, p, s}, self)
+			thread.ops.colorSample5x5({i, p, s}, self)
 		end
 		thread.ops.lightnessSelect({i, r, s, o, m}, self)
 	end
@@ -173,7 +173,7 @@ return function(ops)
 		p:toDevice()
 
 		if update or self.elem[4].value then
-			thread.ops.colorSample({i, p, s}, self)
+			thread.ops.colorSample5x5({i, p, s}, self)
 		end
 		thread.ops.smartSelect({i, r, d, p, s, o, m}, self)
 	end
@@ -208,7 +208,7 @@ return function(ops)
 		p:toDevice()
 
 		if update or self.elem[3].value then
-			thread.ops.colorSample({i, p, s}, self)
+			thread.ops.colorSample5x5({i, p, s}, self)
 		end
 		thread.ops.colorSelect({i, r, s, o, m}, self)
 		if self.portOut[5].link then

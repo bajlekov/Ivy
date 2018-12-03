@@ -64,7 +64,7 @@ return function(ops)
 				p:set(0, 0, 0, ox)
 				p:set(0, 0, 1, oy)
 				p:toDevice()
-				thread.ops.colorSample({i, p, s}, self)
+				thread.ops.colorSample5x5({i, p, s}, self)
 			end
 
 			if dy ~= 0 then

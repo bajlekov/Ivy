@@ -302,7 +302,7 @@ local function processAutoWB(self)
 	p:toDevice()
 
 	if update or self.elem[2].value then
-		thread.ops.colorSample({i, p, s}, self)
+		thread.ops.colorSample5x5({i, p, s}, self)
 	end
 
 	thread.ops.autoWB({i, s, o}, self)
