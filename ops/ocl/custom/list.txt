@@ -5,6 +5,7 @@ contrast.cl
 edgeAware.cl
 snn.cl
 sobel.cl
+softSkin.cl
 median.cl
 area_clamp.cl
 erode.cl
