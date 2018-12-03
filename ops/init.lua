@@ -377,6 +377,67 @@ do
 end
 
 
+do
+	local function paint(self, i, p, ox, oy)
+		p:set(0, 0, 0, ox)
+		p:set(0, 0, 1, oy)
+		p:toDevice()
+		thread.ops.paintSmart({self.mask, i, p}, self)
+	end
+
+	local function processPaintMask(self)
+		self.procType = "dev"
+		local link = self.portOut[0].link
+		assert(link)
+		link.data = self.mask
+		link:setData("Y", self.procType)
+
+		local i = t.inputSourceBlack(self, 0)
+
+		local ox, oy, update = self.data.tweak.getOrigin()
+		local p = t.autoTempBuffer(self, -1, 1, 1, 6) -- [x, y, range, sharpness, size, value]
+
+		p:set(0, 0, 2, self.elem[1].value)
+		p:set(0, 0, 3, self.elem[2].value)
+		p:set(0, 0, 4, self.elem[3].value)
+		p:set(0, 0, 5, self.elem[4].value)
+
+		if update then
+			paint(self, i, p, ox, oy)
+		end
+	end
+
+	function ops.paintMaskSmart(x, y)
+		local n = node:new("[!] Paint mask")
+		n.data.tweak = require "tools.tweak"(true)
+
+		local sx, sy = t.imageShape()
+		n.mask = data:new(sx, sy, 1)
+		n:addPortIn(0, "LAB")
+		n:addPortOut(0, "Y")
+
+		n:addElem("float", 1, "Range", 0, 1, 0.2)
+		n:addElem("float", 2, "Sharpness", 0, 1, 0.5)
+		n:addElem("float", 3, "Size", 0, 512, 32)
+		n:addElem("float", 4, "Value", -1, 1, 1)
+
+		for x = 0, sx-1 do
+			for y = 0, sy-1 do
+				n.mask:set(x, y, 0, 0)
+			end
+		end
+		n.mask:toDevice()
+
+		n.data.tweak.toolButton(n, 5, "Paint")
+
+		n.process = processPaintMask
+		n:setPos(x, y)
+		return n
+	end
+end
+
+
+
 local function detailEQProcess(self)
 	self.procType = "dev"
 
