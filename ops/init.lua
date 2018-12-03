@@ -1398,7 +1398,11 @@ local function pyrUpProcess(self)
 	local L, G, O, f
 	L = t.inputSourceBlack(self, 1)
 	G = t.inputSourceBlack(self, 2)
-	O = t.autoOutput(self, 0, L:shape())
+	local lx, ly, lz = L:shape()
+	local gx, gy, gz = G:shape()
+	lx = lx==1 and gx*2 or lx
+	ly = ly==1 and gy*2 or ly
+	O = t.autoOutput(self, 0, lx, ly, 3)
 	f = t.inputParam(self, 3)
 	thread.ops.pyrUp({L, G, O, f}, self)
 end

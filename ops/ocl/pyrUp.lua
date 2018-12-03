@@ -64,7 +64,10 @@ kernel void pyrUpG(global float *L, global float *G, global float *O, global flo
 
 local function execute()
 	proc:getAllBuffers("L", "G", "O", "f")
-	proc:executeKernel("pyrUpG", proc:size3D("G"))
+	local x, y, z = proc.buffers.O:shape()
+	x = math.ceil(x/2)
+	y = math.ceil(y/2)
+	proc:executeKernel("pyrUpG", {x, y, z})
 end
 
 local function init(d, c, q)
