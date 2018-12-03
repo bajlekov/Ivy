@@ -1182,6 +1182,120 @@ local function blur8_1D(self, i, o)
 	thread.ops.pyrBlurUp({l1, o}, self)
 end
 
+local function mix8(self, a, b, m, o)
+	local mg1, mg2, mg3, mg4, mg5, mg6, mg7, mg8
+
+	local al1, al2, al3, al4, al5, al6, al7, al8, ag8
+	local bl1, bl2, bl3, bl4, bl5, bl6, bl7, bl8, bg8
+	local g1, g2, g3, g4, g5, g6, g7
+
+	al1 = t.autoTempBuffer(self, -1, o:shape())
+	al2 = t.autoTempBuffer(self, -2, downsize(al1))
+	al3 = t.autoTempBuffer(self, -3, downsize(al2))
+	al4 = t.autoTempBuffer(self, -4, downsize(al3))
+	al5 = t.autoTempBuffer(self, -5, downsize(al4))
+	al6 = t.autoTempBuffer(self, -6, downsize(al5))
+	al7 = t.autoTempBuffer(self, -7, downsize(al6))
+	al8 = t.autoTempBuffer(self, -8, downsize(al7))
+	ag8 = t.autoTempBuffer(self, -9, downsize(al8))
+
+	bl1 = t.autoTempBuffer(self, -11, o:shape())
+	bl2 = t.autoTempBuffer(self, -12, downsize(bl1))
+	bl3 = t.autoTempBuffer(self, -13, downsize(bl2))
+	bl4 = t.autoTempBuffer(self, -14, downsize(bl3))
+	bl5 = t.autoTempBuffer(self, -15, downsize(bl4))
+	bl6 = t.autoTempBuffer(self, -16, downsize(bl5))
+	bl7 = t.autoTempBuffer(self, -17, downsize(bl6))
+	bl8 = t.autoTempBuffer(self, -18, downsize(bl7))
+	bg8 = t.autoTempBuffer(self, -19, downsize(bl8))
+
+	g1 = t.autoTempBuffer(self, -21, downsize(o))
+	g2 = t.autoTempBuffer(self, -22, downsize(g1))
+	g3 = t.autoTempBuffer(self, -23, downsize(g2))
+	g4 = t.autoTempBuffer(self, -24, downsize(g3))
+	g5 = t.autoTempBuffer(self, -25, downsize(g4))
+	g6 = t.autoTempBuffer(self, -26, downsize(g5))
+	g7 = t.autoTempBuffer(self, -27, downsize(g6))
+
+	thread.ops.pyrDown({a, al1, g1}, self)
+	thread.ops.pyrDown({g1, al2, g2}, self)
+	thread.ops.pyrDown({g2, al3, g3}, self)
+	thread.ops.pyrDown({g3, al4, g4}, self)
+	thread.ops.pyrDown({g4, al5, g5}, self)
+	thread.ops.pyrDown({g5, al6, g6}, self)
+	thread.ops.pyrDown({g6, al7, g7}, self)
+	thread.ops.pyrDown({g7, al8, ag8}, self)
+
+	thread.ops.pyrDown({b, bl1, g1}, self)
+	thread.ops.pyrDown({g1, bl2, g2}, self)
+	thread.ops.pyrDown({g2, bl3, g3}, self)
+	thread.ops.pyrDown({g3, bl4, g4}, self)
+	thread.ops.pyrDown({g4, bl5, g5}, self)
+	thread.ops.pyrDown({g5, bl6, g6}, self)
+	thread.ops.pyrDown({g6, bl7, g7}, self)
+	thread.ops.pyrDown({g7, bl8, bg8}, self)
+
+	mg1 = t.autoTempBuffer(self, -31, downsize(m))
+	mg2 = t.autoTempBuffer(self, -32, downsize(mg1))
+	mg3 = t.autoTempBuffer(self, -33, downsize(mg2))
+	mg4 = t.autoTempBuffer(self, -34, downsize(mg3))
+	mg5 = t.autoTempBuffer(self, -35, downsize(mg4))
+	mg6 = t.autoTempBuffer(self, -36, downsize(mg5))
+	mg7 = t.autoTempBuffer(self, -37, downsize(mg6))
+	mg8 = t.autoTempBuffer(self, -38, downsize(mg7))
+
+	thread.ops.pyrBlurDown({m, mg1}, self)
+	thread.ops.pyrBlurDown({mg1, mg2}, self)
+	thread.ops.pyrBlurDown({mg2, mg3}, self)
+	thread.ops.pyrBlurDown({mg3, mg4}, self)
+	thread.ops.pyrBlurDown({mg4, mg5}, self)
+	thread.ops.pyrBlurDown({mg5, mg6}, self)
+	thread.ops.pyrBlurDown({mg6, mg7}, self)
+	thread.ops.pyrBlurDown({mg7, mg8}, self)
+
+	thread.ops.mix({al1, bl1, m, al1}, self)
+	thread.ops.mix({al2, bl2, mg1, al2}, self)
+	thread.ops.mix({al3, bl3, mg2, al3}, self)
+	thread.ops.mix({al4, bl4, mg3, al4}, self)
+	thread.ops.mix({al5, bl5, mg4, al5}, self)
+	thread.ops.mix({al6, bl6, mg5, al6}, self)
+	thread.ops.mix({al7, bl7, mg6, al7}, self)
+	thread.ops.mix({al8, bl8, mg7, al8}, self)
+	thread.ops.mix({ag8, bg8, mg8, ag8}, self)
+
+	thread.ops.pyrUp({al8, ag8, g7, data.one}, self)
+	thread.ops.pyrUp({al7, g7, g6, data.one}, self)
+	thread.ops.pyrUp({al6, g6, g5, data.one}, self)
+	thread.ops.pyrUp({al5, g5, g4, data.one}, self)
+	thread.ops.pyrUp({al4, g4, g3, data.one}, self)
+	thread.ops.pyrUp({al3, g3, g2, data.one}, self)
+	thread.ops.pyrUp({al2, g2, g1, data.one}, self)
+	thread.ops.pyrUp({al1, g1, o, data.one}, self)
+end
+
+local function smartMixProcess(self)
+	self.procType = "dev"
+	local a, b, m, o
+	a = t.inputSourceBlack(self, 1)
+	b = t.inputSourceBlack(self, 2)
+	m = t.inputParam(self, 3)
+	o = t.autoOutput(self, 0, data.superSize(a, b, m))
+	mix8(self, a, b, m, o)
+end
+
+function ops.smartMix(x, y)
+	local n = node:new("Smart Mix")
+	n:addPortIn(1, "LAB"):addElem("text", 1, "A")
+	n:addPortIn(2, "LAB"):addElem("text", 2, "B")
+	n:addPortIn(3, "Y"):addElem("float", 3, "Factor", 0, 1, 0.5)
+	n:addPortOut(0, "LAB")
+
+	n.process = smartMixProcess
+	n.w = 75
+	n:setPos(x, y)
+	return n
+end
+
 local function blur(self, i, o, n)
 	local L = {} --TODO: move buffer allocation to processing thread so that resources are cleaned after execution
 	self.data.levels = L

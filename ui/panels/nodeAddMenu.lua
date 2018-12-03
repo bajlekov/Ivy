@@ -123,6 +123,7 @@ overlayMask:addElem("addNode", 4, "Hue Mask", {ops, "hueMask"})
 overlayMask:addElem("addNode", 5, "Green-Red Mask", {ops, "greenRedMask"})
 overlayMask:addElem("addNode", 6, "Blue-Yellow Mask", {ops, "blueYellowMask"})
 overlayMask:addElem("addNode", 7, "Mix", {ops, "mix"})
+overlayMask:addElem("addNode", 8, "Smart Mix", {ops, "smartMix"})
 
 local clutColor = {"Precisa", "Vista", "Astia", "Provia", "Sensia", "Superia", "Velvia", "Ektachrome", "Kodachrome", "Portra"}
 local clutBW = {"Neopan", "Delta", "Tri-X"}
