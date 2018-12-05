@@ -1,6 +1,7 @@
 do local _={
   halideEnable=false,
   halideGpuEnable=false,
+  hostLowMemory=true,
   imageLoader="native",
   imagePath="img.jpg",
   juliaEnable=false,
