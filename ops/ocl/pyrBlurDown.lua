@@ -17,46 +17,6 @@
 
 local proc = require "lib.opencl.process".new()
 
-local source = [[
-constant float k[5] = {0.0625, 0.25, 0.375, 0.25, 0.0625};
-
-constant float kk[5][5] = {
-  {0.00390625, 0.015625, 0.0234375, 0.015625, 0.00390625},
-  {0.015625  , 0.0625  , 0.09375  , 0.0625  , 0.015625  },
-  {0.0234375 , 0.09375 , 0.140625 , 0.09375 , 0.0234375 },
-  {0.015625  , 0.0625  , 0.09375  , 0.0625  , 0.015625  },
-  {0.00390625, 0.015625, 0.0234375, 0.015625, 0.00390625}
-};
-
-kernel void pyrDown(global float *I, global float *G)
-{
-  const int x = get_global_id(0);
-  const int y = get_global_id(1);
-  const int z = get_global_id(2);
-
-	float h[5][5];
-	for (int i = 0; i<5; i++)
-		for (int j = 0; j<5; j++)
-			h[i][j] = $I[x*2+i-2, y*2+j-2, z];
-
-	float v[5];
-	for (int i = 0; i<5; i++)
-		v[i] = 0;
-	for (int i = 0; i<5; i++)
-		#pragma unroll 5
-		for (int j = 0; j<5; j++) {
-			v[i] += h[i][j]*k[j];
-		}
-
-	float g = 0;
-	for (int i = 0; i<5; i++) {
-		g += v[i]*k[i];
-	}
-
-	$G[x, y, z] = g;
-}
-]]
-
 local function execute()
 	proc:getAllBuffers("I", "G")
 	proc:executeKernel("pyrDown", proc:size3D("G"))
@@ -64,7 +24,7 @@ end
 
 local function init(d, c, q)
 	proc:init(d, c, q)
-	proc:loadSourceString(source)
+	proc:loadSourceFile("pyr.cl")
 	return execute
 end
 
