@@ -24,7 +24,8 @@ local function parseIndex(source, buffers)
 
 	-- returns float, no out of bounds extending
 	local function parse3(b, x, y, z)
-		assert(buffers[b], "No buffer '"..b.."' found in provided buffers list.")
+		if not buffers[b] then return "#error buffer "..b.." not defined" end
+		--assert(buffers[b], "No buffer '"..b.."' found in provided buffers list.")
 		local sx = buffers[b].x == 1 and 0 or buffers[b].sx
 		local sy = buffers[b].y == 1 and 0 or buffers[b].sy
 		local sz = buffers[b].z == 1 and 0 or buffers[b].sz
@@ -35,7 +36,8 @@ local function parseIndex(source, buffers)
 	-- returns float, out of bounds extending through clamping to known value
 	-- OOB loads work, OOB stores write to edge of image
 	local function parse3extend(b, x, y, z) -- extend boundaries on out of bounds indexing
-		assert(buffers[b], "No buffer '"..b.."' found in provided buffers list.")
+		if not buffers[b] then return "#error buffer "..b.." not defined" end
+		--assert(buffers[b], "No buffer '"..b.."' found in provided buffers list.")
 		local sx = buffers[b].x == 1 and 0 or buffers[b].sx
 		local sy = buffers[b].y == 1 and 0 or buffers[b].sy
 		local sz = buffers[b].z == 1 and 0 or buffers[b].sz
@@ -50,7 +52,8 @@ local function parseIndex(source, buffers)
 
 	-- returns float, out of bounds returns 0 on load, RHS expression only!
 	local function parse3zero(b, x, y, z) -- return 0 on out of bounds indexing
-		assert(buffers[b], "No buffer '"..b.."' found in provided buffers list.")
+		if not buffers[b] then return "#error buffer "..b.." not defined" end
+		--assert(buffers[b], "No buffer '"..b.."' found in provided buffers list.")
 		local sx = buffers[b].x == 1 and 0 or buffers[b].sx
 		local sy = buffers[b].y == 1 and 0 or buffers[b].sy
 		local sz = buffers[b].z == 1 and 0 or buffers[b].sz
@@ -60,7 +63,8 @@ local function parseIndex(source, buffers)
 
 	-- returns float or float3 accordingly
 	local function parse2extend_load(b, x, y) -- see notes for parse3extend
-		assert(buffers[b], "No buffer '"..b.."' found in provided buffers list.")
+		if not buffers[b] then return "#error buffer "..b.." not defined" end
+		--assert(buffers[b], "No buffer '"..b.."' found in provided buffers list.")
 		local sx = buffers[b].x == 1 and 0 or buffers[b].sx
 		local sy = buffers[b].y == 1 and 0 or buffers[b].sy
 		local sz = buffers[b].z == 1 and 0 or buffers[b].sz
@@ -80,7 +84,8 @@ local function parseIndex(source, buffers)
 	local includeCS = false
 	-- returns float or float3 accordingly, includes CS conversion when needed
 	local function parse2extend_load_cs(b, x, y, csOut) -- see notes for parse3extend
-		assert(buffers[b], "No buffer '"..b.."' found in provided buffers list.")
+		if not buffers[b] then return "#error buffer "..b.." not defined" end
+		--assert(buffers[b], "No buffer '"..b.."' found in provided buffers list.")
 		local csIn = buffers[b].cs
 
 		local sx = buffers[b].x == 1 and 0 or buffers[b].sx
@@ -102,7 +107,8 @@ local function parseIndex(source, buffers)
 
 	-- stores a float3 into a 3ch buffer, or a float into a 1ch buffer
 	local function parse2extend_store(b, x, y, s) -- see notes for parse3extend
-		assert(buffers[b], "No buffer '"..b.."' found in provided buffers list.")
+		if not buffers[b] then return "#error buffer "..b.." not defined" end
+		--assert(buffers[b], "No buffer '"..b.."' found in provided buffers list.")
 		local sx = buffers[b].x == 1 and 0 or buffers[b].sx
 		local sy = buffers[b].y == 1 and 0 or buffers[b].sy
 		local sz = buffers[b].z == 1 and 0 or buffers[b].sz
@@ -124,12 +130,14 @@ local function parseIndex(source, buffers)
 	end
 
 	local function parse1prop(b, p)
-		assert(buffers[b], "No buffer '"..b.."' found in provided buffers list.")
+		if not buffers[b] then return "#error buffer "..b.." not defined" end
+		--assert(buffers[b], "No buffer '"..b.."' found in provided buffers list.")
 		return ("("..buffers[b][p]..")")
 	end
 
 	local function parse1float(b)
-		assert(buffers[b], "No buffer '"..b.."' found in provided buffers list.")
+		if not buffers[b] then return "#error buffer "..b.." not defined" end
+		--assert(buffers[b], "No buffer '"..b.."' found in provided buffers list.")
 		if buffers[b].z==3 then
 			return "float3"
 		elseif buffers[b].z==1 then
