@@ -1357,42 +1357,23 @@ function ops.smartMix(x, y)
 	return n
 end
 
-local function blur(self, i, o, n)
-	local L = {} --TODO: move buffer allocation to processing thread so that resources are cleaned after execution
-	self.data.levels = L
-
-	n = math.round(n)
-
-	L[1] = t.autoTempBuffer(self, - 1, downsize(i))
-	for i = 2, n do
-		L[i] = t.autoTempBuffer(self, - 2, downsize(L[i-1]))
-	end
-
-	thread.ops.pyrBlurDown({i, L[1]}, self)
-	for i = 2, n do
-		thread.ops.pyrBlurDown({L[i-1], L[i]}, self)
-	end
-
-	for i = n, 2, -1 do
-		thread.ops.pyrBlurUp({L[i], L[i-1]}, self)
-	end
-	thread.ops.pyrBlurUp({L[1], o}, self)
-end
-
 local function blurProcess(self)
 	self.procType = "dev"
 	local i, o
 	i = t.inputSourceBlack(self, 0)
 	o = t.autoOutput(self, 0, i:shape())
 	o.cs = i.cs
-	blur(self, i, o, self.elem[1].value)
+
+	local n = t.autoTempBuffer(self, -1, 1, 1, 1)
+	n:set(0, 0, 0, self.elem[1].value) -- CPU-only buffer, no sync!
+	thread.ops.blur({i, o, n}, self)
 end
 
 function ops.blur(x, y)
 	local n = node:new("Blur")
-	n:addPortIn(0, "ANY")
-	n:addPortOut(0, "ANY")
-	n:addElem("int", 1, "Scale", 1, 9, 3, 1)
+	n:addPortIn(0, "Y__")
+	n:addPortOut(0, "Y__")
+	n:addElem("int", 1, "Scale", 1, 15, 3, 1)
 	n.process = blurProcess
 	n:setPos(x, y)
 	return n
