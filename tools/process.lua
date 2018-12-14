@@ -90,6 +90,8 @@ function process.load(file, append)
 				v.node.graph.ptsG = v.elem.graph.ptsG
 				v.node.graph.ptsB = v.elem.graph.ptsB
 				v.node.graph.channel = v.elem.graph.channel
+				v.node.graph.x = v.elem.graph.x
+				v.node.graph.y = v.elem.graph.y
 
 				if v.node.graph.updateCurve then
 					v.node.graph:updateCurve()
@@ -186,6 +188,8 @@ function process.save(name)
 			e.graph.ptsG = t.graph.ptsG
 			e.graph.ptsB = t.graph.ptsB
 			e.graph.channel = t.graph.channel
+			e.graph.x = t.graph.x
+			e.graph.y = t.graph.y
 		end
 
 		for i = 0, t.elem.n do
