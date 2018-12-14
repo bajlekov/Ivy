@@ -27,6 +27,7 @@ local ops = {}
 require "ops.adjust"(ops)
 require "ops.curves"(ops)
 require "ops.select"(ops)
+require "ops.color"(ops)
 
 -- list of ops + menu entries
 t.register(ops, "contrast")
