@@ -119,4 +119,31 @@ function event.move.equalizer(graph, mouse)
 end
 
 
+
+function event.press.colorwheel(graph, mouse)
+	if mouse.button==2 then
+		graph.x = 0
+		graph.y = 0
+	end
+end
+
+function event.move.colorwheel(graph, mouse)
+	graph.parent.dirty = true
+	if mouse.button == 1 then
+		local shift = love.keyboard.isDown("lshift") or love.keyboard.isDown("rshift")
+		local x, y = graph.x, graph.y
+		x = x + mouse.dx/50 * (shift and 0.1 or 1)
+		y = y + mouse.dy/50 * (shift and 0.1 or 1)
+
+		local r = math.sqrt(x^2 + y^2)
+		if r>1 then
+			x = x/r
+			y = y/r
+		end
+
+		graph.x, graph.y = x, y
+	end
+end
+
+
 return event

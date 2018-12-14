@@ -263,4 +263,114 @@ function draw.preview(graph, x, y, w, h)
 	graph.parent.data.preview:draw(x, y)
 end
 
+
+local pixelcode = [[
+	#define wp_x 0.95042854537718f
+	#define wp_y 1.0f
+	#define wp_z 1.0889003707981f
+	#define E (216.0f/24389.0f)
+	#define K (24389.0f/27.0f)
+
+	float xyz(float V) {
+		float V3 = V*V*V;
+		if (V3>E) {
+			return V3;
+		} else {
+			return (116.0f*V - 16.0f)/K;
+		}
+	}
+
+	vec4 LAB_XYZ(vec4 i) {
+		vec4 o;
+		o.y = (i.x + 0.16f)/1.16f;
+		o.x = i.y*0.2f + o.y;
+		o.z = o.y - i.z*0.5f;
+		o.x = wp_x*xyz(o.x);
+		o.y = wp_y*xyz(o.y);
+		o.z = wp_z*xyz(o.z);
+		return o;
+	}
+
+	vec4 XYZ_LRGB(vec4 i) {
+		vec4 o;
+		o.x = i.x* 3.2404542f + i.y*-1.5371385f + i.z*-0.4985314f;
+		o.y = i.x*-0.9692660f + i.y* 1.8760108f + i.z* 0.0415560f;
+		o.z = i.x* 0.0556434f + i.y*-0.2040259f + i.z* 1.0572252f;
+		return o;
+	}
+
+	#define A    0.055f
+	#define G    2.4f
+	#define N    0.03928571428571429f
+	#define F    12.923210180787855f
+
+	float srgb(float v) {
+		if (v<N/F) {
+			return F*v;
+		} else {
+			return (1+A)*pow(v, 1/G) - A;
+		}
+	}
+
+	vec4 LRGB_SRGB(vec4 i) {
+		return vec4(srgb(i.x), srgb(i.y), srgb(i.z), 0.0f);
+	}
+
+	vec4 effect( vec4 color, Image texture, vec2 texture_coords, vec2 screen_coords )
+	{
+			vec4 texcolor = Texel(texture, texture_coords);
+			float x = (texture_coords.x-0.5f)*2.0f;
+			float y = (texture_coords.y-0.5f)*2.0f;
+
+			if (x*x + y*y < 1.0f) {
+				float r = 0.75f-0.5f*sqrt(x*x + y*y);
+				vec4 col = LRGB_SRGB(XYZ_LRGB(LAB_XYZ(vec4(r, x*0.5f, y*0.5f, 0.0f))));
+				texcolor.r = col.r;
+				texcolor.g = col.g;
+				texcolor.b = col.b;
+			} else {
+				texcolor.r = 0.3;
+				texcolor.g = 0.3;
+				texcolor.b = 0.3;
+			}
+
+			return texcolor;
+	}
+]]
+
+local shader = love.graphics.newShader(pixelcode)
+
+local canvas = love.graphics.newCanvas(100, 100, {msaa = 4})
+love.graphics.setCanvas(canvas)
+love.graphics.setColor(0, 0, 0, 1)
+love.graphics.rectangle("fill", 0, 0, 100, 100, 3.5, 3.5)
+love.graphics.setCanvas()
+
+function draw.colorwheel(graph, x, y, w, h)
+	love.graphics.setColor(style.gray3)
+
+	love.graphics.setShader(shader)
+	love.graphics.draw(canvas, x, y)
+	love.graphics.setShader()
+
+	love.graphics.setLineWidth(0.7)
+	love.graphics.setLineJoin("miter")
+	love.graphics.setColor(style.gray5)
+
+	love.graphics.line(x + 50.5, y + h - 3.5, x + 50.5, y + 3.5)
+	love.graphics.line(x + 3.5, y + 50.5, x + h - 3.5, y + 50.5)
+
+
+	love.graphics.setLineWidth(1.2)
+	love.graphics.circle("line", x+50, y+50, 50)
+
+	love.graphics.setColor({0, 0, 0, 0.3})
+	love.graphics.setLineWidth(3)
+	love.graphics.circle("line", x + 50 + graph.x*50, y + 50 + graph.y*50, 3)
+
+	love.graphics.setColor(style.gray9)
+	love.graphics.setLineWidth(1.5)
+	love.graphics.circle("line", x + 50 + graph.x*50, y + 50 + graph.y*50, 3)
+end
+
 return draw

@@ -121,13 +121,15 @@ function graph.histogram(node)
 end
 
 function graph.colorwheel(node)
-	local graph = graph.new(node, 150, 150)
+	local graph = graph.new(node, 100, 100)
 	graph.type = "colorwheel"
+	graph.x = 0
+	graph.y = 0
 end
 
-function graph.colorgrade(node)
-	local graph = graph.new(node, 150, 150)
-	graph.type = "colorgrade"
+function graph.colorwheelTriplet(node)
+	local graph = graph.new(node, 300, 100)
+	graph.type = "colorwheelTriplet"
 end
 
 function graph.preview(node)
