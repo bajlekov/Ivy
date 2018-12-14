@@ -18,14 +18,14 @@
 local proc = require "lib.opencl.process".new()
 
 local source = [[
-kernel void gamma(global float *I, global float *P, global float *O) {
+kernel void offset(global float *I, global float *P, global float *O) {
 	const int x = get_global_id(0);
 	const int y = get_global_id(1);
 
 	float3 i = $I[x, y];
 	float3 p = $P[x, y];
 
-	i = pow(fmax(i, 0.0f), log(p)/log(0.5f));
+	i = i + p;
 
 	$O[x, y] = i;
 }
@@ -36,7 +36,7 @@ local function execute()
 	proc.buffers.I.__write = false
 	proc.buffers.P.__write = false
 	proc.buffers.O.__read = false
-	proc:executeKernel("gamma", proc:size2D("O"))
+	proc:executeKernel("offset", proc:size2D("O"))
 end
 
 local function init(d, c, q)

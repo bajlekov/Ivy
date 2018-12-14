@@ -157,4 +157,36 @@ return function(ops)
     return n
   end
 
+
+  local function offsetProcess(self)
+    self.procType = "dev"
+    local i = t.inputSourceBlack(self, 0)
+    local p = t.autoTempBuffer(self, -1, 1, 1, 3)
+    local x, y, z = i:shape()
+    local o = t.autoOutput(self, 0, x, y, 3)
+
+    local x, y, z = XYZ_LRGB(LAB_XYZ(0.75, self.graph.x*0.1, self.graph.y*0.1))
+    local m = self.elem[1].value - (x + y + z)/3
+    p:set(0, 0, 0, x + m)
+    p:set(0, 0, 1, y + m)
+    p:set(0, 0, 2, z + m)
+    p:toDevice()
+
+    thread.ops.color_offset({i, p, o}, self)
+  end
+
+  function ops.color_offset(x, y)
+    local n = node:new("Offset")
+    n:addPortIn(0, "LRGB")
+    n:addPortOut(0, "LRGB")
+    n:addElem("float", 1, "Offset", -0.25, 0.25, 0)
+
+    require "ui.graph".colorwheel(n)
+    n.process = offsetProcess
+
+    n.w = 100
+    n:setPos(x, y)
+    return n
+  end
+
 end
