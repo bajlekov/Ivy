@@ -213,7 +213,8 @@ overlayCustom:addElem("addNode", 3, "Mix RGB", {ops, "mixRGB"})
 overlayCustom:addElem("addNode", 4, "Load Image", {ops, "image"})
 overlayCustom:addElem("addNode", 5, "Paint Mask", {ops, "paintMask"})
 overlayCustom:addElem("addNode", 6, "Paint Smart", {ops, "paintMaskSmart"})
-overlayCustom:addElem("label", 7, "User-defined")
+overlayCustom:addElem("addNode", 7, "Script", {ops, "script"})
+overlayCustom:addElem("label", 8, "User-defined")
 
 
 local overlay = Overlay:new("Add node:")
