@@ -59,8 +59,6 @@ local function execute()
     scriptG = _g
     scriptB = _b
 
-    print(getSource(scriptR, scriptG, scriptB))
-    
     proc:loadSourceString(getSource(scriptR, scriptG, scriptB))
   end
 
