@@ -28,6 +28,7 @@ require "ops.adjust"(ops)
 require "ops.curves"(ops)
 require "ops.select"(ops)
 require "ops.color"(ops)
+require "ops.script"(ops)
 
 -- list of ops + menu entries
 t.register(ops, "contrast")
@@ -102,30 +103,6 @@ function ops.temperature(x, y)
 	n:addElem("float", 1, "CCT (K)", 2000, 22000, 6500)
 	n:addElem("float", 2, "Tint", 0.75, 1.25, 1)
 	n.process = temperatureProcess
-	n:setPos(x, y)
-	return n
-end
-
-
-local dataCh = love.thread.getChannel("dataCh_scheduler")
-local function scriptProcess(self)
-	self.procType = "dev"
-	local i = t.inputSourceBlack(self, 0)
-	local o = t.autoOutput(self, 0, i:shape())
-	thread.ops.script({i, o}, self)
-	dataCh:push(self.elem[1].value)
-	dataCh:push(self.elem[2].value)
-	dataCh:push(self.elem[3].value)
-end
-
-function ops.script(x, y)
-	local n = node:new("Script")
-	n:addPortIn(0, "LRGB")
-	n:addPortOut(0, "LRGB")
-	n:addElem("textinput", 1, "r")
-	n:addElem("textinput", 2, "g")
-	n:addElem("textinput", 3, "b")
-	n.process = scriptProcess
 	n:setPos(x, y)
 	return n
 end
