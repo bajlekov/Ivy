@@ -18,7 +18,7 @@
 local proc = require "lib.opencl.process".new()
 
 local source = [[
-kernel void hueMask(global float *I, global float *C, global float *O)
+kernel void hueMask(global float *I, global float *C, global float *P, global float *O)
 {
   const int x = get_global_id(0);
   const int y = get_global_id(1);
@@ -35,13 +35,13 @@ kernel void hueMask(global float *I, global float *C, global float *O)
 	float factor = lowIdx==highIdx ? 1.0f : (i*255.0f-lowIdx)/(highIdx-lowIdx);
 	float o = lowVal*(1.0f - factor) + highVal*factor;
 
-	float c = $I[x, y, 1];
-	$O[x, y, 0] = o * c;
+  float c = $I[x, y, 1];
+  $O[x, y, 0] = o * ($P[x, y]<0.5f ? 1.0f : c);
 }
 ]]
 
 local function execute()
-	proc:getAllBuffers("I", "C", "O")
+	proc:getAllBuffers("I", "C", "P", "O")
 	proc:executeKernel("hueMask", proc:size2D("O"))
 end
 

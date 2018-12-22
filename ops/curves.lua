@@ -305,18 +305,20 @@ return function(ops)
 
 	local function hueMaskProcess(self)
 		self.procType = "dev"
-		local i, c, o
+		local i, c, p, o
 		i = t.inputSourceBlack(self, 0)
+		p = t.plainParam(self, 1)
 		c = self.data.curve:toDevice()
 		local x, y, z = i:shape()
 		o = t.autoOutput(self, 0, x, y, 1)
-		thread.ops.hueMask({i, c, o}, self)
+		thread.ops.hueMask({i, c, p, o}, self)
 	end
 
 	function ops.hueMask(x, y)
 		local n = node:new("Hue Mask")
 		n:addPortIn(0, "LCH")
 		n:addPortOut(0, "Y")
+		n:addElem("bool", 1, "Chroma modulation", true)
 		n.process = hueMaskProcess
 		n.data.curve = data:new(256, 1, 1)
 		require "ui.graph".curve(n, {{x = 0, y = 1}, {x = 1, y = 1}})
