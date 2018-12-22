@@ -668,6 +668,10 @@ function love.mousereleased(x, y, button, isTouch)
 	dirtyImage = true
 end
 
+function pipeline.update()
+  dirtyImage = true
+end
+
 local fullscreen = false
 function love.keypressed(key)
 	if key == "1" then

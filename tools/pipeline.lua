@@ -21,5 +21,8 @@ local pipeline = {}
 
 pipeline.input = nil
 pipeline.output = nil
+pipeline.update = function()
+  error("Implement pipeline.update()")
+end
 
 return pipeline
