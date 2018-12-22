@@ -21,16 +21,19 @@ local function getSource(r, g, b)
   local source = [[
   kernel void script(global float *I, global float *O)
   {
-    const int x = get_global_id(0);
-    const int y = get_global_id(1);
+    const int _x = get_global_id(0);
+    const int _y = get_global_id(1);
 
-    float r = $I[x, y, 0];
-    float g = $I[x, y, 1];
-    float b = $I[x, y, 2];
+    float r = $I[_x, _y, 0];
+    float g = $I[_x, _y, 1];
+    float b = $I[_x, _y, 2];
 
-    $O[x, y, 0] = ]]..r..[[;
-    $O[x, y, 1] = ]]..g..[[;
-    $O[x, y, 2] = ]]..b..[[;
+    float x = (float)(_x)/$$O.x$$;
+    float y = (float)(_y)/$$O.y$$;
+
+    $O[_x, _y, 0] = ]]..r..[[;
+    $O[_x, _y, 1] = ]]..g..[[;
+    $O[_x, _y, 2] = ]]..b..[[;
   }
   ]]
 
