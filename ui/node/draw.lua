@@ -93,21 +93,6 @@ local function draw(self, element)
 	love.graphics.line(x + 25, y - 0.5, x + nodeWidth - 25, y - 0.5)
 	love.graphics.setLineWidth(1)
 
-	for i = 1, self.elem.n do
-
-		if self.elem[i] then
-			if not (self.elem[i - 1] and self.elem[i - 1].type == self.elem[i].type) then self.elem[i].first = true end
-			if not (self.elem[i + 1] and self.elem[i + 1].type == self.elem[i].type) then self.elem[i].last = true end
-
-			local x = x
-			local y = y + style.titleHeight + style.elemHeight * (i - 1)
-			local w = nodeWidth
-			local h = style.elemHeight - style.elemBorder
-
-			self.elem[i]:draw(x, y, w, h)
-		end
-	end
-
 	if self.portIn[0] then
 		if self.portIn[0].link then
 			love.graphics.setColor(style.portOnColor)
@@ -131,8 +116,10 @@ local function draw(self, element)
 	for i = 1, self.elem.n do
 		if self.portIn[i] then
 			if self.portIn[i].link then
+				self.elem[i].disabled = true
 				love.graphics.setColor(style.portOnColor)
 			else
+				self.elem[i].disabled = false
 				love.graphics.setColor(style.portOffColor)
 			end
 			love.graphics.rectangle("fill", x - style.nodeBorder - (style.elemHeight) / 2, y + style.titleHeight + style.elemHeight * (i - 1), (style.elemHeight) / 2, style.elemHeight - style.elemBorder, 3, 3)
@@ -158,6 +145,20 @@ local function draw(self, element)
 			if self.portOut[i + 1] then
 				love.graphics.rectangle("fill", x + nodeWidth + style.nodeBorder, y + style.titleHeight + style.elemHeight * (i - 1) + 3, (style.elemHeight) / 2, style.elemHeight - style.elemBorder - 3)
 			end
+		end
+	end
+
+	for i = 1, self.elem.n do
+		if self.elem[i] then
+			if not (self.elem[i - 1] and self.elem[i - 1].type == self.elem[i].type) then self.elem[i].first = true end
+			if not (self.elem[i + 1] and self.elem[i + 1].type == self.elem[i].type) then self.elem[i].last = true end
+
+			local x = x
+			local y = y + style.titleHeight + style.elemHeight * (i - 1)
+			local w = nodeWidth
+			local h = style.elemHeight - style.elemBorder
+
+			self.elem[i]:draw(x, y, w, h)
 		end
 	end
 
