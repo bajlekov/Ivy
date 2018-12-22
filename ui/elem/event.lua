@@ -190,12 +190,16 @@ function event.press.textinput(elem, mouse)
 		local _keypressed = love.keypressed
 		local _textinput = love.textinput
 		local _mousepressed = love.mousepressed
+		local _value = elem.value
 
 		elem.tint = style.orange
 		love.keyboard.setKeyRepeat(true)
 
 		function love.keypressed(key)
 			if key=="return" or key=="escape" then
+				if key=="escape" then
+					elem.value = _value
+				end
 				love.keypressed = _keypressed
 				love.textinput = _textinput
 				love.mousepressed = _mousepressed
