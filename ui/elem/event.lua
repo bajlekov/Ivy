@@ -40,7 +40,7 @@ function event.press.float(elem, mouse)
 	elem.tint = style.orange
 end
 function event.move.float(elem, mouse)
-	if mouse.button == 1 then
+	if mouse.button==1 and not elem.disabled then
 		local shift = love.keyboard.isDown("lshift") or love.keyboard.isDown("rshift")
 		local ctrl = love.keyboard.isDown("lctrl") or love.keyboard.isDown("rctrl")
 		local dx, dy = mouse.x - mouse.ox, mouse.y - mouse.oy

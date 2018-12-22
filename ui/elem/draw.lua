@@ -130,18 +130,26 @@ function draw.button(elem, x, y, w, h)
 end
 
 function draw.float(elem, x, y, w, h)
-	love.graphics.setColor(style.elemColor)
-	drawRounded(x, y, w, h, elem.first, elem.last, elem.parent.style=="toolbar")
-	local p = (elem.value - elem.min) / (elem.max - elem.min)
-	love.graphics.setColor(tint(style.elemHighlightColor, elem.tint))
-	love.graphics.setScissor( x, y, w * p, h)
-	drawRounded(x, y, w, h, elem.first, elem.last, elem.parent.style=="toolbar")
-	love.graphics.setScissor( )
+	if elem.disabled then
+		love.graphics.setColor(style.elemHighlightColor)
+		drawRounded(x, y, w, h, elem.first, elem.last, elem.parent.style=="toolbar")
+		love.graphics.setColor(style.elemFontColor)
+		love.graphics.setFont(style.elemFont)
+		love.graphics.printf(elem.name, x + 2, y + 2, w - 4, "left")
+	else
+		love.graphics.setColor(style.elemColor)
+		drawRounded(x, y, w, h, elem.first, elem.last, elem.parent.style=="toolbar")
+		local p = (elem.value - elem.min) / (elem.max - elem.min)
+		love.graphics.setColor(tint(style.elemHighlightColor, elem.tint))
+		love.graphics.setScissor( x, y, w * p, h)
+		drawRounded(x, y, w, h, elem.first, elem.last, elem.parent.style=="toolbar")
+		love.graphics.setScissor( )
 
-	love.graphics.setColor(style.elemFontColor)
-	love.graphics.setFont(style.elemFont)
-	love.graphics.printf(elem.name, x + 2, y + 2, w - 4, "left")
-	love.graphics.printf(string.format("%.2f", elem.value), x + 2, y + 2, w - 4, "right")
+		love.graphics.setColor(style.elemFontColor)
+		love.graphics.setFont(style.elemFont)
+		love.graphics.printf(elem.name, x + 2, y + 2, w - 4, "left")
+		love.graphics.printf(string.format("%.2f", elem.value), x + 2, y + 2, w - 4, "right")
+	end
 end
 
 function draw.int(elem, x, y, w, h)
