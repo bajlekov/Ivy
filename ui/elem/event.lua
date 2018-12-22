@@ -31,7 +31,7 @@ end
 
 local originalElementValue
 function event.press.float(elem, mouse)
-	if mouse.button == 2 then
+	if mouse.button==2 and not elem.disabled then
 		elem.value = elem.default
 		dirty(elem)
 	else
