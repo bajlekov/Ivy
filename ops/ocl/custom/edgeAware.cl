@@ -46,6 +46,11 @@ kernel void edgeAware(
 
 	sum = sum / wgt;
 
-	$O3[x, y] = sum;
-	$O4[x, y] = i - sum;
+  #if $$O3.z==3$$
+    $O3[x, y] = sum;
+  #endif
+
+  #if $$O4.z==3$$
+    $O4[x, y] = i - sum;
+  #endif
 }
