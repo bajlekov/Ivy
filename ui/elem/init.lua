@@ -157,4 +157,13 @@ function elem:color(n, name)
 	return processElem(self, n, elem)
 end
 
+function elem:textinput(n, default)
+	local elem = {
+		type = "textinput",
+		value = default,
+		default = default,
+	}
+	return processElem(self, n, elem)
+end
+
 return elem

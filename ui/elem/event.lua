@@ -182,4 +182,48 @@ function event.press.graphic(graphic, mouse)
 
 end
 
+
+local pipeline = require "tools.pipeline"
+function event.press.textinput(elem, mouse)
+
+	if not elem.tint and mouse.button==1 then
+		local _keypressed = love.keypressed
+		local _textinput = love.textinput
+
+		elem.tint = style.orange
+		love.keyboard.setKeyRepeat(true)
+
+		function love.keypressed(key)
+			if key=="return" or key=="escape" then
+				love.keypressed = _keypressed
+				love.textinput = _textinput
+
+				elem.tint = nil
+				love.keyboard.setKeyRepeat(false)
+				dirty(elem)
+				pipeline.update()
+				return
+			end
+
+			local n = #elem.value
+			if key=="backspace" and n > 0 then
+				elem.value = elem.value:sub(1, n - 1)
+				return
+			end
+		end
+
+		function love.textinput(text)
+			elem.value = elem.value..text
+			-- implement cursor
+			-- proper editing
+		end
+	end
+
+	if not elem.tint and mouse.button==2 then
+		elem.value = elem.default
+		dirty(elem)
+		pipeline.update()
+	end
+end
+
 return event

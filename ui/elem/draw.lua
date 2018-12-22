@@ -79,6 +79,20 @@ function draw.text(elem, x, y, w, h)
 	love.graphics.printf(elem.right or "", x + 2, y + 2, w - 4, "right")
 end
 
+function draw.textinput(elem, x, y, w, h)
+	love.graphics.setColor(tint(style.elemColor, elem.tint))
+	drawRounded(x, y, w, h, elem.first, elem.last, elem.parent.style=="toolbar")
+
+	love.graphics.setColor(style.elemFontColor)
+	love.graphics.setFont(style.elemFont)
+
+	local text = love.graphics.newText(style.elemFont, elem.value) -- optimize
+	local textwidth = text:getWidth()
+	love.graphics.setScissor( x+1, y, w-2, h)
+	love.graphics.draw(text, x + w-textwidth-4, y+2)
+	love.graphics.setScissor()
+end
+
 function draw.button(elem, x, y, w, h)
 	love.graphics.setColor(style.elemColor)
 	drawRounded(x, y, w, h, elem.first, elem.last, elem.parent.style=="toolbar")
