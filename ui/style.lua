@@ -82,21 +82,21 @@ style.gray9 = {0.9, 0.9, 0.9, alpha}
 style.backgroundColor = style.gray2
 
 style.shadowColor = {0, 0, 0, 0.1}
-style.nodeColor = style.gray5
+style.nodeColor = style.gray4
 
-style.titleColor = style.gray8
+style.titleColor = style.gray9
 style.titleFontColor = style.gray3
 
 --style.portColor = style.gray7
-style.portOnColor = style.gray8
-style.portOffColor = style.gray7
+style.portOnColor = style.gray9
+style.portOffColor = style.gray75
 
 style.labelColor = style.nodeColor
-style.labelFontColor = style.gray8
+style.labelFontColor = style.gray9
 
-style.elemColor = style.gray8
+style.elemColor = style.gray9
 style.elemFontColor = style.gray3
-style.elemHighlightColor = style.gray7
+style.elemHighlightColor = style.gray75
 
 style.linkColor = style.portOnColor
 style.linkDragColor = style.orange
