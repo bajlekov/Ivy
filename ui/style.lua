@@ -82,7 +82,7 @@ style.gray9 = {0.9, 0.9, 0.9, alpha}
 style.backgroundColor = style.gray2
 
 style.shadowColor = {0, 0, 0, 0.1}
-style.nodeColor = style.gray4
+style.nodeColor = style.gray5
 
 style.titleColor = style.gray9
 style.titleFontColor = style.gray3
