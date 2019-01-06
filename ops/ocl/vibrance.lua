@@ -19,24 +19,25 @@ local proc = require "lib.opencl.process".new()
 
 local source = [[
 
-kernel void vibrance(global float *p1, global float *p2, global float *p3)
+kernel void vibrance(global float *I, global float *V, global float *P, global float *O)
 {
   const int x = get_global_id(0);
   const int y = get_global_id(1);
 
-	float3 i = $p1[x, y];
-	float v = $p2[x, y, 0]*i.x + 1.0f;
+	float3 i = $I[x, y];
+	float v = $V[x, y, 0]*i.x + 1.0f;
 
+	i.y = clamp(i.y, 0.0f, 1.0f);
 	float o = (1-v)*pown(i.y, 2) + v*i.y;
-	i.x *= 1.0f - (o - i.y)*0.2f;
+	i.x *= 1.0f - $P[x, y]*(o - i.y)*0.25f;
 
-  $p3[x, y] = (float3)(i.x, o, i.z);
+  $O[x, y] = (float3)(i.x, o, i.z);
 }
 ]]
 
 local function execute()
-	proc:getAllBuffers("p1", "p2", "p3")
-	proc:executeKernel("vibrance", proc:size2D("p3"))
+	proc:getAllBuffers("I", "V", "P", "O")
+	proc:executeKernel("vibrance", proc:size2D("O"))
 end
 
 local function init(d, c, q)

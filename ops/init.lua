@@ -714,17 +714,19 @@ end
 local function vibranceProcess(self)
 	self.procType = "dev"
 	assert(self.portOut[0].link)
-	local i, v, o
+	local i, v, p, o
 	i = t.inputSourceBlack(self, 0)
 	v = t.inputParam(self, 1)
+	p = t.plainParam(self, 2)
 	o = t.autoOutput(self, 0, data.superSize(i, v))
-	thread.ops.vibrance({i, v, o}, self)
+	thread.ops.vibrance({i, v, p, o}, self)
 end
 
 function ops.vibrance(x, y)
 	local n = node:new("Vibrance")
 	n:addPortIn(0, "LCH")
 	n:addPortIn(1, "Y"):addElem("float", 1, "Vibrance", - 1, 1, 0)
+	n:addElem("bool", 2, "Adjust luminance", true)
 	n:addPortOut(0, "LCH")
 	n.process = vibranceProcess
 	n:setPos(x, y)
