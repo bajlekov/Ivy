@@ -43,6 +43,8 @@ kernel void paintSmart(global float *O, global float *I, global float *P) {
 	float py = P[1]; // y-position
 	float ps = P[4]; // brush size
 
+	if (px - ps + x<0 || px - ps + x>=$O.x$ || py - ps + y<0 || py - ps + y>=$O.y$) return;
+
 	float3 i = $I[px - ps + x, py - ps + y];
   float3 s = $I[px, py];
 

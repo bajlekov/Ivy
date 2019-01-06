@@ -26,6 +26,8 @@ kernel void paint(global float *O, global float *P) {
 	float py = P[1];
 	float pv = P[2];
 
+	if (px - 32 + x<0 || px - 32 + x>=$O.x$ || py - 32 + y<0 || py - 32 + y>=$O.y$) return;
+
 	float d = sqrt((float)((x-32)*(x-32) + (y-32)*(y-32)));
 	float f = d<32.0f ? (cos(d * $$ 1/32*math.pi $$) + 1.0f) * 0.5f : 0.0f;
 
