@@ -86,12 +86,14 @@ function curve:removePt(i)
 	end
 end
 
-local pts = {}
 function curve:drawPts(x, y, w, h)
 	for k, v in ipairs(self.points) do
 		love.graphics.circle("line", x + v.x*w, y + h - v.y*h, 5)
 	end
+end
 
+local pts = {}
+function curve:drawLines(x, y, w, h)
 	local py = 0
 	for px = 0, 256 do
 		py = self:sample(px/256) or py
