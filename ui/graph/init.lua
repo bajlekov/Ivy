@@ -53,10 +53,10 @@ local function updateCurve(graph, channel, curve)
 	end
 end
 
-function graph.curve(node, pts)
+function graph.curve(node, a, b)
 	local graph = graph.new(node, 150, 150)
 	graph.type = "curve"
-	graph.curve = require "tools.curve":new()
+	graph.curve = require "tools.curve":new(a, b)
 	updateCurve(graph)
 	graph.updateCurve = updateCurve
 end
