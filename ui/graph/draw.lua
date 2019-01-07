@@ -41,7 +41,8 @@ function draw.curve(graph, x, y, w, h)
 	love.graphics.line(x + 5, y + 2.5 + math.round((h - 5) * 0.50), x + w - 5, y + 2.5 + math.round((h - 5) * 0.50))
 	love.graphics.line(x + 5, y + 2.5 + math.round((h - 5) * 0.75), x + w - 5, y + 2.5 + math.round((h - 5) * 0.75))
 
-	love.graphics.setLineJoin("bevel")
+	love.graphics.setLineJoin("none")
+
 
 	if graph.parent.data.curve.z==3 then
 		-- draw 3 curves
