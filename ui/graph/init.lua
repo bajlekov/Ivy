@@ -39,65 +39,53 @@ function graph:press(x, y, mouse)
 	return input.press(self, x, y, mouse)
 end
 
--- put values in curve buffer
-local function updateCurve(graph, channel, data)
+local function updateCurve(graph, channel, curve)
 	graph.parent.dirty = true
-	local curve = graph.parent.data.curve
-	local pts = data or graph.pts
+	local data = graph.parent.data.curve
+	local curve = curve or graph.curve
 	local channel = (channel or graph.channel or 1) - 1
-	local n = #pts
 
-	for i = 0, math.floor(pts[1].x * 255) do
-		local c = pts[1].y
-		curve:set(i, 0, channel, c)
-	end
-	for k = 2, n do
-		local x1, x2 = pts[k - 1].x * 255, pts[k].x * 255
-		local y1, y2 = pts[k - 1].y, pts[k].y
-		for i = math.ceil(x1), math.floor(x2) do
-			local c = y1 + (i - x1) / (x2 - x1) * (y2 - y1)
-			curve:set(i, 0, channel, c)
-		end
-	end
-	for i = math.ceil(pts[n].x * 255), 255 do
-		local c = pts[n].y
-		curve:set(i, 0, channel, c)
+	local py = 0
+	for px = 0, 255 do
+		py = curve:sample(px/255) or py
+		py = math.clamp(py, 0, 1)
+		data:set(px, 0, channel, py)
 	end
 end
 
 function graph.curve(node, pts)
 	local graph = graph.new(node, 150, 150)
 	graph.type = "curve"
-	graph.pts = pts or {{x = 0, y = 0}, {x = 1, y = 1}}
-	updateCurve(graph, 1, graph.pts)
+	graph.curve = require "tools.curve":new()
+	updateCurve(graph)
 	graph.updateCurve = updateCurve
 end
 
 function graph.curveRGB(node)
 	local graph = graph.new(node, 150, 150)
 	graph.type = "curve"
-	graph.ptsR = {{x = 0, y = 0}, {x = 1, y = 1}}
-	graph.ptsG = {{x = 0, y = 0}, {x = 1, y = 1}}
-	graph.ptsB = {{x = 0, y = 0}, {x = 1, y = 1}}
+	graph.curveR = require "tools.curve":new()
+	graph.curveG = require "tools.curve":new()
+	graph.curveB = require "tools.curve":new()
 
-	updateCurve(graph, 1, graph.ptsR)
-	updateCurve(graph, 2, graph.ptsG)
-	updateCurve(graph, 3, graph.ptsB)
+	updateCurve(graph, 1, graph.curveR)
+	updateCurve(graph, 2, graph.curveG)
+	updateCurve(graph, 3, graph.curveB)
 
-	graph.pts = graph.ptsR
+	graph.curve = graph.curveR
 	graph.channel = 1
 
 	graph.updateCurve = updateCurve
 	graph.setR = function()
-		graph.pts = graph.ptsR
+		graph.curve = graph.curveR
 		graph.channel = 1
 	end
 	graph.setG = function()
-		graph.pts = graph.ptsG
+		graph.curve = graph.curveG
 		graph.channel = 2
 	end
 	graph.setB = function()
-		graph.pts = graph.ptsB
+		graph.curve = graph.curveB
 		graph.channel = 3
 	end
 end

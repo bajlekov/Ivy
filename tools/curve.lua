@@ -35,7 +35,7 @@ function curve:new(a, b)
 	return o
 end
 
-local limit = 8/146
+local limit = 0.05
 
 local abs = math.abs
 
@@ -86,23 +86,24 @@ function curve:removePt(i)
 	end
 end
 
-function curve:drawPts(x, y, w, h)
+function curve:drawPts(x, y, w, h, r)
 	for k, v in ipairs(self.points) do
-		love.graphics.circle("line", x + v.x*w, y + h - v.y*h, 5)
+		love.graphics.circle("fill", x + v.x*w, y + h - v.y*h, r)
 	end
 end
 
 local pts = {}
-function curve:drawLines(x, y, w, h)
+function curve:drawLines(x, y, w, h, n)
+	if #pts~=n then pts = {} end
+
 	local py = 0
-	for px = 0, 256 do
-		py = self:sample(px/256) or py
+	for px = 0, n or 255 do
+		py = self:sample(px/(n or 255)) or py
 		py = math.clamp(py, 0, 1)
-		pts[px*2+1] = x + px/256*w
+		pts[px*2+1] = x + px/(n or 255)*w
 		pts[px*2+2] = y + h - py*h
 	end
 
-	love.graphics.setLineJoin("bevel")
 	love.graphics.line(pts)
 end
 
