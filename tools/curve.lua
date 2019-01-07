@@ -108,8 +108,13 @@ function curve:drawLines(x, y, w, h, n)
 end
 
 local function t(a, b, c, x) -- compute t at point x
+	-- instability when b-a==c-b, introduce small offset
+	local v = b - 0.5*(a + c)
+	if abs(v)<0.00001 then
+		b = b + (v<0 and -0.00001-v or 0.00001-v)
+	end
+
 	return (a - b + math.sqrt(b^2 - a * c + a * x - 2 * b * x + c * x)) / (a - 2 * b + c)
-	-- FIXME: instability when b-a == c-b (a+c==2b => a-2*b+c==0)
 end
 
 local function y(a, b, c, t) -- compute y at point t
