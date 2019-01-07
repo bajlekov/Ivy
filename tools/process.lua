@@ -85,10 +85,10 @@ function process.load(file, append)
 
 			-- curve handling
 			if v.elem.graph then
-				v.node.graph.pts = v.elem.graph.pts
-				v.node.graph.ptsR = v.elem.graph.ptsR
-				v.node.graph.ptsG = v.elem.graph.ptsG
-				v.node.graph.ptsB = v.elem.graph.ptsB
+				v.node.graph.curve.points = v.elem.graph.pts
+				if v.node.graph.curveR then v.node.graph.curveR.points = v.elem.graph.ptsR end
+				if v.node.graph.curveG then v.node.graph.curveG.points = v.elem.graph.ptsG end
+				if v.node.graph.curveB then v.node.graph.curveB.points = v.elem.graph.ptsB end
 				v.node.graph.channel = v.elem.graph.channel
 				v.node.graph.x = v.elem.graph.x
 				v.node.graph.y = v.elem.graph.y
@@ -183,10 +183,11 @@ function process.save(name)
 
 		if t.graph then
 			e.graph = {}
-			e.graph.pts = t.graph.pts
-			e.graph.ptsR = t.graph.ptsR
-			e.graph.ptsG = t.graph.ptsG
-			e.graph.ptsB = t.graph.ptsB
+			e.graph.pts = t.graph.curve.points
+
+			e.graph.ptsR = t.graph.curveR and t.graph.curveR.points
+			e.graph.ptsG = t.graph.curveG and t.graph.curveG.points
+			e.graph.ptsB = t.graph.curveB and t.graph.curveB.points
 			e.graph.channel = t.graph.channel
 			e.graph.x = t.graph.x
 			e.graph.y = t.graph.y
