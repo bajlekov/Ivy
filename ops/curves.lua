@@ -75,7 +75,7 @@ return function(ops)
 		n:addPortOut(0, "LCH")
 		n.process = curveLCProcess
 		n.data.curve = data:new(256, 1, 1)
-		require "ui.graph".curve(n, {{x = 0, y = 0.5}, {x = 1, y = 0.5}})
+		require "ui.graph".curve(n, 0.5, 0.5)
 		n.graph.background = background_LC
 		n:setPos(x, y)
 		return n
@@ -96,7 +96,7 @@ return function(ops)
 		n:addPortOut(0, "LCH")
 		n.process = curveLHProcess
 		n.data.curve = data:new(256, 1, 1)
-		require "ui.graph".curve(n, {{x = 0, y = 0.5}, {x = 1, y = 0.5}})
+		require "ui.graph".curve(n, 0.5, 0.5)
 		n.graph.background = background_LH
 		n:setPos(x, y)
 		return n
@@ -118,7 +118,7 @@ return function(ops)
 		n:addPortOut(0, "LCH")
 		n.process = curveCLProcess
 		n.data.curve = data:new(256, 1, 1)
-		require "ui.graph".curve(n, {{x = 0, y = 0.5}, {x = 1, y = 0.5}})
+		require "ui.graph".curve(n, 0.5, 0.5)
 		n.graph.background = background_CL
 		n:setPos(x, y)
 		return n
@@ -160,7 +160,7 @@ return function(ops)
 		n:addPortOut(0, "LCH")
 		n.process = curveCHProcess
 		n.data.curve = data:new(256, 1, 1)
-		require "ui.graph".curve(n, {{x = 0, y = 0.5}, {x = 1, y = 0.5}})
+		require "ui.graph".curve(n, 0.5, 0.5)
 		n.graph.background = background_CH
 		n:setPos(x, y)
 		return n
@@ -182,7 +182,7 @@ return function(ops)
 		n:addPortOut(0, "LCH")
 		n.process = curveHLProcess
 		n.data.curve = data:new(256, 1, 1)
-		require "ui.graph".curve(n, {{x = 0, y = 0.5}, {x = 1, y = 0.5}})
+		require "ui.graph".curve(n, 0.5, 0.5)
 		n.graph.background = background_HL
 		n:setPos(x, y)
 		return n
@@ -203,7 +203,7 @@ return function(ops)
 		n:addPortOut(0, "LCH")
 		n.process = curveHCProcess
 		n.data.curve = data:new(256, 1, 1)
-		require "ui.graph".curve(n, {{x = 0, y = 0.5}, {x = 1, y = 0.5}})
+		require "ui.graph".curve(n, 0.5, 0.5)
 		n.graph.background = background_HC
 		n:setPos(x, y)
 		return n
@@ -224,7 +224,7 @@ return function(ops)
 		n:addPortOut(0, "LCH")
 		n.process = curveHHProcess
 		n.data.curve = data:new(256, 1, 1)
-		require "ui.graph".curve(n, {{x = 0, y = 0.5}, {x = 1, y = 0.5}})
+		require "ui.graph".curve(n, 0.5, 0.5)
 		n.graph.background = background_HH
 		n:setPos(x, y)
 		return n
@@ -272,7 +272,7 @@ return function(ops)
 		n:addElem("bool", 2, "Driver Range [-1, 1]")
 		n.process = curveOffsetProcess
 		n.data.curve = data:new(256, 1, 1)
-		require "ui.graph".curve(n, {{x = 0, y = 0.5}, {x = 1, y = 0.5}})
+		require "ui.graph".curve(n, 0.5, 0.5)
 		n:setPos(x, y)
 		return n
 	end
@@ -296,7 +296,7 @@ return function(ops)
 		n:addElem("bool", 2, "Driver Range [-1, 1]")
 		n.process = curveModulateProcess
 		n.data.curve = data:new(256, 1, 1)
-		require "ui.graph".curve(n, {{x = 0, y = 0.5}, {x = 1, y = 0.5}})
+		require "ui.graph".curve(n, 0.5, 0.5)
 		n:setPos(x, y)
 		return n
 	end
@@ -321,7 +321,7 @@ return function(ops)
 		n:addElem("bool", 1, "Chroma modulation", true)
 		n.process = hueMaskProcess
 		n.data.curve = data:new(256, 1, 1)
-		require "ui.graph".curve(n, {{x = 0, y = 1}, {x = 1, y = 1}})
+		require "ui.graph".curve(n, 1, 1)
 		n.graph.background = background_H
 		n:setPos(x, y)
 		return n
@@ -343,7 +343,7 @@ return function(ops)
 		n:addPortOut(0, "Y")
 		n.process = lightnessMaskProcess
 		n.data.curve = data:new(256, 1, 1)
-		require "ui.graph".curve(n, {{x = 0, y = 1}, {x = 1, y = 1}})
+		require "ui.graph".curve(n, 1, 1)
 		n.graph.background = background_L
 		n:setPos(x, y)
 		return n
@@ -366,7 +366,7 @@ return function(ops)
 		n:addPortOut(0, "Y")
 		n.process = chromaMaskProcess
 		n.data.curve = data:new(256, 1, 1)
-		require "ui.graph".curve(n, {{x = 0, y = 1}, {x = 1, y = 1}})
+		require "ui.graph".curve(n, 1, 1)
 		n.graph.background = background_C
 		n:setPos(x, y)
 		return n
@@ -389,7 +389,7 @@ return function(ops)
 		n:addPortOut(0, "Y")
 		n.process = blueYellowMaskProcess
 		n.data.curve = data:new(256, 1, 1)
-		require "ui.graph".curve(n, {{x = 0, y = 1}, {x = 1, y = 1}})
+		require "ui.graph".curve(n, 1, 1)
 		n.graph.background = background_B
 		n:setPos(x, y)
 		return n
@@ -412,7 +412,7 @@ return function(ops)
 		n:addPortOut(0, "Y")
 		n.process = greenRedMaskProcess
 		n.data.curve = data:new(256, 1, 1)
-		require "ui.graph".curve(n, {{x = 0, y = 1}, {x = 1, y = 1}})
+		require "ui.graph".curve(n, 1, 1)
 		n.graph.background = background_A
 		n:setPos(x, y)
 		return n
