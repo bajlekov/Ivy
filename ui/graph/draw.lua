@@ -43,15 +43,16 @@ function draw.curve(graph, x, y, w, h)
 
 	love.graphics.setLineJoin("none")
 
+	local n = w-4
 
 	if graph.parent.data.curve.z==3 then
 		-- draw 3 curves
 		love.graphics.setColor(0, 0, 0, 0.3)
 		love.graphics.setLineWidth(4)
 
-		graph.curveR:drawLines(x + 2, y + 2, w - 4, h - 4, 256)
-		graph.curveG:drawLines(x + 2, y + 2, w - 4, h - 4, 256)
-		graph.curveB:drawLines(x + 2, y + 2, w - 4, h - 4, 256)
+		graph.curveR:drawLines(x + 2, y + 2, w - 4, h - 4, n)
+		graph.curveG:drawLines(x + 2, y + 2, w - 4, h - 4, n)
+		graph.curveB:drawLines(x + 2, y + 2, w - 4, h - 4, n)
 		if graph.channel == 1 then
 			graph.curveR:drawPts(x + 2, y + 2, w - 4, h - 4, 4)
 		end
@@ -65,48 +66,48 @@ function draw.curve(graph, x, y, w, h)
 		love.graphics.setLineWidth(2)
 
 		love.graphics.setColor(style.red)
-		graph.curveR:drawLines(x + 2, y + 2, w - 4, h - 4, 256)
+		graph.curveR:drawLines(x + 2, y + 2, w - 4, h - 4, n)
 		love.graphics.setColor(style.green)
-		graph.curveG:drawLines(x + 2, y + 2, w - 4, h - 4, 256)
+		graph.curveG:drawLines(x + 2, y + 2, w - 4, h - 4, n)
 		love.graphics.setColor(style.blue)
-		graph.curveB:drawLines(x + 2, y + 2, w - 4, h - 4, 256)
+		graph.curveB:drawLines(x + 2, y + 2, w - 4, h - 4, n)
 		if graph.channel == 1 then
 			love.graphics.setColor(style.green)
-			graph.curveG:drawLines(x + 2, y + 2, w - 4, h - 4, 256)
+			graph.curveG:drawLines(x + 2, y + 2, w - 4, h - 4, n)
 			love.graphics.setColor(style.blue)
-			graph.curveB:drawLines(x + 2, y + 2, w - 4, h - 4, 256)
+			graph.curveB:drawLines(x + 2, y + 2, w - 4, h - 4, n)
 			love.graphics.setColor(style.red)
-			graph.curveR:drawLines(x + 2, y + 2, w - 4, h - 4, 256)
+			graph.curveR:drawLines(x + 2, y + 2, w - 4, h - 4, n)
 			graph.curveR:drawPts(x + 2, y + 2, w - 4, h - 4, 3)
 		end
 		if graph.channel == 2 then
 			love.graphics.setColor(style.red)
-			graph.curveR:drawLines(x + 2, y + 2, w - 4, h - 4, 256)
+			graph.curveR:drawLines(x + 2, y + 2, w - 4, h - 4, n)
 			love.graphics.setColor(style.blue)
-			graph.curveB:drawLines(x + 2, y + 2, w - 4, h - 4, 256)
+			graph.curveB:drawLines(x + 2, y + 2, w - 4, h - 4, n)
 			love.graphics.setColor(style.green)
-			graph.curveG:drawLines(x + 2, y + 2, w - 4, h - 4, 256)
+			graph.curveG:drawLines(x + 2, y + 2, w - 4, h - 4, n)
 			graph.curveG:drawPts(x + 2, y + 2, w - 4, h - 4, 3)
 		end
 		if graph.channel == 3 then
 			love.graphics.setColor(style.red)
-			graph.curveR:drawLines(x + 2, y + 2, w - 4, h - 4, 256)
+			graph.curveR:drawLines(x + 2, y + 2, w - 4, h - 4, n)
 			love.graphics.setColor(style.green)
-			graph.curveG:drawLines(x + 2, y + 2, w - 4, h - 4, 256)
+			graph.curveG:drawLines(x + 2, y + 2, w - 4, h - 4, n)
 			love.graphics.setColor(style.blue)
-			graph.curveB:drawLines(x + 2, y + 2, w - 4, h - 4, 256)
+			graph.curveB:drawLines(x + 2, y + 2, w - 4, h - 4, n)
 			graph.curveB:drawPts(x + 2, y + 2, w - 4, h - 4, 3)
 		end
 	else
 		-- draw single curve
 		love.graphics.setColor(0, 0, 0, 0.3)
 		love.graphics.setLineWidth(4)
-		graph.curve:drawLines(x + 2, y + 2, w - 4, h - 4, 256)
+		graph.curve:drawLines(x + 2, y + 2, w - 4, h - 4, n)
 		graph.curve:drawPts(x + 2, y + 2, w - 4, h - 4, 4)
 
 		love.graphics.setLineWidth(2)
 		love.graphics.setColor(style.gray9)
-		graph.curve:drawLines(x + 2, y + 2, w - 4, h - 4, 256)
+		graph.curve:drawLines(x + 2, y + 2, w - 4, h - 4, n)
 		graph.curve:drawPts(x + 2, y + 2, w - 4, h - 4, 3)
 	end
 end
