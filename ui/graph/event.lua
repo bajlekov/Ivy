@@ -58,7 +58,7 @@ function event.press.equalizer(graph, mouse)
 
 	local ch = graph.channel
 	for k, v in ipairs(graph.pts[ch]) do
-		if x < (k-0.5)/8 + s and x > (k-0.5)/8 - s and y < v + s and y > v - s then
+		if x < (k-0.5)/8 + 1/16 and x > (k-0.5)/8 - 1/16 and y < v + 1/16 and y > v - 1/16 then
 			if mouse.button==1 then
 				pt = k
 			elseif mouse.button==2 then
