@@ -519,7 +519,7 @@ function ops.histogram(x, y)
 	n:addElem("dropdown", 1, "Visibility", overlayHistogram)
 
 	n.process = histogramProcess
-	n.data.histogram = data:new(256, 1, 4)
+	n.data.histogram = data:new(256, 1, 4):allocHost()
 	n.compute = true
 	require "ui.graph".histogram(n)
 	n:setPos(x, y)
