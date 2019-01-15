@@ -526,6 +526,28 @@ function ops.histogram(x, y)
 	return n
 end
 
+
+local function histEQProcess(self)
+	self.procType = "dev"
+	local i = t.inputSourceBlack(self, 0)
+	local h = self.data.histogram -- pre-allocated
+	local o = t.autoOutput(self, 0, i:shape())
+	thread.ops.histEQ({i, h, o}, self)
+end
+
+function ops.histEQ(x, y)
+	local n = node:new("Histogram EQ")
+	n:addPortIn(0, "LAB")
+	n:addPortOut(0, "LAB")
+
+	n.process = histEQProcess
+	n.data.histogram = data:new(1024, 1, 1)
+
+	n:setPos(x, y)
+	return n
+end
+
+
 local function previewProcess(self)
 	self.procType = "dev"
 
