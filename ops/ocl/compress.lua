@@ -28,14 +28,17 @@ kernel void compress(global float *I, global float *H, global float *S, global f
 	float s = $S[x, y, 0];
 	float o = $O[x, y, 0];
 
-	float ch = tanh(o);
-	float cs = (1+tanh(o-1));
+	float t = tanh(o*2.0f - 1.0f)*0.5f + 0.5f;
+	float ch = o>0.5f ? t : o;
+	float cs = o<0.5f ? t : o;
 
-	float vh = (1-h)*o + h*ch + (i-o);
-	float vs = (1-s)*o + s*cs + (i-o);
+	float d = i-o;
+	float vh = (1-h)*o + h*ch + d;
+	float vs = (1-s)*o + s*cs + d;
 
-	$O[x, y, 0] = vh*i + vs*(1-i);
-	$O[x, y, 1] = $I[x, y, 1];
+	o = o>0.5f ? vh : vs;
+	$O[x, y, 0] = o;
+	$O[x, y, 1] = $I[x, y, 1] * o/i;
 	$O[x, y, 2] = $I[x, y, 2];
 }
 ]]
