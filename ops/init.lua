@@ -1214,11 +1214,9 @@ local function blur(self, i, o, n, d)
 	end
 	thread.ops.pyrBlurDown({i, l[1]}, self)
 	for j = 2, n do
-		print(l[j-1], l[j], "down")
 		thread.ops.pyrBlurDown({l[j-1], l[j]}, self)
 	end
 	for j = n, 2, -1 do
-		print(l[j], l[j-1], "up")
 		thread.ops.pyrBlurUp({l[j], l[j-1]}, self)
 	end
 	thread.ops.pyrBlurUp({l[1], o}, self)
