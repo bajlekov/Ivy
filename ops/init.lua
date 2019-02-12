@@ -1205,68 +1205,23 @@ local function downsize(x, y, z)
 	return x, y, z
 end
 
-local function blur8(self, i, o)
-	local l1, l2, l3, l4, l5, l6, l7, l8
-
-	l1 = t.autoTempBuffer(self, - 1, downsize(i))
-	l2 = t.autoTempBuffer(self, - 2, downsize(l1))
-	l3 = t.autoTempBuffer(self, - 3, downsize(l2))
-	l4 = t.autoTempBuffer(self, - 4, downsize(l3))
-	l5 = t.autoTempBuffer(self, - 5, downsize(l4))
-	l6 = t.autoTempBuffer(self, - 6, downsize(l5))
-	l7 = t.autoTempBuffer(self, - 7, downsize(l6))
-	l8 = t.autoTempBuffer(self, - 8, downsize(l7))
-
-	thread.ops.pyrBlurDown({i, l1}, self)
-	thread.ops.pyrBlurDown({l1, l2}, self)
-	thread.ops.pyrBlurDown({l2, l3}, self)
-	thread.ops.pyrBlurDown({l3, l4}, self)
-	thread.ops.pyrBlurDown({l4, l5}, self)
-	thread.ops.pyrBlurDown({l5, l6}, self)
-	thread.ops.pyrBlurDown({l6, l7}, self)
-	thread.ops.pyrBlurDown({l7, l8}, self)
-
-	thread.ops.pyrBlurUp({l8, l7}, self)
-	thread.ops.pyrBlurUp({l7, l6}, self)
-	thread.ops.pyrBlurUp({l6, l5}, self)
-	thread.ops.pyrBlurUp({l5, l4}, self)
-	thread.ops.pyrBlurUp({l4, l3}, self)
-	thread.ops.pyrBlurUp({l3, l2}, self)
-	thread.ops.pyrBlurUp({l2, l1}, self)
-	thread.ops.pyrBlurUp({l1, o}, self)
-end
-
-local function blur8_1D(self, i, o)
-	local l1, l2, l3, l4, l5, l6, l7, l8
-
+local function blur(self, i, o, n, d)
 	local x, y, z = downsize(i)
-
-	l1 = t.autoTempBuffer(self, - 1, x, y, 1)
-	l2 = t.autoTempBuffer(self, - 2, downsize(l1))
-	l3 = t.autoTempBuffer(self, - 3, downsize(l2))
-	l4 = t.autoTempBuffer(self, - 4, downsize(l3))
-	l5 = t.autoTempBuffer(self, - 5, downsize(l4))
-	l6 = t.autoTempBuffer(self, - 6, downsize(l5))
-	l7 = t.autoTempBuffer(self, - 7, downsize(l6))
-	l8 = t.autoTempBuffer(self, - 8, downsize(l7))
-
-	thread.ops.pyrBlurDown({i, l1}, self)
-	thread.ops.pyrBlurDown({l1, l2}, self)
-	thread.ops.pyrBlurDown({l2, l3}, self)
-	thread.ops.pyrBlurDown({l3, l4}, self)
-	thread.ops.pyrBlurDown({l4, l5}, self)
-	thread.ops.pyrBlurDown({l5, l6}, self)
-	thread.ops.pyrBlurDown({l6, l7}, self)
-	thread.ops.pyrBlurDown({l7, l8}, self)
-
-	thread.ops.pyrBlurUp({l8, l7}, self)
-	thread.ops.pyrBlurUp({l7, l6}, self)
-	thread.ops.pyrBlurUp({l6, l5}, self)
-	thread.ops.pyrBlurUp({l5, l4}, self)
-	thread.ops.pyrBlurUp({l4, l3}, self)
-	thread.ops.pyrBlurUp({l3, l2}, self)
-	thread.ops.pyrBlurUp({l2, l1}, self)
-	thread.ops.pyrBlurUp({l1, o}, self)
+	local l = {}
+	l[1] = t.autoTempBuffer(self, -1, x, y, d or z)
+	for j = 2, n do
+		l[j] = t.autoTempBuffer(self, -j, downsize(l[j-1]))
+	end
+	thread.ops.pyrBlurDown({i, l[1]}, self)
+	for j = 2, n do
+		print(l[j-1], l[j], "down")
+		thread.ops.pyrBlurDown({l[j-1], l[j]}, self)
+	end
+	for j = n, 2, -1 do
+		print(l[j], l[j-1], "up")
+		thread.ops.pyrBlurUp({l[j], l[j-1]}, self)
+	end
+	thread.ops.pyrBlurUp({l[1], o}, self)
 end
 
 local function mix8(self, a, b, m, o)
@@ -1440,7 +1395,7 @@ local function clarityProcess(self)
 	i = t.inputSourceBlack(self, 0)
 	c = t.inputParam(self, 1)
 	o = t.autoOutput(self, 0, i:shape())
-	blur8(self, i, o)
+	blur(self, i, o, 8)
 	thread.ops.clarity({i, c, o}, self)
 
 	if self.elem[2].value then
@@ -1468,7 +1423,7 @@ local function compressProcess(self)
 	h = t.inputParam(self, 1)
 	s = t.inputParam(self, 2)
 	o = t.autoOutput(self, 0, i:shape())
-	blur8_1D(self, i, o)
+	blur(self, i, o, 8, 1)
 	thread.ops.compress({i, h, s, o}, self)
 end
 
@@ -1489,7 +1444,7 @@ local function structureProcess(self)
 	i = t.inputSourceBlack(self, 0)
 	s = t.inputParam(self, 1)
 	o = t.autoOutput(self, 0, i:shape())
-	blur8_1D(self, i, o)
+	blur(self, i, o, 8, 1)
 	thread.ops.structure({i, s, o}, self)
 end
 
@@ -1538,7 +1493,7 @@ local function tonalContrastProcess(self)
 	p3 = t.inputParam(self, 3)
 	p4 = t.inputParam(self, 4)
 	o = t.autoOutput(self, 0, data.superSize(i, p1, p2, p3, p4))
-	blur8_1D(self, i, o)
+	blur(self, i, o, 8, 1)
 	thread.ops.tonalContrast({i, p1, p2, p3, p4, o}, self)
 end
 
