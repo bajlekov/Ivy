@@ -1395,10 +1395,10 @@ local function clarityProcess(self)
 	i = t.inputSourceBlack(self, 0)
 	c = t.inputParam(self, 1)
 	o = t.autoOutput(self, 0, i:shape())
-	blur(self, i, o, 8)
+	blur(self, i, o, self.elem[2].value)
 	thread.ops.clarity({i, c, o}, self)
 
-	if self.elem[2].value then
+	if self.elem[3].value then
 		thread.ops.setHue({o, i, o}, self)
 		o.cs = "LCH"
 	end
@@ -1409,7 +1409,8 @@ function ops.clarity(x, y)
 	n:addPortIn(0, "SRGB")
 	n:addPortOut(0, "SRGB")
 	n:addPortIn(1, "Y"):addElem("float", 1, "Clarity", 0, 1, 0)
-	n:addElem("bool", 2, "Preserve Hue", true)
+	n:addElem("int", 2, "Scale", 1, 16, 8)
+	n:addElem("bool", 3, "Preserve Hue", true)
 	n.process = clarityProcess
 	n:setPos(x, y)
 	return n
@@ -1423,7 +1424,7 @@ local function compressProcess(self)
 	h = t.inputParam(self, 1)
 	s = t.inputParam(self, 2)
 	o = t.autoOutput(self, 0, i:shape())
-	blur(self, i, o, 8, 1)
+	blur(self, i, o, self.elem[3].value, 1)
 	thread.ops.compress({i, h, s, o}, self)
 end
 
@@ -1433,6 +1434,7 @@ function ops.compress(x, y)
 	n:addPortOut(0, "LAB")
 	n:addPortIn(1, "Y"):addElem("float", 1, "Highlights", 0, 1, 0)
 	n:addPortIn(2, "Y"):addElem("float", 2, "Shadows", 0, 1, 0)
+	n:addElem("int", 3, "Scale", 1, 16, 8)
 	n.process = compressProcess
 	n:setPos(x, y)
 	return n
@@ -1444,7 +1446,7 @@ local function structureProcess(self)
 	i = t.inputSourceBlack(self, 0)
 	s = t.inputParam(self, 1)
 	o = t.autoOutput(self, 0, i:shape())
-	blur(self, i, o, 8, 1)
+	blur(self, i, o, self.elem[2].value, 1)
 	thread.ops.structure({i, s, o}, self)
 end
 
@@ -1453,6 +1455,7 @@ function ops.structure(x, y)
 	n:addPortIn(0, "LAB") -- FIXME: use L__
 	n:addPortOut(0, "LAB")
 	n:addPortIn(1, "Y"):addElem("float", 1, "Structure", 0, 1, 0)
+	n:addElem("int", 2, "Scale", 1, 16, 8)
 	n.process = structureProcess
 	n:setPos(x, y)
 	return n
@@ -1493,7 +1496,7 @@ local function tonalContrastProcess(self)
 	p3 = t.inputParam(self, 3)
 	p4 = t.inputParam(self, 4)
 	o = t.autoOutput(self, 0, data.superSize(i, p1, p2, p3, p4))
-	blur(self, i, o, 8, 1)
+	blur(self, i, o, self.elem[5].value, 1)
 	thread.ops.tonalContrast({i, p1, p2, p3, p4, o}, self)
 end
 
@@ -1505,6 +1508,7 @@ function ops.tonalContrast(x, y)
 	n:addPortIn(2, "Y"):addElem("float", 2, "Darks", - 1, 1, 0)
 	n:addPortIn(3, "Y"):addElem("float", 3, "Midtones", - 1, 1, 0)
 	n:addPortIn(4, "Y"):addElem("float", 4, "Lights", - 1, 1, 0)
+	n:addElem("int", 5, "Scale", 1, 16, 8)
 
 	n.process = tonalContrastProcess
 	n:setPos(x, y)
