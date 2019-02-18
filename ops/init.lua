@@ -342,8 +342,6 @@ do
 	end
 
 	local function processPaintMask(self)
-		pool.resize(t.imageShape())
-		
 		self.procType = "dev"
 		local link = self.portOut[0].link
 		assert(link)
@@ -379,6 +377,7 @@ do
 		n:addElem("float", 1, "Value", 0, 1, 1)
 		n.data.tweak.toolButton(n, 2, "Paint")
 
+		n.compute = true
 		n.process = processPaintMask
 		n:setPos(x, y)
 		return n

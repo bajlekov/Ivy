@@ -359,6 +359,7 @@ function love.update()
 			imageOffset:toDevice()
 
 			local pool = require "tools.imagePool"
+			pool.resize(originalImage.x, originalImage.y)
 			pool.crop(imageOffset.data[0], imageOffset.data[1], pipeline.input.imageData.x, pipeline.input.imageData.y)
 
 			--thread.ops.cropCorrectFisheye({originalImage, input.imageData, imageOffset}, OCL and "dev" or "par")
