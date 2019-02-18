@@ -61,7 +61,18 @@ end
 
 local offset = data:new(1, 1, 3)
 offset:set(0, 0, 2, 1) -- no scaling!
-
+local function pasteView(image)
+	offset:set(0, 0, 0, image.x)
+	offset:set(0, 0, 1, image.y)
+	offset:toDevice()
+	thread.ops.paste({image.view, image.full, offset}, "dev")
+end
+local function cropView(image)
+	offset:set(0, 0, 0, pool.x)
+	offset:set(0, 0, 1, pool.y)
+	offset:toDevice()
+	thread.ops.crop({image.full, image.view, offset}, "dev")
+end
 
 local function get(image, write)
 	if write==nil then write = true end -- TODO: decide on proper default
@@ -70,21 +81,14 @@ local function get(image, write)
 		return image.view
 	else
 		if image.view and write then
-			offset:set(0, 0, 0, image.x)
-			offset:set(0, 0, 1, image.y)
-			offset:toDevice()
-			thread.ops.paste({image.view, image.full, offset}, "dev")
-			print(image.view, image.full)
+			pasteView(image)
 		end
 		if not (image.w==pool.w and image.h==pool.h) then
 			image.view = data:new(pool.w, pool.h, image.full.z)
 			image.w = pool.w
 			image.h = pool.h
 		end
-		offset:set(0, 0, 0, pool.x)
-		offset:set(0, 0, 1, pool.y)
-		offset:toDevice()
-		thread.ops.crop({image.full, image.view, offset}, "dev")
+		cropView(image)
 		image.x = pool.x
 		image.y = pool.y
 		return image.view
