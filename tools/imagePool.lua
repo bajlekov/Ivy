@@ -23,16 +23,19 @@ local thread = require "thread"
 
 local pool = {}
 pool.images = {}
-pool.sx = 0
+
+pool.sx = 0 -- full image size
 pool.sy = 0
-pool.x = 0
+
+pool.x = 0 -- view offset
 pool.y = 0
-pool.w = 0
+
+pool.w = 0 -- view size
 pool.h = 0
 
 local offset = data:new(1, 1, 3)
-offset:set(0, 0, 0, 0) -- no offset
-offset:set(0, 0, 1, 0) -- no offset
+offset:set(0, 0, 0, 0)
+offset:set(0, 0, 1, 0)
 offset:set(0, 0, 2, 1) -- no scaling
 offset:toDevice()
 function pool.resize(x, y) -- resize full image
@@ -40,10 +43,10 @@ function pool.resize(x, y) -- resize full image
 		pool.sx = x
 		pool.sy = y
 
-		for k, v in pairs(pool.images) do
-			local new = data:new(x, y, v.full.z)
-			thread.ops.paste({v.full, new, offset}, "dev")
-			v.full = new
+		for k, image in pairs(pool.images) do
+			local new = data:new(x, y, image.full.z)
+			thread.ops.paste({image.full, new, offset}, "dev")
+			image.full = new
 		end
 	end
 end
@@ -54,7 +57,7 @@ function pool.crop(x, y, w, h) -- select new crop for views
 	pool.w = w
 	pool.h = h
 
-	for k, v in pairs(pool.images) do
+	for k, image in pairs(pool.images) do
 		--
 	end
 end
@@ -71,8 +74,8 @@ end
 local offset = data:new(1, 1, 3)
 offset:set(0, 0, 2, 1) -- no scaling!
 local function cropView(image)
-	offset:set(0, 0, 0, pool.x)
-	offset:set(0, 0, 1, pool.y)
+	offset:set(0, 0, 0, image.x)
+	offset:set(0, 0, 1, image.y)
 	offset:toDevice()
 	thread.ops.crop({image.full, image.view, offset}, "dev")
 end
@@ -85,6 +88,8 @@ local function get(image, write)
 	else
 		if image.view and write then
 			pasteView(image)
+			image.x = pool.x
+			image.y = pool.y
 		end
 		if not (image.w==pool.w and image.h==pool.h) then
 			image.view = data:new(pool.w, pool.h, image.full.z)
@@ -92,21 +97,18 @@ local function get(image, write)
 			image.h = pool.h
 		end
 		cropView(image)
-		image.x = pool.x
-		image.y = pool.y
 		return image.view
 	end
 end
 
 function pool.add(fullImage)
-	print(fullImage.x, fullImage.y)
 	local image = {}
 	image.full = fullImage
 	image.view = false
-	image.x = false
-	image.y = false
-	image.w = false
-	image.h = false
+	image.x = 0
+	image.y = 0
+	image.w = 0
+	image.h = 0
 	image.get = get
 
 	pool.images[fullImage] = image
