@@ -331,19 +331,23 @@ end
 
 
 do
+	local pool = require "tools.imagePool"
+
 	local function paint(self, p, ox, oy)
 		p:set(0, 0, 0, ox)
 		p:set(0, 0, 1, oy)
 		p:set(0, 0, 2, self.elem[1].value)
 		p:toDevice()
-		thread.ops.paint({self.mask, p}, self)
+		thread.ops.paint({self.mask:get(), p}, self)
 	end
 
 	local function processPaintMask(self)
+		pool.resize(t.imageShape())
+		
 		self.procType = "dev"
 		local link = self.portOut[0].link
 		assert(link)
-		link.data = self.mask
+		link.data = self.mask:get()
 		link:setData("Y", self.procType)
 
 		local ox, oy, update = self.data.tweak.getOrigin()
@@ -359,16 +363,19 @@ do
 		n.data.tweak = require "tools.tweak"(true)
 
 		local sx, sy = t.imageShape()
-		n.mask = data:new(sx, sy, 1)
-		n:addPortOut(0, "Y")
+		local mask = data:new(sx, sy, 1)
 
 		for x = 0, sx-1 do
 			for y = 0, sy-1 do
-				n.mask:set(x, y, 0, 0)
+				mask:set(x, y, 0, 0)
 			end
 		end
-		n.mask:toDevice()
+		mask:toDevice()
 
+		pool.resize(t.imageShape())
+		n.mask = pool.add(mask)
+
+		n:addPortOut(0, "Y")
 		n:addElem("float", 1, "Value", 0, 1, 1)
 		n.data.tweak.toolButton(n, 2, "Paint")
 
