@@ -36,7 +36,6 @@ kernel void paste(global float *p1, global float *p2, global float *offset)
 local function execute()
   proc:getAllBuffers("p1", "p2", "offset")
   proc:executeKernel("paste", proc:size3D("p1"))
-  print("***pasting***")
 end
 
 local function init(d, c, q)
