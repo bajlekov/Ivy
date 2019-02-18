@@ -67,6 +67,9 @@ local function pasteView(image)
 	offset:toDevice()
 	thread.ops.paste({image.view, image.full, offset}, "dev")
 end
+
+local offset = data:new(1, 1, 3)
+offset:set(0, 0, 2, 1) -- no scaling!
 local function cropView(image)
 	offset:set(0, 0, 0, pool.x)
 	offset:set(0, 0, 1, pool.y)
