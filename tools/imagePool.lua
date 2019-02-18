@@ -30,13 +30,20 @@ pool.y = 0
 pool.w = 0
 pool.h = 0
 
+local offset = data:new(1, 1, 3)
+offset:set(0, 0, 0, 0) -- no offset
+offset:set(0, 0, 1, 0) -- no offset
+offset:set(0, 0, 2, 1) -- no scaling
+offset:toDevice()
 function pool.resize(x, y) -- resize full image
-	if not(pool.x==x and pool.y==y) then
+	if not(pool.sx==x and pool.sy==y) then
 		pool.sx = x
 		pool.sy = y
 
 		for k, v in pairs(pool.images) do
-			v.full = data:new(x, y, v.full.z)
+			local new = data:new(x, y, v.full.z)
+			thread.ops.paste({v.full, new, offset}, "dev")
+			v.full = new
 		end
 	end
 end
