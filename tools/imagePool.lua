@@ -102,7 +102,7 @@ function pool.add(fullImage)
 	image.h = false
 	image.get = get
 
-	pool[fullImage] = image
+	pool.images[fullImage] = image
 
 	return image
 end
