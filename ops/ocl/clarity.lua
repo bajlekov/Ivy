@@ -29,7 +29,7 @@ kernel void clarity(global float *I, global float *C, global float *O)
 	float o = $O[x, y, z];
 
 	float v = (i-o)*c + i;
-	float f = v<i ? i : 1-i;
+	float f = v<i ? 0 : 1-i;
 	v = f*v + (1-f)*i;
 
 	$O[x, y, z] = v;
