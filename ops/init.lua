@@ -1407,7 +1407,7 @@ function ops.clarity(x, y)
 	n:addPortIn(0, "SRGB")
 	n:addPortOut(0, "SRGB")
 	n:addPortIn(1, "Y"):addElem("float", 1, "Clarity", 0, 1, 0)
-	n:addElem("int", 2, "Scale", 1, 16, 8)
+	n:addElem("int", 2, "Scale", 1, 15, 8)
 	n:addElem("bool", 3, "Preserve Hue", true)
 	n.process = clarityProcess
 	n:setPos(x, y)
@@ -1432,7 +1432,7 @@ function ops.compress(x, y)
 	n:addPortOut(0, "LAB")
 	n:addPortIn(1, "Y"):addElem("float", 1, "Highlights", 0, 1, 0)
 	n:addPortIn(2, "Y"):addElem("float", 2, "Shadows", 0, 1, 0)
-	n:addElem("int", 3, "Scale", 1, 16, 8)
+	n:addElem("int", 3, "Scale", 1, 15, 8)
 	n.process = compressProcess
 	n:setPos(x, y)
 	return n
@@ -1453,7 +1453,7 @@ function ops.structure(x, y)
 	n:addPortIn(0, "LAB") -- FIXME: use L__
 	n:addPortOut(0, "LAB")
 	n:addPortIn(1, "Y"):addElem("float", 1, "Structure", 0, 1, 0)
-	n:addElem("int", 2, "Scale", 1, 16, 8)
+	n:addElem("int", 2, "Scale", 1, 15, 8)
 	n.process = structureProcess
 	n:setPos(x, y)
 	return n
@@ -1506,7 +1506,7 @@ function ops.tonalContrast(x, y)
 	n:addPortIn(2, "Y"):addElem("float", 2, "Darks", - 1, 1, 0)
 	n:addPortIn(3, "Y"):addElem("float", 3, "Midtones", - 1, 1, 0)
 	n:addPortIn(4, "Y"):addElem("float", 4, "Lights", - 1, 1, 0)
-	n:addElem("int", 5, "Scale", 1, 16, 8)
+	n:addElem("int", 5, "Scale", 1, 15, 8)
 
 	n.process = tonalContrastProcess
 	n:setPos(x, y)
