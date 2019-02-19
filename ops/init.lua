@@ -1645,7 +1645,7 @@ local function genMath2(name, fn, init, min, max)
 	ops.math[name] = function(x, y)
 		local n = node:new(name)
 		n:addPortIn(0, "Y__")
-		n:addPortIn(1, "Y__"):addElem("float", 1, name, min or -2, max or 2, init)
+		n:addPortIn(1, "Y__"):addElem("float", 1, "", min or -2, max or 2, init)
 		n:addPortOut(0)
 		n.process = process
 		n.w = 75
