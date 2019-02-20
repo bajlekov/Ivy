@@ -497,6 +497,30 @@ function ops.detailEQ(x, y)
 end
 
 
+local function localLaplacianProcess(self)
+	self.procType = "dev"
+	local i = t.inputSourceWhite(self, 0)
+	local d = t.inputParam(self, 1)
+	local s = t.inputParam(self, 2)
+	local h = t.inputParam(self, 3)
+	local r = t.inputParam(self, 4)
+	local o = t.autoOutput(self, 0, i:shape())
+
+	thread.ops.localLaplacian({i, d, s, h, r, o}, self)
+end
+
+function ops.localLaplacian(x, y)
+	local n = node:new("Dynamic Range")
+	n:addPortIn(0, "LAB"):addPortOut(0, "LAB")
+	n:addPortIn(1, "Y"):addElem("float", 1, "Detail", 0, 2, 1)
+	n:addPortIn(2, "Y"):addElem("float", 2, "Shadows", 0, 2, 1)
+	n:addPortIn(3, "Y"):addElem("float", 3, "Highlights", 0, 2, 1)
+	n:addPortIn(4, "Y"):addElem("float", 4, "Range", 0, 1, 0.2)
+	n.process = localLaplacianProcess
+	n:setPos(x, y)
+	return n
+end
+
 
 
 local function histogramProcess(self)
@@ -1214,11 +1238,9 @@ local function blur(self, i, o, n, d)
 	end
 	thread.ops.pyrBlurDown({i, l[1]}, self)
 	for j = 2, n do
-		print(l[j-1], l[j], "down")
 		thread.ops.pyrBlurDown({l[j-1], l[j]}, self)
 	end
 	for j = n, 2, -1 do
-		print(l[j], l[j-1], "up")
 		thread.ops.pyrBlurUp({l[j], l[j-1]}, self)
 	end
 	thread.ops.pyrBlurUp({l[1], o}, self)
@@ -1409,7 +1431,7 @@ function ops.clarity(x, y)
 	n:addPortIn(0, "SRGB")
 	n:addPortOut(0, "SRGB")
 	n:addPortIn(1, "Y"):addElem("float", 1, "Clarity", 0, 1, 0)
-	n:addElem("int", 2, "Scale", 1, 16, 8)
+	n:addElem("int", 2, "Scale", 1, 15, 8)
 	n:addElem("bool", 3, "Preserve Hue", true)
 	n.process = clarityProcess
 	n:setPos(x, y)
@@ -1434,7 +1456,7 @@ function ops.compress(x, y)
 	n:addPortOut(0, "LAB")
 	n:addPortIn(1, "Y"):addElem("float", 1, "Highlights", 0, 1, 0)
 	n:addPortIn(2, "Y"):addElem("float", 2, "Shadows", 0, 1, 0)
-	n:addElem("int", 3, "Scale", 1, 16, 8)
+	n:addElem("int", 3, "Scale", 1, 15, 8)
 	n.process = compressProcess
 	n:setPos(x, y)
 	return n
@@ -1455,7 +1477,7 @@ function ops.structure(x, y)
 	n:addPortIn(0, "LAB") -- FIXME: use L__
 	n:addPortOut(0, "LAB")
 	n:addPortIn(1, "Y"):addElem("float", 1, "Structure", 0, 1, 0)
-	n:addElem("int", 2, "Scale", 1, 16, 8)
+	n:addElem("int", 2, "Scale", 1, 15, 8)
 	n.process = structureProcess
 	n:setPos(x, y)
 	return n
@@ -1508,7 +1530,7 @@ function ops.tonalContrast(x, y)
 	n:addPortIn(2, "Y"):addElem("float", 2, "Darks", - 1, 1, 0)
 	n:addPortIn(3, "Y"):addElem("float", 3, "Midtones", - 1, 1, 0)
 	n:addPortIn(4, "Y"):addElem("float", 4, "Lights", - 1, 1, 0)
-	n:addElem("int", 5, "Scale", 1, 16, 8)
+	n:addElem("int", 5, "Scale", 1, 15, 8)
 
 	n.process = tonalContrastProcess
 	n:setPos(x, y)
@@ -1647,7 +1669,7 @@ local function genMath2(name, fn, init, min, max)
 	ops.math[name] = function(x, y)
 		local n = node:new(name)
 		n:addPortIn(0, "Y__")
-		n:addPortIn(1, "Y__"):addElem("float", 1, name, min or -2, max or 2, init)
+		n:addPortIn(1, "Y__"):addElem("float", 1, "", min or -2, max or 2, init)
 		n:addPortOut(0)
 		n.process = process
 		n.w = 75

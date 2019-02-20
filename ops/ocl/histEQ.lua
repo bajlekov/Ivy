@@ -44,7 +44,6 @@ kernel void cumulativeHist(global uint *H) {
 	for (uint i = 0; i<1024; i++) {
 		v += H[i];
 		Hf[i] = v*n;
-		printf("%d: %f", i, Hf[i]);
 	}
 }
 

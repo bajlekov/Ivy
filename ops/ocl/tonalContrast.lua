@@ -46,7 +46,7 @@ kernel void tonalContrast(global float * I, global float * P1, global float * P2
 
 	g = isnan(g) ? 0.0f : g;
 
-	$O[x, y, 0] = i + g; //fmin(g, 0.0f)*i + fmax(g, 0.0f)*(1-i); // protect highlights and shadows...needs better roll-off?
+	$O[x, y, 0] = i + fmin(g, 0.0f)*i + fmax(g, 0.0f)*(1-i);
 	$O[x, y, 1] = $I[x, y, 1]; // * (1.0f + (g - i));
 	$O[x, y, 2] = $I[x, y, 2]; // * (1.0f + (g - i));
 }
