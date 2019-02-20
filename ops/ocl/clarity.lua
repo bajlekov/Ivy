@@ -28,9 +28,8 @@ kernel void clarity(global float *I, global float *C, global float *O)
 	float c = $C[x, y, z]*2;
 	float o = $O[x, y, z];
 
-	float v = (i-o)*c + i;
-	float f = v<i ? 0 : 1-i;
-	v = f*v + (1-f)*i;
+	float v = (i-o)*c;
+	v = i + fmax(v, 0.0f)*(1.0f-i); // + fmin(v, 0.0f)*i
 
 	$O[x, y, z] = v;
 }

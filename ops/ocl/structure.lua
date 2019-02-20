@@ -27,9 +27,8 @@ kernel void structure(global float *I, global float *S, global float *O)
 	float s = $S[x, y, 0]*2;
 	float o = $O[x, y, 0];
 
-	float v = (i-o)*s + i;
-	float f = v<i ? i : 1-i;
-	v = f*v + (1-f)*i;
+	float v = (i-o)*s;
+	v = i + fmin(v, 0.0f)*i + fmax(v, 0.0f)*(1-i);
 
 	$O[x, y, 0] = v;
 	$O[x, y, 1] = $I[x, y, 1]*v/i;
