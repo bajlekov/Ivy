@@ -95,10 +95,14 @@ function process:loadSourceString(s)
 	self.kernels = {}
 end
 
-function process:loadSourceFile(f)
-	local f = assert(io.open("ops/ocl/"..f, "rb"))
-	self.source = f:read("*a")
-	f:close()
+function process:loadSourceFile(...)
+	local s = ""
+	for k, v in ipairs({...}) do
+		local f = assert(io.open("ops/ocl/"..v, "rb"))
+		s = s..f:read("*a")
+		f:close()
+	end
+	self.source = s
 	self.kernels = {}
 end
 
