@@ -24,16 +24,15 @@ kernel void structure(global float *I, global float *S, global float *O)
   const int y = get_global_id(1);
 
 	float i = $I[x, y, 0];
-	float s = $S[x, y, 0];
+	float s = $S[x, y, 0]*2;
 	float o = $O[x, y, 0];
 
-	float d = s*2*(i-o);
-
-	float v = i + fmin(d, 0.0f)*i + fmax(d, 0.0f)*(1-i);
+	float v = (i-o)*s;
+	v = i + fmin(v, 0.0f)*i + fmax(v, 0.0f)*(1-i);
 
 	$O[x, y, 0] = v;
-	$O[x, y, 1] = $I[x, y, 1];
-	$O[x, y, 2] = $I[x, y, 2];
+	$O[x, y, 1] = $I[x, y, 1]*v/i;
+	$O[x, y, 2] = $I[x, y, 2]*v/i;
 }
 ]]
 

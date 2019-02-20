@@ -64,7 +64,9 @@ end
 local function getID(buffers, order)
 	local s = ""
 	for k, v in ipairs(order) do
-		s = signature(buffers[v], s)
+		if type(v)~="cdata" then -- skip cdata
+			s = signature(buffers[v], s)
+		end
 	end
 	return s
 end
@@ -95,10 +97,14 @@ function process:loadSourceString(s)
 	self.kernels = {}
 end
 
-function process:loadSourceFile(f)
-	local f = assert(io.open("ops/ocl/"..f, "rb"))
-	self.source = f:read("*a")
-	f:close()
+function process:loadSourceFile(...)
+	local s = ""
+	for k, v in ipairs({...}) do
+		local f = assert(io.open("ops/ocl/"..v, "rb"))
+		s = s..f:read("*a")
+		f:close()
+	end
+	self.source = s
 	self.kernels = {}
 end
 
@@ -166,7 +172,7 @@ local function setArgs(kernel, buffers, order)
 end
 
 -- use uniform workgroup sizes, settings-selectable
-local function enqueueKernel(process, kernelName, size, order)
+local function enqueueKernel(process, kernelName, size)
 	local kernel = getKernel(process, kernelName)
 	if not kernel then return end
 
@@ -187,7 +193,7 @@ local function enqueueKernel(process, kernelName, size, order)
 
 	if onDemandMemory then
 		process.queue:finish()
-		process.markBuffers(process.buffers, order or process.order)
+		process.markBuffers(process.buffers, process.order)
 		process.freeBuffers()
 	end
 
@@ -197,7 +203,7 @@ local function enqueueKernel(process, kernelName, size, order)
 		print("-------")
 	end
 
-	setArgs(kernel, process.buffers, order or process.order)
+	setArgs(kernel, process.buffers, process.order)
 
 	local event = {}
 	event[1] = process.queue:enqueue_ndrange_kernel(kernel, nil, {ox, oy, sz}, workgroup)
@@ -228,11 +234,16 @@ local function enqueueKernel(process, kernelName, size, order)
 end
 
 function process:executeKernel(kernel, size, order)
+	local oldOrder = self.order
+	if order then
+		self.order = order
+	end
 	if kernel then
-		enqueueKernel(self, kernel, size, order)
+		enqueueKernel(self, kernel, size)
 	else
 		error("No kernel supplied")
 	end
+	self.order = oldOrder
 end
 
 function process:saveSource(name)

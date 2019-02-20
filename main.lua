@@ -49,7 +49,7 @@ else
 end
 
 
-assert(love.window.setMode(1280, 720, {resizable = true, vsync = false, minwidth = 1280, minheight = 720, msaa = 4} ))
+assert(love.window.setMode(1280, 720, {resizable = true, vsync = true, minwidth = 1280, minheight = 720, msaa = 4} ))
 love.window.setTitle("ImageFloat 3: Initializing...")
 love.window.setIcon(love.image.newImageData("res/icon.png"))
 
