@@ -497,6 +497,30 @@ function ops.detailEQ(x, y)
 end
 
 
+local function localLaplacianProcess(self)
+	self.procType = "dev"
+	local i = t.inputSourceWhite(self, 0)
+	local d = t.inputParam(self, 1)
+	local s = t.inputParam(self, 2)
+	local h = t.inputParam(self, 3)
+	local r = t.inputParam(self, 4)
+	local o = t.autoOutput(self, 0, i:shape())
+
+	thread.ops.localLaplacian({i, d, s, h, r, o}, self)
+end
+
+function ops.localLaplacian(x, y)
+	local n = node:new("Dynamic Range")
+	n:addPortIn(0, "LAB"):addPortOut(0, "LAB")
+	n:addPortIn(1, "Y"):addElem("float", 1, "Detail", 0, 2, 1)
+	n:addPortIn(2, "Y"):addElem("float", 2, "Shadows", 0, 2, 1)
+	n:addPortIn(3, "Y"):addElem("float", 3, "Highlights", 0, 2, 1)
+	n:addPortIn(4, "Y"):addElem("float", 4, "Range", 0, 1, 0.2)
+	n.process = localLaplacianProcess
+	n:setPos(x, y)
+	return n
+end
+
 
 
 local function histogramProcess(self)
