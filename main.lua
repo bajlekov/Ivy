@@ -269,7 +269,14 @@ local procTime = 0
 
 local reloadDev = true
 local hist
+
+local correctDistortion
+
 function love.update()
+
+	if correctDistortion~=panels.info.elem[13].value then
+		loadInputImage = true
+	end
 
 	-- handle thread messages
 	while messageCh:getCount() > 0 do
@@ -363,8 +370,12 @@ function love.update()
 			pool.crop(imageOffset.data[0], imageOffset.data[1], pipeline.input.imageData.x, pipeline.input.imageData.y)
 
 			--thread.ops.cropCorrectFisheye({originalImage, input.imageData, imageOffset}, OCL and "dev" or "par")
-			thread.ops.cropCorrect({originalImage, pipeline.input.imageData, imageOffset}, "dev")
-			--thread.ops.crop({originalImage, input.imageData, imageOffset}, OCL and "dev" or "par")
+			if panels.info.elem[13].value then
+				thread.ops.cropCorrect({originalImage, pipeline.input.imageData, imageOffset}, "dev")
+			else
+				thread.ops.crop({originalImage, pipeline.input.imageData, imageOffset}, "dev")
+			end
+			correctDistortion = panels.info.elem[13].value
 
 			pipeline.input.imageData.__cpuDirty = true
 			pipeline.input.imageData.__gpuDirty = false
