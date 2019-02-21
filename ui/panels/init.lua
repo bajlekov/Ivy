@@ -48,6 +48,7 @@ info:addElem("text", 9, "Aperture:", "unknown")
 info:addElem("text", 10, "ISO:", "unknown")
 info:addElem("text", 11, "Date:", "unknown")
 info:addElem("text", 12, "Size:", "unknown")
+info:addElem("bool", 13, "Correct Distortion", true)
 
 do
 	local a = toolbox:addElem("bool", 1, "Move image", false)
