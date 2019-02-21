@@ -651,6 +651,7 @@ local function imageSampleCallback(frame, mouse)
 	return imageSampleDragCallback
 end
 
+panels.image.onSpaceAction = imagePanCallback
 panels.toolbox.elem[1].onChange = function(elem) if elem.value then panels.image.onAction = imagePanCallback end end
 panels.toolbox.elem[2].onChange = function(elem) if elem.value then panels.image.onAction = imageSampleCallback end print("color picker") end
 

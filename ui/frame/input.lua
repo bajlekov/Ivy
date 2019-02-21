@@ -24,7 +24,11 @@ function input.press(mouse)
 	mouse.lx, mouse.ly = lx, ly -- set local x, y within frame
 
 	if mouse.button==1 then
-		return true, fr:onAction(mouse)
+		if love.keyboard.isDown("space") and fr.onSpaceAction then
+			return true, fr:onSpaceAction(mouse)
+		else
+			return true, fr:onAction(mouse)
+		end
 	elseif mouse.button==2 then
 		return true, fr:onContext(mouse)
 	end
