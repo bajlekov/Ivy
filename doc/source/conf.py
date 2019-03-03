@@ -20,7 +20,7 @@
 # -- Project information -----------------------------------------------------
 
 project = 'ImageFloat'
-copyright = '2018, Galin Bajlekov'
+copyright = '2019, Galin Bajlekov'
 author = 'Galin Bajlekov'
 
 # The short X.Y version
