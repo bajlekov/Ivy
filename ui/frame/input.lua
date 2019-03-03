@@ -1,12 +1,12 @@
 --[[
-  Copyright (C) 2011-2018 G. Bajlekov
+  Copyright (C) 2011-2019 G. Bajlekov
 
-    ImageFloat is free software: you can redistribute it and/or modify
+    Ivy is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
     the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
 
-    ImageFloat is distributed in the hope that it will be useful,
+    Ivy is distributed in the hope that it will be useful,
     but WITHOUT ANY WARRANTY; without even the implied warranty of
     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
     GNU General Public License for more details.
@@ -24,7 +24,11 @@ function input.press(mouse)
 	mouse.lx, mouse.ly = lx, ly -- set local x, y within frame
 
 	if mouse.button==1 then
-		return true, fr:onAction(mouse)
+		if love.keyboard.isDown("space") and fr.onSpaceAction then
+			return true, fr:onSpaceAction(mouse)
+		else
+			return true, fr:onAction(mouse)
+		end
 	elseif mouse.button==2 then
 		return true, fr:onContext(mouse)
 	end
