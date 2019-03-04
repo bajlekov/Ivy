@@ -145,8 +145,10 @@ local OCL = true
 
 local exifData
 local originalImage
+local RAW_SRGBmatrix
+local RAW_WBmultipliers
 
-local imageOffset = data:new(1, 1, 6)
+local imageOffset = data:new(1, 1, 12)
 local previewImage
 
 local loadInputImage = true
@@ -158,7 +160,10 @@ function love.filedropped(file)
 	collectgarbage("collect")
 	assert(file, "ERROR: File loading failed")
 
-	originalImage = require("io."..settings.imageLoader).read(file):toDevice(true)
+	originalImage, RAW_SRGBmatrix, RAW_WBmultipliers = require("io."..settings.imageLoader).read(file)
+	originalImage:toDevice(true)
+	if RAW_SRGBmatrix then RAW_SRGBmatrix:toDevice(true) end
+	if RAW_WBmultipliers then RAW_WBmultipliers:toDevice(true) end
 
 	love.window.setTitle("Ivy: "..( type(file) == "string" and file or file:getFilename() ))
 	exifData = require("io.exif").read(file)
@@ -202,11 +207,17 @@ function love.filedropped(file)
 
 	imageOffset:set(0, 0, 0, 0) -- x offset
 	imageOffset:set(0, 0, 1, 0) -- y offset
-	imageOffset:set(0, 0, 2, 1) -- scale!!
-	local A, B, C = require("tools.lensfun")(exifData.LensModel or exifData.CameraModelName, exifData.FocalLength)
-	imageOffset:set(0, 0, 3, A) -- distortion correction
-	imageOffset:set(0, 0, 4, B) -- distortion correction
-	imageOffset:set(0, 0, 5, C) -- distortion correction
+	imageOffset:set(0, 0, 2, 1) -- scale
+	local A, B, C, BR, CR, VR, BB, CB, VB = require("tools.lensfun")(exifData.LensModel or exifData.CameraModelName, exifData.FocalLength)
+	imageOffset:set(0, 0, 3, A) -- enable geometric distortion correction
+	imageOffset:set(0, 0, 4, B)
+	imageOffset:set(0, 0, 5, C)
+	imageOffset:set(0, 0, 6, BR or 0) -- enable TCA correction
+	imageOffset:set(0, 0, 7, CR or 0)
+	imageOffset:set(0, 0, 8, VR or 1)
+	imageOffset:set(0, 0, 9, BB or 0)
+	imageOffset:set(0, 0, 10, CB or 0)
+	imageOffset:set(0, 0, 11, VB or 1)
 	imageOffset:toDevice()
 
 	pipeline.input.imageData = originalImage:new()
@@ -270,13 +281,15 @@ local procTime = 0
 local reloadDev = true
 local hist
 
-local correctDistortion
+--local correctDistortion
+panels.info.elem[15].onChange = function() loadInputImage = true end
+panels.info.elem[16].onChange = function() loadInputImage = true end
+panels.info.elem[18].onChange = function() loadInputImage = true end
+panels.info.elem[19].onChange = function() loadInputImage = true end
+
+local flags = data:new(1, 1, 5) -- distortion, tca, vignetting, sRGB, WB
 
 function love.update()
-
-	if correctDistortion~=panels.info.elem[13].value then
-		loadInputImage = true
-	end
 
 	-- handle thread messages
 	while messageCh:getCount() > 0 do
@@ -366,12 +379,22 @@ function love.update()
 			imageOffset:toDevice()
 
 			--thread.ops.cropCorrectFisheye({originalImage, input.imageData, imageOffset}, OCL and "dev" or "par")
-			if panels.info.elem[13].value then
-				thread.ops.cropCorrect({originalImage, pipeline.input.imageData, imageOffset}, "dev")
+
+			if panels.info.elem[15].value or panels.info.elem[16].value then
+				flags:set(0, 0, 0, panels.info.elem[15].value and 1 or 0)
+				flags:set(0, 0, 1, panels.info.elem[16].value and 1 or 0)
+				flags:toDevice()
+				thread.ops.cropCorrect({originalImage, pipeline.input.imageData, imageOffset, flags}, "dev")
 			else
 				thread.ops.crop({originalImage, pipeline.input.imageData, imageOffset}, "dev")
 			end
-			correctDistortion = panels.info.elem[13].value
+
+			if RAW_SRGBmatrix and RAW_WBmultipliers  then
+				flags:set(0, 0, 3, panels.info.elem[18].value and 0 or 1)
+				flags:set(0, 0, 4, panels.info.elem[19].value and 1 or 0)
+				flags:toDevice()
+				thread.ops.RAWtoSRGB({pipeline.input.imageData, RAW_SRGBmatrix, RAW_WBmultipliers, flags}, "dev")
+			end
 
 			pipeline.input.imageData.__cpuDirty = true
 			pipeline.input.imageData.__gpuDirty = false

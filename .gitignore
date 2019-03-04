@@ -3,6 +3,7 @@
 /process\.lua
 
 lib/dcraw/Windows/dcraw\.exe
+lib/libraw/Windows/libraw\.dll
 
 lib/exiftool/Windows/exiftool\.exe
 

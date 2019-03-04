@@ -16,73 +16,109 @@
 ]]
 
 local ffi = require "ffi"
-local ppm = require "io.ppm"
+local data = require "data"
 
 local raw = {}
 
+local libraw = ffi.load("lib/libraw/Windows/libraw.dll")
+
+do
+	local f = io.open("lib/libraw/Windows/libraw.h", "r")
+	ffi.cdef(f:read("*all"))
+	f:close()
+end
+
 function raw.read(name)
+	local rawData = libraw.libraw_init(0);
 	if type(name) ~= "string" then
 		name = name:getFilename()
 	end
+	assert(libraw.libraw_open_file(rawData, name)==0)
 
-	local raw = false
+	libraw.libraw_set_output_bps(rawData, 16) -- 16-bit output
+	libraw.libraw_set_output_color(rawData, 0) -- RAW color space
+	libraw.libraw_set_demosaic(rawData, 11) -- DHT interpolation
 
-	local op
-	if not raw then
-		op = "-h -o 1 -6 -g 1 1 -w -W" -- TODO: -w for camera white balance, -W to preserve original brightness
-	else
-		op = "-h -E -4"
+	libraw.libraw_set_gamma(rawData, 0, 1) -- no gamma correction
+	libraw.libraw_set_gamma(rawData, 1, 1)
+
+	libraw.libraw_set_no_auto_bright(rawData, 1)
+
+	libraw.libraw_unpack(rawData)
+
+	libraw.libraw_dcraw_process(rawData)
+
+	local img = libraw.libraw_dcraw_make_mem_image(rawData, NULL)
+	local w = img.width
+	local h = img.height
+
+	local M = ffi.new("float[3][4]") -- RAW to sRGB matrix
+	for i = 0, 2 do
+		for j = 0, 3 do
+			M[i][j] = rawData.color.rgb_cam[i][j]
+		end
 	end
 
+	local W = ffi.new("float[3]", {
+		rawData.color.cam_mul[0] / rawData.color.pre_mul[0],
+		rawData.color.cam_mul[1] / rawData.color.pre_mul[1],
+		rawData.color.cam_mul[2] / rawData.color.pre_mul[2],
+	}) -- WB coefficients in RAW space
+	do
+		local W_min = math.min(
+			W[0]*M[0][0] + W[1]*M[0][1] + W[2]*M[0][2],
+			W[0]*M[1][0] + W[1]*M[1][1] + W[2]*M[1][2],
+			W[0]*M[2][0] + W[1]*M[2][1] + W[2]*M[2][2]
+		)
+		W[0] = W[0]/W_min
+		W[1] = W[1]/W_min
+		W[2] = W[2]/W_min
+	end
+	print(W[0], W[1], W[2])
 
-	--[[
-	-v        Print verbose messages
-	-c        Write image data to standard output
-	-e        Extract embedded thumbnail image
-	-i        Identify files without decoding them
-	-i -v     Identify files and show metadata
-	-z        Change file dates to camera timestamp
-	-w        Use camera white balance, if possible
-	-a        Average the whole image for white balance
-	-A <x y w h> Average a grey box for white balance
-	-r <r g b g> Set custom white balance
-	+M/-M     Use/don't use an embedded color matrix
-	-C <r b>  Correct chromatic aberration
-	-P <file> Fix the dead pixels listed in this file
-	-K <file> Subtract dark frame (16-bit raw PGM)
-	-k <num>  Set the darkness level
-	-S <num>  Set the saturation level
-	-n <num>  Set threshold for wavelet denoising
-	-H [0-9]  Highlight mode (0=clip, 1=unclip, 2=blend, 3+=rebuild)
-	-t [0-7]  Flip image (0=none, 3=180, 5=90CCW, 6=90CW)
-	-o [0-6]  Output colorspace (raw,sRGB,Adobe,Wide,ProPhoto,XYZ,ACES)
-	-d        Document mode (no color, no interpolation)
-	-D        Document mode without scaling (totally raw)
-	-j        Don't stretch or rotate raw pixels
-	-W        Don't automatically brighten the image
-	-b <num>  Adjust brightness (default = 1.0)
-	-g <p ts> Set custom gamma curve (default = 2.222 4.5)
-	-q [0-3]  Set the interpolation quality
-	-h        Half-size color image (twice as fast as "-q 0")
-	-f        Interpolate RGGB as four colors
-	-m <num>  Apply a 3x3 median filter to R-G and B-G
-	-s [0..N-1] Select one raw image or "all" from each file
-	-6        Write 16-bit instead of 8-bit
-	-4        Linear 16-bit, same as "-6 -W -g 1 1"
-	-T        Write TIFF instead of PPM
-	--]]
-	local file
-	if ffi.os == "Windows" then
-		file = io.popen("lib\\dcraw\\Windows\\dcraw -c "..op.." \""..name.."\"", "r"..(ffi.os == "Windows" and "b" or ""))
-	elseif ffi.os == "Linux" then
-		file = io.popen("dcraw -c "..op.." \""..name.."\"", "r"..(ffi.os == "Windows" and "b" or ""))
+	local buffer = data:new(w, h, 3)
+
+	local WB = false
+	local sRGB = false
+
+	for x = 0, w-1 do
+		for y = 0, h-1 do
+			local ri = (img.data[((x+y*w)*3 + 0)*2] + img.data[((x+y*w)*3 + 0)*2 + 1]*256)/65535
+			local gi = (img.data[((x+y*w)*3 + 1)*2] + img.data[((x+y*w)*3 + 1)*2 + 1]*256)/65535
+			local bi = (img.data[((x+y*w)*3 + 2)*2] + img.data[((x+y*w)*3 + 2)*2 + 1]*256)/65535
+
+			if WB then
+				ri = ri * W[0]
+				gi = gi * W[1]
+				bi = bi * W[2]
+			end
+
+			local ro = ri
+			local go = gi
+			local bo = bi
+			if sRGB then
+				ro = ri*M[0][0] + gi*M[0][1] + bi*M[0][2]
+				go = ri*M[1][0] + gi*M[1][1] + bi*M[1][2]
+				bo = ri*M[2][0] + gi*M[2][1] + bi*M[2][2]
+			end
+
+			buffer:set(x, h-y-1, 0, ro)
+			buffer:set(x, h-y-1, 1, go)
+			buffer:set(x, h-y-1, 2, bo)
+		end
 	end
 
-	if not raw then
-		return ppm.readStream(file, true, 2^16)
-	else
-		return ppm.readStream(file, true, 4096)
+	local SRGBmatrix = data:new(3, 4, 1)
+	local WBmultipliers = data:new(1, 1, 3)
+
+	for i = 0, 2 do
+		WBmultipliers:set(0, 0, i, W[i])
+		for j = 0, 3 do
+			SRGBmatrix:set(i, j, 0, M[i][j])
+		end
 	end
+
+	return buffer, SRGBmatrix, WBmultipliers
 end
 
 return raw

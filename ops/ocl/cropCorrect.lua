@@ -18,8 +18,16 @@
 local proc = require "lib.opencl.process".new()
 
 local source = [[
-inline float rd(float ru, float A, float B, float C) {
-  return A*ru*ru*ru*ru + B*ru*ru*ru + C*ru*ru + (1-A-B-C)*ru;
+inline float rd(float ru,
+								float A,
+								float B,
+								float C,
+								float BR,
+								float CR,
+								float VR
+							) {
+  ru = ru*(A*ru*ru*ru + B*ru*ru + C*ru + (1-A-B-C));
+	return ru*(BR*ru*ru + CR*ru + VR);
 }
 
 inline float filterLinear(float y0, float y1, float x) {
@@ -35,7 +43,7 @@ inline float filterCubic(float y0, float y1, float y2, float y3, float x) {
   return a*x*x*x + b*x*x + c*x + d;
 }
 
-kernel void cropCorrect(global float *p1, global float *p2, global float *offset)
+kernel void cropCorrect(global float *I, global float *O, global float *offset, global float *flags)
 {
   const int x = get_global_id(0);
   const int y = get_global_id(1);
@@ -45,12 +53,36 @@ kernel void cropCorrect(global float *p1, global float *p2, global float *offset
   float oy = round(offset[1]);
   float s = offset[2];
 
-  float A = offset[3];
-  float B = offset[4];
-  float C = offset[5];
+	float A, B, C;
+	if (flags[0]>0.5f) {
+  	A = offset[3];
+  	B = offset[4];
+  	C = offset[5];
+	} else {
+		A = 0.0f;
+  	B = 0.0f;
+  	C = 0.0f;
+	}
 
-  float x_2 = $p1.x$/2.0;
-  float y_2 = $p1.y$/2.0;
+	float BR, CR, VR;
+	if (flags[1]>0.5f) {
+		if (z==0) {
+			BR = offset[6];
+			CR = offset[7];
+			VR = offset[8];
+		} else if (z==2) {
+			BR = offset[9];
+			CR = offset[10];
+			VR = offset[11];
+		}
+	} else {
+		BR = 0.0f;
+		CR = 0.0f;
+		VR = 1.0f;
+	}
+
+  float x_2 = $I.x$ * 0.5f;
+  float y_2 = $I.y$ * 0.5f;
   float fn_1 = min(x_2, y_2);
   float fn = 1.0/fn_1;
 
@@ -62,7 +94,7 @@ kernel void cropCorrect(global float *p1, global float *p2, global float *offset
 
   float r = sqrt(cxn*cxn + cyn*cyn);
 
-  float sd = rd(r, A, B, C)/(r+1.0e-12);
+  float sd = rd(r, A, B, C, BR, CR, VR)/(r + 1.0e-15);
   cx = sd*cxn*fn_1 + x_2;
   cy = sd*cyn*fn_1 + y_2;
 
@@ -77,24 +109,24 @@ kernel void cropCorrect(global float *p1, global float *p2, global float *offset
   float v20, v21, v22, v23;
   float v30, v31, v32, v33;
 
-  v00 = $p1[xm-1, ym-1, z];
-  v01 = $p1[xm-1, ym  , z];
-  v02 = $p1[xm-1, ym+1, z];
-  v03 = $p1[xm-1, ym+2, z];
-  v10 = $p1[xm  , ym-1, z];
-  v11 = $p1[xm  , ym  , z];
-  v12 = $p1[xm  , ym+1, z];
-  v13 = $p1[xm  , ym+2, z];
-  v20 = $p1[xm+1, ym-1, z];
-  v21 = $p1[xm+1, ym  , z];
-  v22 = $p1[xm+1, ym+1, z];
-  v23 = $p1[xm+1, ym+2, z];
-  v30 = $p1[xm+2, ym-1, z];
-  v31 = $p1[xm+2, ym  , z];
-  v32 = $p1[xm+2, ym+1, z];
-  v33 = $p1[xm+2, ym+2, z];
+  v00 = $I[xm-1, ym-1, z];
+  v01 = $I[xm-1, ym  , z];
+  v02 = $I[xm-1, ym+1, z];
+  v03 = $I[xm-1, ym+2, z];
+  v10 = $I[xm  , ym-1, z];
+  v11 = $I[xm  , ym  , z];
+  v12 = $I[xm  , ym+1, z];
+  v13 = $I[xm  , ym+2, z];
+  v20 = $I[xm+1, ym-1, z];
+  v21 = $I[xm+1, ym  , z];
+  v22 = $I[xm+1, ym+1, z];
+  v23 = $I[xm+1, ym+2, z];
+  v30 = $I[xm+2, ym-1, z];
+  v31 = $I[xm+2, ym  , z];
+  v32 = $I[xm+2, ym+1, z];
+  v33 = $I[xm+2, ym+2, z];
 
-  $p2[x, y, z] = filterCubic(
+  $O[x, y, z] = filterCubic(
     filterCubic(v00, v01, v02, v03, yf),
     filterCubic(v10, v11, v12, v13, yf),
     filterCubic(v20, v21, v22, v23, yf),
@@ -110,12 +142,12 @@ kernel void cropCorrect(global float *p1, global float *p2, global float *offset
 
   float v00, v01, v10, v11;
 
-  v00 = $p1[xm  , ym  , z];
-  v01 = $p1[xm  , ym+1, z];
-  v10 = $p1[xm+1, ym  , z];
-  v11 = $p1[xm+1, ym+1, z];
+  v00 = $I[xm  , ym  , z];
+  v01 = $I[xm  , ym+1, z];
+  v10 = $I[xm+1, ym  , z];
+  v11 = $I[xm+1, ym+1, z];
 
-  $p2[x, y, z] = filterLinear(
+  $O[x, y, z] = filterLinear(
     filterLinear(v00, v01, yf),
     filterLinear(v10, v11, yf),
     xf);
@@ -123,14 +155,14 @@ kernel void cropCorrect(global float *p1, global float *p2, global float *offset
 
   /*
   // nearest neighbor filtering
-  $p2[x, y, z] = $p1[(int)(cx), (int)(cy), z];
+  $O[x, y, z] = $I[(int)(cx), (int)(cy), z];
   */
 }
 ]]
 
 local function execute()
-	proc:getAllBuffers("p1", "p2", "offset")
-	proc:executeKernel("cropCorrect", proc:size3D("p2"))
+	proc:getAllBuffers("I", "O", "offset", "flags")
+	proc:executeKernel("cropCorrect", proc:size3D("O"))
 end
 
 local function init(d, c, q)
