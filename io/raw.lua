@@ -65,7 +65,11 @@ function raw.read(name)
 		rawData.color.cam_mul[2] / rawData.color.pre_mul[2],
 	}) -- WB coefficients in RAW space
 	do
-		local W_min = math.min(W[0], W[1], W[2])
+		local W_min = math.min(
+			W[0]*M[0][0] + W[1]*M[0][1] + W[2]*M[0][2],
+			W[0]*M[1][0] + W[1]*M[1][1] + W[2]*M[1][2],
+			W[0]*M[2][0] + W[1]*M[2][1] + W[2]*M[2][2]
+		)
 		W[0] = W[0]/W_min
 		W[1] = W[1]/W_min
 		W[2] = W[2]/W_min
