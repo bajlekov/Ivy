@@ -75,7 +75,7 @@ function raw.read(name)
 	local buffer = data:new(w, h, 3)
 
 	local WB = false
-	local sRGB = true
+	local sRGB = false
 
 	for x = 0, w-1 do
 		for y = 0, h-1 do
@@ -104,7 +104,17 @@ function raw.read(name)
 		end
 	end
 
-	return buffer
+	local SRGBmatrix = data:new(3, 4, 1)
+	local WBmultipliers = data:new(1, 1, 3)
+
+	for i = 0, 2 do
+		WBmultipliers:set(0, 0, i, W[i])
+		for j = 0, 3 do
+			SRGBmatrix:set(i, j, 0, M[i][j])
+		end
+	end
+
+	return buffer, SRGBmatrix, WBmultipliers
 end
 
 return raw

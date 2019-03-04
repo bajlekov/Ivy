@@ -145,6 +145,8 @@ local OCL = true
 
 local exifData
 local originalImage
+local RAW_SRGBmatrix
+local RAW_WBmultipliers
 
 local imageOffset = data:new(1, 1, 6)
 local previewImage
@@ -158,7 +160,10 @@ function love.filedropped(file)
 	collectgarbage("collect")
 	assert(file, "ERROR: File loading failed")
 
-	originalImage = require("io."..settings.imageLoader).read(file):toDevice(true)
+	originalImage, RAW_SRGBmatrix, RAW_WBmultipliers = require("io."..settings.imageLoader).read(file)
+	originalImage:toDevice(true)
+	if RAW_SRGBmatrix then RAW_SRGBmatrix:toDevice(true) end
+	if RAW_WBmultipliers then RAW_WBmultipliers:toDevice(true) end
 
 	love.window.setTitle("Ivy: "..( type(file) == "string" and file or file:getFilename() ))
 	exifData = require("io.exif").read(file)
@@ -372,6 +377,10 @@ function love.update()
 				thread.ops.crop({originalImage, pipeline.input.imageData, imageOffset}, "dev")
 			end
 			correctDistortion = panels.info.elem[13].value
+
+			if RAW_SRGBmatrix and RAW_WBmultipliers then
+				thread.ops.RAWtoSRGB({pipeline.input.imageData, RAW_SRGBmatrix, RAW_WBmultipliers}, "dev")
+			end
 
 			pipeline.input.imageData.__cpuDirty = true
 			pipeline.input.imageData.__gpuDirty = false
