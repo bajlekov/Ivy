@@ -18,27 +18,35 @@
 local proc = require "lib.opencl.process".new()
 
 local source = [[
-kernel void convert(global float *I, global float *M, global float *W)
+kernel void convert(global float *I, global float *M, global float *W, global float *flags)
 {
 	const int x = get_global_id(0);
 	const int y = get_global_id(1);
 
-	float ri = $I[x, y, 0] * $W[0, 0, 0];
-	float gi = $I[x, y, 1] * $W[0, 0, 1];
-	float bi = $I[x, y, 2] * $W[0, 0, 2];
+	float ri = $I[x, y, 0];
+	float gi = $I[x, y, 1];
+	float bi = $I[x, y, 2];
 
-	float ro = ri*$M[0, 0, 0] + gi*$M[0, 1, 0] + bi*$M[0, 2, 0];
-	float go = ri*$M[1, 0, 0] + gi*$M[1, 1, 0] + bi*$M[1, 2, 0];
-	float bo = ri*$M[2, 0, 0] + gi*$M[2, 1, 0] + bi*$M[2, 2, 0];
+	if (flags[4]>0.5f) {
+		ri = ri * $W[0, 0, 0];
+		gi = gi * $W[0, 0, 1];
+		bi = bi * $W[0, 0, 2];
+	}
 
-  $I[x, y, 0] = ro;
-	$I[x, y, 1] = go;
-	$I[x, y, 2] = bo;
+	if (flags[3]>0.5f) {
+		$I[x, y, 0] = ri*$M[0, 0, 0] + gi*$M[0, 1, 0] + bi*$M[0, 2, 0];
+		$I[x, y, 1] = ri*$M[1, 0, 0] + gi*$M[1, 1, 0] + bi*$M[1, 2, 0];
+		$I[x, y, 2] = ri*$M[2, 0, 0] + gi*$M[2, 1, 0] + bi*$M[2, 2, 0];
+	} else {
+		$I[x, y, 0] = ri;
+		$I[x, y, 1] = gi;
+		$I[x, y, 2] = bi;
+	}
 }
 ]]
 
 local function execute()
-	proc:getAllBuffers("I", "M", "W")
+	proc:getAllBuffers("I", "M", "W", "flags")
 	proc.buffers.M.__write = false
 	proc.buffers.W.__write = false
 	proc:executeKernel("convert", proc:size2D("I"))

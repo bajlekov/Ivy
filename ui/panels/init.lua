@@ -48,7 +48,14 @@ info:addElem("text", 9, "Aperture:", "unknown")
 info:addElem("text", 10, "ISO:", "unknown")
 info:addElem("text", 11, "Date:", "unknown")
 info:addElem("text", 12, "Size:", "unknown")
-info:addElem("bool", 13, "Correct Distortion", true)
+
+-- TODO: save parameters
+info:addElem("label", 14, "RAW conversion parameters")
+info:addElem("bool", 15, "Geometric distortion correction", true)
+info:addElem("bool", 16, "Chromatic aberration correction", true)
+info:addElem("text", 17, "[NYI] Vignetting correction")
+info:addElem("bool", 18, "RAW color space", false)
+info:addElem("bool", 19, "Camera WB", false)
 
 do
 	local a = toolbox:addElem("bool", 1, "Move image", false)
