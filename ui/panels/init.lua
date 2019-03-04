@@ -84,19 +84,18 @@ setmetatable(imageSample.exclusive, {__mode = "v"}) -- important to not anchor t
 
 
 -- TODO: move to menu
-menu:addElem("label", 1, "Ivy")
 local fileMenu = Overlay:new()
 fileMenu.w = 201
-menu:addElem("dropdown", 2, "File", fileMenu)
+menu:addElem("dropdown", 1, "File", fileMenu)
 local processMenu = Overlay:new()
 processMenu.w = 201
-menu:addElem("dropdown", 3, "Process", processMenu)
+menu:addElem("dropdown", 2, "Process", processMenu)
 local settingsMenu = Overlay:new()
 settingsMenu.w = 201
-menu:addElem("dropdown", 4, "Settings", settingsMenu)
+menu:addElem("dropdown", 3, "Settings", settingsMenu)
 local helpMenu = Overlay:new()
 helpMenu.w = 201
-menu:addElem("dropdown", 5, "Help", helpMenu)
+menu:addElem("dropdown", 4, "Help", helpMenu)
 
 fileMenu:addElem("button", 1, "Load Image...", function()
 	local file = require "lib.zenity".fileOpen({
