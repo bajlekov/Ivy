@@ -257,6 +257,41 @@ function draw.histogram(graph, x, y, w, h)
 	end
 end
 
+function draw.waveform(graph, x, y, w, h)
+	love.graphics.setColor(style.gray3)
+	love.graphics.rectangle("fill", x, y, w, h, 3, 3)
+
+	local waveform = graph.parent.data.waveform
+
+	local x = x + 2.5
+	local y = y + 2.5
+	local w = w - 5
+	local h = h - 5
+
+	local f = 2048*graph.parent.elem[2].value/graph.parent.portIn[0].link.data.y/graph.parent.portIn[0].link.data.y
+	local l = graph.parent.elem[1].value
+
+	for i = 0, w-1 do
+		for j = 0, h-1 do
+			local r, g, b
+			r = waveform:get_u32(i, j, l and 3 or 0)*f
+			g = waveform:get_u32(i, j, l and 3 or 1)*f
+			b = waveform:get_u32(i, j, l and 3 or 2)*f
+			love.graphics.setColor(r, g, b, 1)
+			love.graphics.points(x+i, y+h-j-1)
+		end
+	end
+
+	love.graphics.setLineWidth(0.7)
+	love.graphics.setLineJoin("none")
+	love.graphics.setColor(style.gray5)
+	love.graphics.rectangle("line", x, y, w, h)
+
+	love.graphics.line(x + 2.5, y + math.round((h) * 0.25), x + w - 2.5, y + math.round((h) * 0.25))
+	love.graphics.line(x + 2.5, y + math.round((h) * 0.50), x + w - 2.5, y + math.round((h) * 0.50))
+	love.graphics.line(x + 2.5, y + math.round((h) * 0.75), x + w - 2.5, y + math.round((h) * 0.75))
+end
+
 function draw.preview(graph, x, y, w, h)
 	love.graphics.setColor(1, 1, 1, 1)
 	graph.parent.data.preview:refresh()

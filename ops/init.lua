@@ -550,6 +550,26 @@ function ops.histogram(x, y)
 	return n
 end
 
+local function waveformProcess(self)
+	self.proc = "dev"
+	local i = t.inputSourceBlack(self, 0)
+	local w = self.data.waveform -- pre-allocated
+	thread.ops.waveform({i, w}, self)
+end
+
+function ops.waveform(x, y)
+	local n = node:new("Waveform")
+	n:addPortIn(0, "ANY")
+	n:addElem("bool", 1, "Luminance", false)
+	n:addElem("float", 2, "Scale", 0, 3, 1)
+
+	n.process = waveformProcess
+	n.data.waveform = data:new(150, 100, 4):allocHost()
+	require "ui.graph".waveform(n)
+	n.compute = true
+	n:setPos(x, y)
+	return n
+end
 
 local function histEQProcess(self)
 	self.procType = "dev"

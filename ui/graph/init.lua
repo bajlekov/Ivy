@@ -127,6 +127,11 @@ function graph.colorwheel(node)
 	graph.y = 0
 end
 
+function graph.waveform(node)
+	local graph = graph.new(node, 150, 100)
+	graph.type = "waveform"
+end
+
 function graph.colorwheelTriplet(node)
 	local graph = graph.new(node, 300, 100)
 	graph.type = "colorwheelTriplet"
