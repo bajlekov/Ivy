@@ -37,12 +37,12 @@ kernel void waveform(global float *I, global uint *W) {
 
 	float3 v = $I[x, y]SRGB;
 
-  uchar r = (uchar)round(clamp(v.x, 0.0f, 1.0f)*99.0f);
-  uchar g = (uchar)round(clamp(v.y, 0.0f, 1.0f)*99.0f);
-  uchar b = (uchar)round(clamp(v.z, 0.0f, 1.0f)*99.0f);
-  uchar l = (uchar)round(clamp($I[x, y]L, 0.0f, 1.0f)*99.0f);
+  uchar r = (uchar)round(clamp(v.x, 0.0f, 1.0f)*94.0f);
+  uchar g = (uchar)round(clamp(v.y, 0.0f, 1.0f)*94.0f);
+  uchar b = (uchar)round(clamp(v.z, 0.0f, 1.0f)*94.0f);
+  uchar l = (uchar)round(clamp($I[x, y]L, 0.0f, 1.0f)*94.0f);
 
-	uint xf = (x*149)/$I.x$;
+	uint xf = clamp((x*145)/$I.x$, 0, 144);
 
 	atomic_inc(W + 0*$W.sz$ + r*$W.sy$ + xf*$W.sx$);
 	atomic_inc(W + 1*$W.sz$ + g*$W.sy$ + xf*$W.sx$);
@@ -58,7 +58,7 @@ local previewY
 local function execute()
 	proc:getAllBuffers("I", "W")
 
-	proc:executeKernel("clearWaveform", {150, 100}, {"W"})
+	proc:executeKernel("clearWaveform", proc:size2D("W"), {"W"})
 	proc:executeKernel("waveform", proc:size2D("I"))
 
 	local event3 = proc.queue:enqueue_read_buffer(proc.buffers.W.dataOCL, true, proc.buffers.W.data)

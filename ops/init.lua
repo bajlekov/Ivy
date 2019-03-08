@@ -564,7 +564,7 @@ function ops.waveform(x, y)
 	n:addElem("float", 2, "Scale", 0, 3, 1)
 
 	n.process = waveformProcess
-	n.data.waveform = data:new(150, 100, 4):allocHost()
+	n.data.waveform = data:new(145, 95, 4):allocHost()
 	require "ui.graph".waveform(n)
 	n.compute = true
 	n:setPos(x, y)
