@@ -560,7 +560,7 @@ end
 function ops.waveform(x, y)
 	local n = node:new("Waveform")
 	n:addPortIn(0, "ANY")
-	n:addElem("bool", 1, "Luminance", false)
+	n:addElem("bool", 1, "Lightness", false)
 	n:addElem("float", 2, "Scale", 0, 3, 1)
 
 	n.process = waveformProcess
@@ -792,7 +792,7 @@ function ops.vibrance(x, y)
 	local n = node:new("Vibrance")
 	n:addPortIn(0, "LCH")
 	n:addPortIn(1, "Y"):addElem("float", 1, "Vibrance", - 1, 1, 0)
-	n:addElem("bool", 2, "Adjust luminance", true)
+	n:addElem("bool", 2, "Adjust lightness", true)
 	n:addPortOut(0, "LCH")
 	n.process = vibranceProcess
 	n:setPos(x, y)
