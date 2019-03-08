@@ -128,7 +128,7 @@ function graph.colorwheel(node)
 end
 
 function graph.waveform(node)
-	local graph = graph.new(node, 150, 100)
+	local graph = graph.new(node, 150, 150)
 	graph.type = "waveform"
 end
 
