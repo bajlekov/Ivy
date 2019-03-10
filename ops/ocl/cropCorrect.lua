@@ -74,6 +74,10 @@ kernel void cropCorrect(global float *I, global float *O, global float *offset, 
 			BR = offset[9];
 			CR = offset[10];
 			VR = offset[11];
+		} else {
+			BR = 0.0f;
+			CR = 0.0f;
+			VR = 1.0f;
 		}
 	} else {
 		BR = 0.0f;
