@@ -770,7 +770,7 @@ end
 function ops.exposure(x, y)
 	local n = node:new("Exposure")
 	n:addPortIn(0, "Y__")
-	n:addPortIn(1, "Y"):addElem("float", 1, "Exposure", - 3, 3, 0)
+	n:addPortIn(1, "Y"):addElem("float", 1, "Exposure", -3.3333, 3.3333, 0)
 	n:addPortOut(0)
 	n.process = exposureProcess
 	n:setPos(x, y)
