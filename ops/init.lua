@@ -574,6 +574,30 @@ function ops.waveform(x, y)
 	return n
 end
 
+local function ABplotProcess(self)
+	self.proc = "dev"
+	local i = t.inputSourceBlack(self, 0)
+	local w = self.data.plot -- pre-allocated
+	local s = t.plainParam(self, 2)
+	local clip = t.plainParam(self, 1)
+	thread.ops.ABplot({i, w, s, clip}, self)
+end
+
+function ops.ABplot(x, y)
+	local n = node:new("AB Plot")
+	n:addPortIn(0, "ANY")
+	n:addElem("bool", 1, "Clip to sRGB", true)
+	n:addElem("float", 2, "Scale", 0, 3, 1)
+
+	n.process = ABplotProcess
+	n.data.plot = require "ui.image":new(145, 145)
+	require "ui.graph".plot(n)
+	n.graph.grid.cross = true
+	n.compute = true
+	n:setPos(x, y)
+	return n
+end
+
 local function histEQProcess(self)
 	self.procType = "dev"
 	local i = t.inputSourceBlack(self, 0)
