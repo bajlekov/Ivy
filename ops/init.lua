@@ -510,7 +510,7 @@ local function localLaplacianProcess(self)
 end
 
 function ops.localLaplacian(x, y)
-	local n = node:new("Dynamic Range")
+	local n = node:new("Detail")
 	n:addPortIn(0, "LAB"):addPortOut(0, "LAB")
 	n:addPortIn(1, "Y"):addElem("float", 1, "Detail", 0, 2, 1)
 	n:addPortIn(2, "Y"):addElem("float", 2, "Shadows", 0, 2, 1)

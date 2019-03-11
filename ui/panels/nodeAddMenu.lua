@@ -99,7 +99,7 @@ overlayLiveAdjust:addElem("addNode", 9, "Adjust H(H)", {ops, "adjustHH"})
 
 
 local overlayEnhance = Overlay:new("Enhance:")
-overlayEnhance:addElem("addNode", 1, "Dynamic Range", {ops, "localLaplacian"})
+overlayEnhance:addElem("addNode", 1, "Detail", {ops, "localLaplacian"})
 overlayEnhance:addElem("addNode", 2, "Sharpen", {ops, "sharpen"})
 overlayEnhance:addElem("addNode", 3, "Denoise", {ops, "nlmeans"})
 overlayEnhance:addElem("addNode", 4, "Detail EQ", {ops, "detailEQ"})
