@@ -18,20 +18,27 @@
 local style = require("ui.style")
 
 local drawElem = require("ui.elem.draw")
+local event = require "ui.node.event"
 
 local function draw(self, element)
-	local x, y = self.ui.x, self.ui.y
-
 	local nodeWidth = self.w or style.nodeWidth
+	local nodeHeight = style.titleHeight + style.elemHeight * self.elem.n - (self.elem.n == 0 and style.nodeBorder or style.elemBorder)
 
-	if element == "link in" then
-		for i = 0, self.elem.n do
-			if self.portIn[i] and self.portIn[i].link then
-				self.portIn[i].link:draw()
-			end
+	do
+		local x, y = self.ui.x, self.ui.y
+		local w = love.graphics.getWidth()
+		local h = love.graphics.getHeight()
+
+		if x > w - nodeWidth - 3 then x = w - nodeWidth - 3 end
+		if y > h - nodeHeight - 3 then y = h - nodeHeight - 3 end
+		if x < 3 then x = 3 end
+		if y < 3 then y = 3 end
+
+		if self.ui.x~=x or self.ui.y~=y then
+			self:setPos(x, y)
 		end
-		return
 	end
+
 	if element == "link out" then
 		for i = 0, self.elem.n do
 			if self.portOut[i] and self.portOut[i].link then
@@ -41,7 +48,7 @@ local function draw(self, element)
 		return
 	end
 
-	local nodeHeight = style.titleHeight + style.elemHeight * self.elem.n - (self.elem.n == 0 and style.nodeBorder or style.elemBorder)
+	local x, y = self.ui.x, self.ui.y
 
 	if self.graph then
 		nodeHeight = nodeHeight + self.graph.h + style.nodeBorder
