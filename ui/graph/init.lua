@@ -127,9 +127,15 @@ function graph.colorwheel(node)
 	graph.y = 0
 end
 
-function graph.waveform(node)
+function graph.plot(node)
 	local graph = graph.new(node, 150, 150)
-	graph.type = "waveform"
+	graph.type = "plot"
+	graph.grid = {
+		horizontal = false,
+		vertical = false,
+		cross = false,
+		polar = false,
+	}
 end
 
 function graph.colorwheelTriplet(node)

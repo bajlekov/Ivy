@@ -553,7 +553,7 @@ end
 local function waveformProcess(self)
 	self.proc = "dev"
 	local i = t.inputSourceBlack(self, 0)
-	local w = self.data.waveform -- pre-allocated
+	local w = self.data.plot -- pre-allocated
 	local s = t.plainParam(self, 2)
 	local l = t.plainParam(self, 1)
 	thread.ops.waveform({i, w, s, l}, self)
@@ -566,8 +566,9 @@ function ops.waveform(x, y)
 	n:addElem("float", 2, "Scale", 0, 3, 1)
 
 	n.process = waveformProcess
-	n.data.waveform = require "ui.image":new(145, 145)
-	require "ui.graph".waveform(n)
+	n.data.plot = require "ui.image":new(146, 146)
+	require "ui.graph".plot(n)
+	n.graph.grid.horizontal = true
 	n.compute = true
 	n:setPos(x, y)
 	return n

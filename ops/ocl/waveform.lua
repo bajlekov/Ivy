@@ -35,7 +35,7 @@ kernel void waveform(global float *I, global uint *C, global float *L) {
   const int x = get_global_id(0);
   const int y = get_global_id(1);
 
-	uint xf = clamp((x*($C.x$-1))/$I.x$, 0, ($C.x$-1));
+	uint xf = clamp((x*$C.x$)/$I.x$, 0, ($C.x$-1));
 
 	if (L[0]>0.5f) {
 		float v = $I[x, y]L;
