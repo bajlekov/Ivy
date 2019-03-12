@@ -9,7 +9,7 @@ Documentation
 -------------
 _Work in progress_
 
-[https://ivy.readthedocs.io/en/latest/](https://ivy.readthedocs.io/en/latest/)
+[https://ivy-image-processor.readthedocs.io/en/latest/](https://ivy-image-processor.readthedocs.io/en/latest/)
 
 Releases
 --------
