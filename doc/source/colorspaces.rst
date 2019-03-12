@@ -1,10 +1,10 @@
 Color Spaces
 ============
 
-ImageFloat processes image data which stores color information in a 2-dimensional spatial grid. Color, as characterized by human visual perception, can be mapped to a 3-dimensional space defined by the 3 distinct response spectra of the cone cell photoreceptors in the human eye. These are defined as S (420nm–440nm), M (530nm-540nm), and L (560nm-580nm) corresponding to the peak wavelength they are sensitive to. However, the mapping of color to this LMS space is not always intuitive. Therefor several other color spaces have been defined which more closely match physical or perceptual concepts of light. Transformation between common color spaces are lossless, as they map the same 3-dimensional space.
+Ivy processes image data which stores color information in a 2-dimensional spatial grid. Color, as characterized by human visual perception, can be mapped to a 3-dimensional space defined by the 3 distinct response spectra of the cone cell photoreceptors in the human eye. These are defined as S (420nm–440nm), M (530nm-540nm), and L (560nm-580nm) corresponding to the peak wavelength they are sensitive to. However, the mapping of color to this LMS space is not always intuitive. Therefor several other color spaces have been defined which more closely match physical or perceptual concepts of light. Transformation between common color spaces are lossless, as they map the same 3-dimensional space.
 
 .. note::
-	For capturing and displaying purposes, the color space components are limited to a defined range (gamut). Within ImageFloat, this restriction is only applied when strictly necessary. The processing pipeline preserves out of gamut colors until export to file or display.
+	For capturing and displaying purposes, the color space components are limited to a defined range (gamut). Within Ivy, this restriction is only applied when strictly necessary. The processing pipeline preserves out of gamut colors until export to file or display.
 
 .. note::
 	These color spaces do not capture spectrum of visible light in full detail. There is a loss of information when capturing light as a tristimulus color, whether with common imaging devices or in human vision. When looking at most commercially available imaging and display technology, imaging devices map the visible light spectrum to color such that the reproduced light spectrum will be perceived approximately the same as the original spectrum. The loss of spectral information is inherent to this process.
@@ -77,7 +77,7 @@ Based on the previously described LAB_ color space, the LCH color space is a rad
 Y and L
 -------
 
-In addition to the trichromatic color values, ImageFloat internally uses two monochromatic data representations when there is no color information. This is useful for mask or modulation data. The Y and L representations are derived from the Y and L components of XYZ_ and LAB_ respectively. They offer a choice between linear light intensity or perceptual lightness scales.
+In addition to the trichromatic color values, Ivy internally uses two monochromatic data representations when there is no color information. This is useful for mask or modulation data. The Y and L representations are derived from the Y and L components of XYZ_ and LAB_ respectively. They offer a choice between linear light intensity or perceptual lightness scales.
 
 .. _`Y`:
 
