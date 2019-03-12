@@ -163,6 +163,8 @@ kernel void cropCorrect(global float *I, global float *O, global float *offset, 
   // nearest neighbor filtering
   $O[x, y, z] = $I[(int)(cx), (int)(cy), z];
   */
+
+	if (xm<0 || ym<0 || xm>$$I.x-1$$ || ym>$$I.y-1$$) $O[x, y, z] = 0.0f;
 }
 ]]
 
