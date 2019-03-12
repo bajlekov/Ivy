@@ -148,7 +148,7 @@ local originalImage
 local RAW_SRGBmatrix
 local RAW_WBmultipliers
 
-local imageOffset = data:new(1, 1, 12)
+local imageOffset = data:new(1, 1, 13)
 local previewImage
 
 local loadInputImage = true
@@ -209,15 +209,42 @@ function love.filedropped(file)
 	imageOffset:set(0, 0, 1, 0) -- y offset
 	imageOffset:set(0, 0, 2, 1) -- scale
 	local A, B, C, BR, CR, VR, BB, CB, VB = require("tools.lensfun")(exifData.LensModel or exifData.CameraModelName, exifData.FocalLength)
-	imageOffset:set(0, 0, 3, A) -- enable geometric distortion correction
+	imageOffset:set(0, 0, 3, A)
 	imageOffset:set(0, 0, 4, B)
 	imageOffset:set(0, 0, 5, C)
-	imageOffset:set(0, 0, 6, BR or 0) -- enable TCA correction
+	imageOffset:set(0, 0, 6, BR or 0)
 	imageOffset:set(0, 0, 7, CR or 0)
 	imageOffset:set(0, 0, 8, VR or 1)
 	imageOffset:set(0, 0, 9, BB or 0)
 	imageOffset:set(0, 0, 10, CB or 0)
 	imageOffset:set(0, 0, 11, VB or 1)
+
+	-- calculate distortion correction optimal scale
+	do
+		local s_min = math.huge
+		local s_max = -math.huge
+
+		local x = originalImage.x/2
+		for y = 0, originalImage.y/2 do
+			local ru = math.sqrt(x^2 + y^2) / math.sqrt((originalImage.x)/2^2 + (originalImage.y/2)^2)
+			local rd = ru*(A*ru*ru*ru + B*ru*ru + C*ru + (1-A-B-C))
+			local rr = ru/rd
+			if rr<s_min then s_min = rr end
+			if rr>s_max then s_max = rr end
+		end
+
+		local y = originalImage.y/2
+		for x = 0, originalImage.x/2 do
+			local ru = math.sqrt(x^2 + y^2) / math.sqrt((originalImage.x)/2^2 + (originalImage.y/2)^2)
+			local rd = ru*(A*ru*ru*ru + B*ru*ru + C*ru + (1-A-B-C))
+			local rr = ru/rd
+			if rr<s_min then s_min = rr end
+			if rr>s_max then s_max = rr end
+		end
+
+		imageOffset:set(0, 0, 12, s_min)
+	end
+
 	imageOffset:toDevice()
 
 	pipeline.input.imageData = originalImage:new()

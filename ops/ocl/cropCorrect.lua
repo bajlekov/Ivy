@@ -54,10 +54,12 @@ kernel void cropCorrect(global float *I, global float *O, global float *offset, 
   float s = offset[2];
 
 	float A, B, C;
+	float gs = 1.0f;
 	if (flags[0]>0.5f) {
   	A = offset[3];
   	B = offset[4];
   	C = offset[5];
+		gs = offset[12];
 	} else {
 		A = 0.0f;
   	B = 0.0f;
@@ -98,7 +100,7 @@ kernel void cropCorrect(global float *I, global float *O, global float *offset, 
 
   float r = sqrt(cxn*cxn + cyn*cyn);
 
-  float sd = rd(r, A, B, C, BR, CR, VR)/(r + 1.0e-15);
+  float sd = rd(r, A, B, C, BR, CR, VR)/(r + 1.0e-15)*gs;
   cx = sd*cxn*fn_1 + x_2;
   cy = sd*cyn*fn_1 + y_2;
 
