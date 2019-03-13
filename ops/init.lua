@@ -1741,21 +1741,15 @@ genMath2("Greater", "GT", 0.5, 0, 1)
 genMath2("Less", "LT", 0.5, 0, 1)
 
 local function processValue(self)
-	local o = t.autoOutput(self, 4, 1, 1, 1)
-	local v = self.elem[1].value * 0.1 +
-	self.elem[2].value +
-	self.elem[3].value * 10
-	self.elem[4].right = string.format("%.2f", v)
+	local o = t.autoOutput(self, 0, 1, 1, 1)
+	local v = tonumber(self.elem[1].value)
 	o:set(0, 0, 0, v)
 	o:toDevice()
 end
 
 ops.math.value = function(x, y)
 	local n = node:new("Value")
-	n:addElem("float", 1, "x 0.1", - 1, 1, 0)
-	n:addElem("float", 2, "x 1.0", - 1, 1, 0)
-	n:addElem("float", 3, "x 10.0", - 1, 1, 0)
-	n:addPortOut(4, "Y"):addElem("text", 4, "Value:", string.format("%.2f", 0))
+	n:addPortOut(0, "Y"):addElem("textinput", 1, "1.0")
 	n.process = processValue
 	n.w = 75
 	n:setPos(x, y)
