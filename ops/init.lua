@@ -1429,6 +1429,28 @@ function ops.blur(x, y)
 	return n
 end
 
+local function bokehProcess(self)
+	self.procType = "dev"
+	local i, r, o, h
+	i = t.inputSourceBlack(self, 0)
+	r = t.inputParam(self, 1)
+	o = t.autoOutput(self, 0, i:shape())
+	h = t.plainParam(self, 2)
+	o.cs = i.cs
+	thread.ops.bokeh({i, r, o, h}, self)
+end
+
+function ops.bokeh(x, y)
+	local n = node:new("Bokeh")
+	n:addPortIn(0, "Y__")
+	n:addPortOut(0, "Y__")
+	n:addPortIn(1, "Y"):addElem("float", 1, "Radius", 0, 1, 0.1)
+	n:addElem("bool", 2, "Hexagonal", false)
+	n.process = bokehProcess
+	n:setPos(x, y)
+	return n
+end
+
 local function sharpenProcess(self)
 	self.procType = "dev"
 	local i, f, s, c, o

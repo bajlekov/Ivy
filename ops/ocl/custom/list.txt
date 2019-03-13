@@ -11,4 +11,3 @@ area_clamp.cl
 erode.cl
 dilate.cl
 wiener.cl
-bokeh.cl
