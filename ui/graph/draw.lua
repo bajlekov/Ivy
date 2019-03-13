@@ -391,10 +391,11 @@ local pixelcode = [[
 local shader = love.graphics.newShader(pixelcode)
 
 local canvas = love.graphics.newCanvas(100, 100, {msaa = 4})
+local tempCanvas = love.graphics.getCanvas()
 love.graphics.setCanvas(canvas)
 love.graphics.setColor(0, 0, 0, 1)
 love.graphics.rectangle("fill", 0, 0, 100, 100, 3.5, 3.5)
-love.graphics.setCanvas()
+love.graphics.setCanvas(tempCanvas)
 
 function draw.colorwheel(graph, x, y, w, h)
 	love.graphics.setColor(style.gray3)
