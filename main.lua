@@ -773,7 +773,72 @@ function love.keypressed(key)
 	end
 
 	if key=="d" then
-		--debug.see(panels.image.onAction)
+		-- document mode
+		local nodeAddOverlay = require "ui.panels.nodeAddMenu"
+
+		debug.see(nodeAddOverlay)
+
+		pipeline.input:setPos(-200, 6)
+		pipeline.output:setPos(400, 6)
+
+		local function getNodes(t)
+			for k, v in ipairs(t.elem) do
+				if v.action then
+
+					if pipeline.input.portOut[0].link then
+						pipeline.input.portOut[0].link:remove()
+					end
+
+					local n = v.action(13, 6)
+
+					local w, h -- calculate node size
+					do
+						local nodeWidth = n.w or style.nodeWidth
+						local nodeHeight = style.titleHeight + style.elemHeight * n.elem.n - (n.elem.n == 0 and style.nodeBorder or style.elemBorder)
+						if n.graph then
+							nodeHeight = nodeHeight + n.graph.h + style.nodeBorder
+						end
+						local left = next(n.portIn)
+						local right = next(n.portOut)
+						w = nodeWidth + style.nodeBorder * 2 + style.elemHeight
+						h = nodeHeight + style.nodeBorder * 2
+					end
+
+					local c = love.graphics.newCanvas(w + 8, h + 8, {msaa = 16})
+					love.graphics.setCanvas(c)
+					love.graphics.clear(style.backgroundColor)
+					love.graphics.setColor(1, 1, 1, 1)
+
+					if n.portIn[0] then
+						local l = link:connect(pipeline.input.portOut[0], n.portIn[0])
+						l.data = true
+						l:draw()
+					end
+					if n.portOut[0] then
+						local l = link:connect(n.portOut[0], pipeline.output.portIn[0])
+						l.data = true
+						l:draw()
+					end
+					n:draw()
+
+					love.graphics.setCanvas()
+
+					love.graphics.draw(c, 0, 0)
+					local d = c:newImageData()
+					d:encode("png", "testdoc.png")
+					local path = love.filesystem.getSaveDirectory( )
+					assert(os.rename(path.."/testdoc.png", "doc/nodes/"..table.concat(n.call, "-")..".png"))
+
+					love.graphics.present()
+					n:remove()
+				end
+				if v.frame then
+					getNodes(v.frame)
+				end
+			end
+		end
+
+		getNodes(nodeAddOverlay)
 	end
 
 	if key == "`" then
