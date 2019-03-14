@@ -1,7 +1,7 @@
 Introduction
 ============
 
-ImageFloat is a program for image processing. The main idea behind it is the creation of a processing pipeline in the form of a  `directed acyclic graph`_, which describes the processing steps performed from the initial input image to the final output image. This provides great flexibility in the processing pipelines and allows for a non-linear processing flow.
+Ivy is a program for image processing. The main idea behind it is the creation of a processing pipeline in the form of a  `directed acyclic graph`_, which describes the processing steps performed from the initial input image to the final output image. This provides great flexibility in the processing pipelines and allows for a non-linear processing flow.
 
 .. image:: preview.png
 

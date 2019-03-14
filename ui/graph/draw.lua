@@ -257,6 +257,56 @@ function draw.histogram(graph, x, y, w, h)
 	end
 end
 
+function draw.plot(graph, x, y, w, h)
+	love.graphics.setColor(style.gray3)
+	love.graphics.rectangle("fill", x, y, w, h, 3, 3)
+
+	local plot = graph.parent.data.plot
+
+	local x = x + 2.5
+	local y = y + 2.5
+	local w = w - 5
+	local h = h - 5
+
+	love.graphics.setColor(1, 1, 1, 1)
+	plot:refresh()
+	plot:draw(x-0.5, y-0.5)
+
+	love.graphics.setLineWidth(0.7)
+	love.graphics.setLineJoin("none")
+	love.graphics.setColor(style.gray5)
+	love.graphics.rectangle("line", x, y, w, h)
+
+	love.graphics.setColor(1, 1, 1, 0.475)
+
+	if graph.grid.horizontal then
+		love.graphics.line(x + 2.5, y + math.round((h) * 0.25), x + w - 2.5, y + math.round((h) * 0.25))
+		love.graphics.line(x + 2.5, y + math.round((h) * 0.50), x + w - 2.5, y + math.round((h) * 0.50))
+		love.graphics.line(x + 2.5, y + math.round((h) * 0.75), x + w - 2.5, y + math.round((h) * 0.75))
+	end
+
+	if graph.grid.vertical then
+		love.graphics.line(x + math.round((w) * 0.25), y + 2.5, x + math.round((w) * 0.25), y + h - 2.5)
+		love.graphics.line(x + math.round((w) * 0.50), y + 2.5, x + math.round((w) * 0.50), y + h - 2.5)
+		love.graphics.line(x + math.round((w) * 0.75), y + 2.5, x + math.round((w) * 0.75), y + h - 2.5)
+	end
+
+	if graph.grid.cross then
+		love.graphics.line(x + 2.5, y + math.round((h) * 0.50), x + w - 2.5, y + math.round((h) * 0.50))
+		love.graphics.line(x + math.round((w) * 0.50), y + 2.5, x + math.round((w) * 0.50), y + h - 2.5)
+	end
+
+	if graph.grid.polar then
+		love.graphics.line(x + 2.5, y + math.round((h) * 0.50), x + w - 2.5, y + math.round((h) * 0.50))
+		love.graphics.line(x + math.round((w) * 0.50), y + 2.5, x + math.round((w) * 0.50), y + h - 2.5)
+		love.graphics.line(x + 2.5, y + 2.5, x + w - 2.5, y + h - 2.5)
+		love.graphics.line(x + w - 2.5, y + 2.5, x + 2.5, y + h - 2.5)
+		local r = math.min(h, w) * 0.5 - 2
+		love.graphics.circle("line", x + math.round((w) * 0.50), y + math.round((h) * 0.50), r*0.5, 256)
+		love.graphics.circle("line", x + math.round((w) * 0.50), y + math.round((h) * 0.50), r, 256)
+	end
+end
+
 function draw.preview(graph, x, y, w, h)
 	love.graphics.setColor(1, 1, 1, 1)
 	graph.parent.data.preview:refresh()
@@ -341,10 +391,11 @@ local pixelcode = [[
 local shader = love.graphics.newShader(pixelcode)
 
 local canvas = love.graphics.newCanvas(100, 100, {msaa = 4})
+local tempCanvas = love.graphics.getCanvas()
 love.graphics.setCanvas(canvas)
 love.graphics.setColor(0, 0, 0, 1)
 love.graphics.rectangle("fill", 0, 0, 100, 100, 3.5, 3.5)
-love.graphics.setCanvas()
+love.graphics.setCanvas(tempCanvas)
 
 function draw.colorwheel(graph, x, y, w, h)
 	love.graphics.setColor(style.gray3)
