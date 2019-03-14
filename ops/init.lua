@@ -1451,6 +1451,27 @@ function ops.bokeh(x, y)
 	return n
 end
 
+local function RLdeconvolutionProcess(self)
+	self.procType = "dev"
+	local i, o, w, f
+	i = t.inputSourceBlack(self, 0)
+	o = t.autoOutput(self, 0, i:shape())
+	w = t.inputParam(self, 1)
+	f = t.inputParam(self, 2)
+	thread.ops.RLdeconvolution({i, o, w, f}, self)
+end
+
+function ops.RLdeconvolution(x, y)
+	local n = node:new("RL-Deconv.")
+	n:addPortIn(0, "LAB")
+	n:addPortOut(0, "LAB")
+	n:addPortIn(1, "Y"):addElem("float", 1, "Radius", 0, 2, 0.75)
+	n:addPortIn(2, "Y"):addElem("float", 2, "Strength", 0, 20, 5)
+	n.process = RLdeconvolutionProcess
+	n:setPos(x, y)
+	return n
+end
+
 local function sharpenProcess(self)
 	self.procType = "dev"
 	local i, f, s, c, o
