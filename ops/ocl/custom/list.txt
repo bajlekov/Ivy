@@ -12,3 +12,6 @@ erode.cl
 dilate.cl
 wiener.cl
 unsharpMask.cl
+gradient.cl
+laplacian.cl
+vector.cl
