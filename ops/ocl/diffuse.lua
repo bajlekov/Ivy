@@ -26,7 +26,7 @@ float range(float a, float b, float s) {
   return (1.0f-2.0f*x2+x4);
 }
 
-kernel void diffuse(global float *I, global float *F, global float *S, global float *C, global float *O)
+kernel void diffuse(global float *I, global float *F, global float *S, global float *O)
 {
   const int x = get_global_id(0);
   const int y = get_global_id(1);
@@ -41,8 +41,7 @@ kernel void diffuse(global float *I, global float *F, global float *S, global fl
 	float d3 = $I[x+1, y-1, 0];
 	float d4 = $I[x-1, y+1, 0];
 
-	float f = $F[x, y, 0];
-	f = f * 0.1f;
+	float f = $F[x, y, 0] * 0.1f;
 
 	// attenuate f dependent on noise
 	float att = 2.5f/$S[x, y, 0];
@@ -58,15 +57,14 @@ kernel void diffuse(global float *I, global float *F, global float *S, global fl
 
 	float o = i - f*a - f*b - 0.5f*f*c - 0.5f*f*d;
 
-	if (C[0]>0.5f) {
-		float m;
-		m = fmax(fmax(fmax(fmax(xp, xn), yp), yn), i);
-		//m = fmax(fmax(fmax(fmax(d1, d2), d3), d4), m);
-		o = fmin(o, m);
-		m = fmin(fmin(fmin(fmin(xp, xn), yp), yn), i);
-		//m = fmin(fmin(fmin(fmin(d1, d2), d3), d4), m);
-		o = fmax(o, m);
-	}
+	// ignore diagonals during clamping due to mosaicing artifacts
+	float m;
+	m = fmax(fmax(fmax(fmax(xp, xn), yp), yn), i);
+	//m = fmax(fmax(fmax(fmax(d1, d2), d3), d4), m);
+	o = fmin(o, m);
+	m = fmin(fmin(fmin(fmin(xp, xn), yp), yn), i);
+	//m = fmin(fmin(fmin(fmin(d1, d2), d3), d4), m);
+	o = fmax(o, m);
 
 	$O[x, y, 0] = o;
 	$O[x, y, 1] = $I[x, y, 1];
@@ -75,7 +73,7 @@ kernel void diffuse(global float *I, global float *F, global float *S, global fl
 ]]
 
 local function execute()
-	proc:getAllBuffers("I", "F", "S", "C", "O")
+	proc:getAllBuffers("I", "F", "S", "O")
 	proc:executeKernel("diffuse", proc:size2D("O"))
 end
 

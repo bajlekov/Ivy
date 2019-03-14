@@ -50,6 +50,10 @@ function process.new(device, context, queue)
 	return o
 end
 
+function process:setWorkgroupSize(size)
+	self.workgroupSize = size
+end
+
 function process:init(device, context, queue)
 	self.device = device
 	self.context = context
@@ -180,6 +184,7 @@ local function enqueueKernel(process, kernelName, size)
 	size[2] = size[2] or 1
 	size[3] = size[3] or 1
 
+	local workgroupSize = process.workgroupSize or workgroupSize
 	local workgroup = {math.min(size[1], workgroupSize[1]), math.min(size[2], workgroupSize[2]), math.min(size[3], workgroupSize[3])}
 
 	local sx = workgroup[1]

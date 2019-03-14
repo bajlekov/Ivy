@@ -118,6 +118,9 @@ function raw.read(name)
 		end
 	end
 
+	libraw.libraw_dcraw_clear_mem(img)
+	libraw.libraw_close(rawData)
+
 	return buffer, SRGBmatrix, WBmultipliers
 end
 

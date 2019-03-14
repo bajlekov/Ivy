@@ -510,7 +510,7 @@ local function localLaplacianProcess(self)
 end
 
 function ops.localLaplacian(x, y)
-	local n = node:new("Dynamic Range")
+	local n = node:new("Detail")
 	n:addPortIn(0, "LAB"):addPortOut(0, "LAB")
 	n:addPortIn(1, "Y"):addElem("float", 1, "Detail", 0, 2, 1)
 	n:addPortIn(2, "Y"):addElem("float", 2, "Shadows", 0, 2, 1)
@@ -550,6 +550,53 @@ function ops.histogram(x, y)
 	return n
 end
 
+local function waveformProcess(self)
+	self.proc = "dev"
+	local i = t.inputSourceBlack(self, 0)
+	local w = self.data.plot -- pre-allocated
+	local s = t.plainParam(self, 2)
+	local l = t.plainParam(self, 1)
+	thread.ops.waveform({i, w, s, l}, self)
+end
+
+function ops.waveform(x, y)
+	local n = node:new("Waveform")
+	n:addPortIn(0, "ANY")
+	n:addElem("bool", 1, "Lightness", false)
+	n:addElem("float", 2, "Scale", 0, 3, 1)
+
+	n.process = waveformProcess
+	n.data.plot = require "ui.image":new(146, 146)
+	require "ui.graph".plot(n)
+	n.graph.grid.horizontal = true
+	n.compute = true
+	n:setPos(x, y)
+	return n
+end
+
+local function ABplotProcess(self)
+	self.proc = "dev"
+	local i = t.inputSourceBlack(self, 0)
+	local w = self.data.plot -- pre-allocated
+	local s = t.plainParam(self, 2)
+	local clip = t.plainParam(self, 1)
+	thread.ops.ABplot({i, w, s, clip}, self)
+end
+
+function ops.ABplot(x, y)
+	local n = node:new("AB Plot")
+	n:addPortIn(0, "ANY")
+	n:addElem("bool", 1, "Clip to sRGB", true)
+	n:addElem("float", 2, "Scale", 0, 3, 1)
+
+	n.process = ABplotProcess
+	n.data.plot = require "ui.image":new(145, 145)
+	require "ui.graph".plot(n)
+	n.graph.grid.cross = true
+	n.compute = true
+	n:setPos(x, y)
+	return n
+end
 
 local function histEQProcess(self)
 	self.procType = "dev"
@@ -723,7 +770,7 @@ end
 function ops.exposure(x, y)
 	local n = node:new("Exposure")
 	n:addPortIn(0, "Y__")
-	n:addPortIn(1, "Y"):addElem("float", 1, "Exposure", - 3, 3, 0)
+	n:addPortIn(1, "Y"):addElem("float", 1, "Exposure", -3.3333, 3.3333, 0)
 	n:addPortOut(0)
 	n.process = exposureProcess
 	n:setPos(x, y)
@@ -772,7 +819,7 @@ function ops.vibrance(x, y)
 	local n = node:new("Vibrance")
 	n:addPortIn(0, "LCH")
 	n:addPortIn(1, "Y"):addElem("float", 1, "Vibrance", - 1, 1, 0)
-	n:addElem("bool", 2, "Adjust luminance", true)
+	n:addElem("bool", 2, "Adjust lightness", true)
 	n:addPortOut(0, "LCH")
 	n.process = vibranceProcess
 	n:setPos(x, y)
@@ -1382,17 +1429,59 @@ function ops.blur(x, y)
 	return n
 end
 
+local function bokehProcess(self)
+	self.procType = "dev"
+	local i, r, o, h
+	i = t.inputSourceBlack(self, 0)
+	r = t.inputParam(self, 1)
+	o = t.autoOutput(self, 0, i:shape())
+	h = t.plainParam(self, 2)
+	o.cs = i.cs
+	thread.ops.bokeh({i, r, o, h}, self)
+end
+
+function ops.bokeh(x, y)
+	local n = node:new("Bokeh")
+	n:addPortIn(0, "Y__")
+	n:addPortOut(0, "Y__")
+	n:addPortIn(1, "Y"):addElem("float", 1, "Radius", 0, 1, 0.1)
+	n:addElem("bool", 2, "Hexagonal", false)
+	n.process = bokehProcess
+	n:setPos(x, y)
+	return n
+end
+
+local function RLdeconvolutionProcess(self)
+	self.procType = "dev"
+	local i, o, w, f
+	i = t.inputSourceBlack(self, 0)
+	o = t.autoOutput(self, 0, i:shape())
+	w = t.inputParam(self, 1)
+	f = t.inputParam(self, 2)
+	thread.ops.RLdeconvolution({i, o, w, f}, self)
+end
+
+function ops.RLdeconvolution(x, y)
+	local n = node:new("RL-Deconv.")
+	n:addPortIn(0, "LAB")
+	n:addPortOut(0, "LAB")
+	n:addPortIn(1, "Y"):addElem("float", 1, "Radius", 0, 2, 0.75)
+	n:addPortIn(2, "Y"):addElem("float", 2, "Strength", 0, 20, 5)
+	n.process = RLdeconvolutionProcess
+	n:setPos(x, y)
+	return n
+end
+
 local function sharpenProcess(self)
 	self.procType = "dev"
 	local i, f, s, c, o
 	i = t.inputSourceBlack(self, 0)
 	f = t.inputParam(self, 1)
 	s = t.inputParam(self, 3)
-	c = t.plainParam(self, 4)
 	o = t.autoOutput(self, 0, i:shape())
-	thread.ops.diffuse({i, f, s, c, o}, self)
+	thread.ops.diffuse({i, f, s, o}, self)
 	for i = 2, self.elem[2].value do
-		thread.ops.diffuse({o, f, s, c, o}, self)
+		thread.ops.diffuse({o, f, s, o}, self)
 	end
 end
 
@@ -1400,12 +1489,11 @@ function ops.sharpen(x, y)
 	local n = node:new("Sharpen")
 	n:addPortIn(0, "LAB")
 	n:addPortOut(0, "LAB")
-	n:addPortIn(1, "Y"):addElem("float", 1, "Factor", 0, 1, 0.5)
+	n:addPortIn(1, "Y"):addElem("float", 1, "Strength", 0, 1, 0.5)
 	n:addElem("int", 2, "Iterations", 1, 9, 5)
-	n:addPortIn(3, "Y"):addElem("float", 3, "Suppress Noise", 0, 1, 0)
-	n:addElem("bool", 4, "Suppress Halos", true)
+	n:addPortIn(3, "Y"):addElem("float", 3, "Reduce Noise", 0, 1, 0)
 	n.process = sharpenProcess
-	n.w = 125
+	n.w = 100
 	n:setPos(x, y)
 	return n
 end
@@ -1696,21 +1784,15 @@ genMath2("Greater", "GT", 0.5, 0, 1)
 genMath2("Less", "LT", 0.5, 0, 1)
 
 local function processValue(self)
-	local o = t.autoOutput(self, 4, 1, 1, 1)
-	local v = self.elem[1].value * 0.1 +
-	self.elem[2].value +
-	self.elem[3].value * 10
-	self.elem[4].right = string.format("%.2f", v)
+	local o = t.autoOutput(self, 0, 1, 1, 1)
+	local v = tonumber(self.elem[1].value)
 	o:set(0, 0, 0, v)
 	o:toDevice()
 end
 
 ops.math.value = function(x, y)
 	local n = node:new("Value")
-	n:addElem("float", 1, "x 0.1", - 1, 1, 0)
-	n:addElem("float", 2, "x 1.0", - 1, 1, 0)
-	n:addElem("float", 3, "x 10.0", - 1, 1, 0)
-	n:addPortOut(4, "Y"):addElem("text", 4, "Value:", string.format("%.2f", 0))
+	n:addPortOut(0, "Y"):addElem("textinput", 1, "1.0")
 	n.process = processValue
 	n.w = 75
 	n:setPos(x, y)

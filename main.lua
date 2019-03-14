@@ -148,7 +148,7 @@ local originalImage
 local RAW_SRGBmatrix
 local RAW_WBmultipliers
 
-local imageOffset = data:new(1, 1, 12)
+local imageOffset = data:new(1, 1, 13)
 local previewImage
 
 local loadInputImage = true
@@ -209,15 +209,42 @@ function love.filedropped(file)
 	imageOffset:set(0, 0, 1, 0) -- y offset
 	imageOffset:set(0, 0, 2, 1) -- scale
 	local A, B, C, BR, CR, VR, BB, CB, VB = require("tools.lensfun")(exifData.LensModel or exifData.CameraModelName, exifData.FocalLength)
-	imageOffset:set(0, 0, 3, A) -- enable geometric distortion correction
+	imageOffset:set(0, 0, 3, A)
 	imageOffset:set(0, 0, 4, B)
 	imageOffset:set(0, 0, 5, C)
-	imageOffset:set(0, 0, 6, BR or 0) -- enable TCA correction
+	imageOffset:set(0, 0, 6, BR or 0)
 	imageOffset:set(0, 0, 7, CR or 0)
 	imageOffset:set(0, 0, 8, VR or 1)
 	imageOffset:set(0, 0, 9, BB or 0)
 	imageOffset:set(0, 0, 10, CB or 0)
 	imageOffset:set(0, 0, 11, VB or 1)
+
+	-- calculate distortion correction optimal scale
+	do
+		local s_min = math.huge
+		local s_max = -math.huge
+
+		local x = originalImage.x/2
+		for y = 0, originalImage.y/2 do
+			local ru = math.sqrt(x^2 + y^2) / math.sqrt((originalImage.x)/2^2 + (originalImage.y/2)^2)
+			local rd = ru*(A*ru*ru*ru + B*ru*ru + C*ru + (1-A-B-C))
+			local rr = ru/rd
+			if rr<s_min then s_min = rr end
+			if rr>s_max then s_max = rr end
+		end
+
+		local y = originalImage.y/2
+		for x = 0, originalImage.x/2 do
+			local ru = math.sqrt(x^2 + y^2) / math.sqrt((originalImage.x)/2^2 + (originalImage.y/2)^2)
+			local rd = ru*(A*ru*ru*ru + B*ru*ru + C*ru + (1-A-B-C))
+			local rr = ru/rd
+			if rr<s_min then s_min = rr end
+			if rr>s_max then s_max = rr end
+		end
+
+		imageOffset:set(0, 0, 12, s_min)
+	end
+
 	imageOffset:toDevice()
 
 	pipeline.input.imageData = originalImage:new()
@@ -746,7 +773,72 @@ function love.keypressed(key)
 	end
 
 	if key=="d" then
-		--debug.see(panels.image.onAction)
+		-- document mode
+		local nodeAddOverlay = require "ui.panels.nodeAddMenu"
+
+		debug.see(nodeAddOverlay)
+
+		pipeline.input:setPos(-200, 6)
+		pipeline.output:setPos(400, 6)
+
+		local function getNodes(t)
+			for k, v in ipairs(t.elem) do
+				if v.action then
+
+					if pipeline.input.portOut[0].link then
+						pipeline.input.portOut[0].link:remove()
+					end
+
+					local n = v.action(13, 6)
+
+					local w, h -- calculate node size
+					do
+						local nodeWidth = n.w or style.nodeWidth
+						local nodeHeight = style.titleHeight + style.elemHeight * n.elem.n - (n.elem.n == 0 and style.nodeBorder or style.elemBorder)
+						if n.graph then
+							nodeHeight = nodeHeight + n.graph.h + style.nodeBorder
+						end
+						local left = next(n.portIn)
+						local right = next(n.portOut)
+						w = nodeWidth + style.nodeBorder * 2 + style.elemHeight
+						h = nodeHeight + style.nodeBorder * 2
+					end
+
+					local c = love.graphics.newCanvas(w + 8, h + 8, {msaa = 16})
+					love.graphics.setCanvas(c)
+					love.graphics.clear(style.backgroundColor)
+					love.graphics.setColor(1, 1, 1, 1)
+
+					if n.portIn[0] then
+						local l = link:connect(pipeline.input.portOut[0], n.portIn[0])
+						l.data = true
+						l:draw()
+					end
+					if n.portOut[0] then
+						local l = link:connect(n.portOut[0], pipeline.output.portIn[0])
+						l.data = true
+						l:draw()
+					end
+					n:draw()
+
+					love.graphics.setCanvas()
+
+					love.graphics.draw(c, 0, 0)
+					local d = c:newImageData()
+					d:encode("png", "testdoc.png")
+					local path = love.filesystem.getSaveDirectory( )
+					assert(os.rename(path.."/testdoc.png", "doc/nodes/"..table.concat(n.call, "-")..".png"))
+
+					love.graphics.present()
+					n:remove()
+				end
+				if v.frame then
+					getNodes(v.frame)
+				end
+			end
+		end
+
+		getNodes(nodeAddOverlay)
 	end
 
 	if key == "`" then
