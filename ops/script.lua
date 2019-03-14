@@ -28,6 +28,24 @@ return function(ops)
   	self.procType = "dev"
   	local i = t.inputSourceBlack(self, 0)
   	local o = t.autoOutput(self, 0, i:shape())
+  	thread.ops.script_Y({i, o}, self)
+  	dataCh:push(self.elem[1].value)
+  end
+
+  function ops.scriptY(x, y)
+  	local n = node:new("Script Y")
+  	n:addPortIn(0, "Y")
+  	n:addPortOut(0, "Y")
+  	n:addElem("textinput", 1, "i")
+  	n.process = scriptProcess
+  	n:setPos(x, y)
+  	return n
+  end
+
+  local function scriptProcess(self)
+  	self.procType = "dev"
+  	local i = t.inputSourceBlack(self, 0)
+  	local o = t.autoOutput(self, 0, i:shape())
   	thread.ops.script_LRGB({i, o}, self)
   	dataCh:push(self.elem[1].value)
   	dataCh:push(self.elem[2].value)
