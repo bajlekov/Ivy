@@ -106,7 +106,7 @@ local function parse(parseType, device, context, queue)
 					spec.temp[n] = {shape = "image", arg = k}
 				elseif t == "O" then
 					spec.output[n] = {cs = cs, arg = k}
-					if (not spec.param[n]) and n > 1 then
+					if (not spec.param[n]) and n > 0 then
 						spec.param[n] = params[n] or {type = "text", right = "Output "..n}
 					end
 				end
