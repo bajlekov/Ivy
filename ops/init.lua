@@ -530,9 +530,9 @@ end
 function ops.localLaplacian(x, y)
 	local n = node:new("Detail")
 	n:addPortIn(0, "LAB"):addPortOut(0, "LAB")
-	n:addPortIn(1, "Y"):addElem("float", 1, "Detail", 0, 2, 1)
-	n:addPortIn(2, "Y"):addElem("float", 2, "Shadows", 0, 2, 1)
-	n:addPortIn(3, "Y"):addElem("float", 3, "Highlights", 0, 2, 1)
+	n:addPortIn(1, "Y"):addElem("float", 1, "Detail", -1, 1, 0)
+	n:addPortIn(2, "Y"):addElem("float", 2, "Shadows", -1, 1, 0)
+	n:addPortIn(3, "Y"):addElem("float", 3, "Highlights", -1, 1, 0)
 	n:addPortIn(4, "Y"):addElem("float", 4, "Range", 0, 1, 0.2)
 	n.process = localLaplacianProcess
 	n:setPos(x, y)
