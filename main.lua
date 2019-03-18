@@ -405,6 +405,10 @@ function love.update()
 			rescaleInputOutput()
 			imageOffset:toDevice()
 
+			local pool = require "tools.imagePool"
+			pool.resize(originalImage.x, originalImage.y)
+			pool.crop(imageOffset.data[0], imageOffset.data[1], pipeline.input.imageData.x, pipeline.input.imageData.y)
+
 			--thread.ops.cropCorrectFisheye({originalImage, input.imageData, imageOffset}, OCL and "dev" or "par")
 
 			if panels.info.elem[15].value or panels.info.elem[16].value then
