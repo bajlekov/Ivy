@@ -53,7 +53,8 @@ return function(ops)
 			local r = t.inputParam(self, 1)
 			local o = t.autoOutputSink(self, 0, i:shape())
 
-			local ox, oy, update = self.data.tweak.getOrigin()
+			local ox, oy = self.data.tweak.getOrigin()
+			local update = self.data.tweak.getUpdate()
 			local dx, dy = self.data.tweak.getTweak()
 			local p = t.autoTempBuffer(self, -1, 1, 1, 4) -- [x, y, dx, dy]
 			local s = t.autoTempBuffer(self, -2, 1, 1, 3) -- [r, g, b]
@@ -83,7 +84,7 @@ return function(ops)
 			n:addPortOut(0, "LCH")
 			n:addPortIn(1, "Y"):addElem("float", 1, v[4].." range", 0, 1, 0.2)
 
-			n.data.tweak = require "tools.tweak"(false)
+			n.data.tweak = require "tools.tweak"()
 			n.data.tweak.toolButton(n, 2, "Adjust "..v[5])
 
 			n.data.curve = data:new(1, 1, 256)

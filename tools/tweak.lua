@@ -17,42 +17,52 @@
 
 -- todo move imageSampleCoord to here! register previewImage
 
-local function tweak(continuous)
+local function tweak()
 	local o = {}
 
 	local node
 
 	local dx, dy =  0,  0
 	local ox, oy = -1, -1
+	local cx, cy = -1, -1
 
 	local update = false
 
 	local function imageSampleReleaseCallback()
 		dx, dy = 0, 0
 	end
+
 	local function imageSampleDragCallback(mouse)
 		node.dirty = true
 		local shift = love.keyboard.isDown("lshift") or love.keyboard.isDown("rshift")
 		dx = dx + (shift and mouse.dx/10 or mouse.dx)
 		dy = dy + (shift and mouse.dy/10 or mouse.dy)
-		if continuous then
-			update = true
-			ox, oy = imageSample.coord(mouse.lx - mouse.ox + mouse.x, mouse.ly - mouse.oy + mouse.y)
-		end
+		update = true
+		cx, cy = imageSample.coord(mouse.lx - mouse.ox + mouse.x, mouse.ly - mouse.oy + mouse.y)
 		return imageSampleReleaseCallback
 	end
+
 	local function imageSamplePressCallback(frame, mouse)
 		node.dirty = true
 		update = true
     dx, dy = 0, 0
     ox, oy = imageSample.coord(mouse.lx, mouse.ly)
+		cx, cy = ox, oy
     return imageSampleDragCallback
   end
 
 	function o.getOrigin()
+		return ox, oy
+	end
+	function o.getCurrent()
 		local u = update
 		update = false
-		return ox, oy, u
+		return cx, cy, u
+	end
+	function o.getUpdate()
+		local u = update
+		update = false
+		return u
 	end
 	function o.getTweak()
 		local x, y = dx, dy

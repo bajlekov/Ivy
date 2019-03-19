@@ -296,7 +296,7 @@ local function processAutoWB(self)
 	local i = t.inputSourceBlack(self, 0)
 	local o = t.autoOutputSink(self, 0, i:shape())
 
-	local ox, oy, update = self.data.tweak.getOrigin()
+	local ox, oy, update = self.data.tweak.getCurrent()
 	local p = t.autoTempBuffer(self, -1, 1, 1, 3) -- [x, y]
 	local s = t.autoTempBuffer(self, -2, 1, 1, 3) -- [r, g, b]
 	p:set(0, 0, 0, ox)
@@ -312,7 +312,7 @@ end
 
 function ops.autoWB(x, y)
 	local n = node:new("Sample WB")
-	n.data.tweak = require "tools.tweak"(true)
+	n.data.tweak = require "tools.tweak"()
 	n:addPortIn(0, "LRGB")
 	n:addPortOut(0, "LRGB")
 	n.data.tweak.toolButton(n, 1, "Sample WB")
@@ -351,8 +351,8 @@ do
 
 			local i = t.inputSourceBlack(self, 6)
 
-			local ox, oy, update = self.data.tweak.getOrigin()
 			local p = t.autoTempBuffer(self, -1, 1, 1, 8) -- [x, y, value, flow, size, fall-off, range, fall-off]
+			local ox, oy = self.data.tweak.getCurrent()
 
 			p:set(0, 0, 2, self.elem[2].value)
 			p:set(0, 0, 3, self.elem[3].value)
@@ -387,7 +387,7 @@ do
 		n:addPortIn(6, "LAB")
 		n.portIn[6].toggle = {[6] = true, [7] = true}
 
-		n.data.tweak = require "tools.tweak"(true)
+		n.data.tweak = require "tools.tweak"()
 		n.data.tweak.toolButton(n, 1, "Paint")
 
 		n:addElem("float", 2, "Value", 0, 1, 1)
