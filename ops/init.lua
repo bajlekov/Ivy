@@ -344,7 +344,7 @@ do
 
 			local i = t.inputSourceBlack(self, 6)
 
-			local ox, oy = self.data.tweak.getCurrent()
+			local ox, oy = self.data.tweak.getOrigin()
 			local cx, cy, update = self.data.tweak.getCurrent()
 			local p = t.autoTempBuffer(self, -1, 1, 1, 10) -- [x, y, value, flow, size, fall-off, range, fall-off, sample x, sample y]
 
