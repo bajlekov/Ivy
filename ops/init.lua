@@ -1212,6 +1212,10 @@ function ops.mixRGB(x, y)
 	n:addPortIn(5, "LRGB")
 	n:addPortIn(8, "LRGB")
 	n:addPortOut(0, "LRGB")
+	n.portIn[2].toggle = {[1] = false, [2] = false, [3] = false}
+	n.portIn[5].toggle = {[4] = false, [5] = false, [6] = false}
+	n.portIn[8].toggle = {[7] = false, [8] = false, [9] = false}
+
 	n:addElem("float", 1, "R(r)", - 2, 3, 1)
 	n:addElem("float", 2, "R(g)", - 2, 3, 0)
 	n:addElem("float", 3, "R(b)", - 2, 3, 0).last = true
