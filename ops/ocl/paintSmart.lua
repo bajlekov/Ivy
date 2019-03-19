@@ -43,8 +43,10 @@ kernel void paintSmart(global float *O, global float *I, global float *P) {
 	if (P[6]<0.0f) { // negative values disable smart paint
 		mask = 1.0f;
 	} else {
+		float sx = P[8];
+		float sy = P[9];
 		float3 i = $I[ix, iy];
-	  float3 s = $I[px, py];
+	  float3 s = $I[sx, sy];
 		float d = sqrt(pown(i.x-s.x, 2) + pown(i.y-s.y, 2) + pown(i.z-s.z, 2));
 		mask = range(d, P[6], P[7]);
 	}
@@ -69,6 +71,8 @@ kernel void paintSmart(global float *O, global float *I, global float *P) {
 	p[5] - brush fall-off
 	p[6] - smart range
 	p[7] - smart range fall-off
+	p[8] - sample x
+	p[9] - sample y
 --]]
 
 local function execute()

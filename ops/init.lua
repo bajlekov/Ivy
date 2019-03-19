@@ -334,13 +334,6 @@ end
 do
 	local pool = require "tools.imagePool"
 
-	local function paint(self, i, p, ox, oy)
-		p:set(0, 0, 0, ox)
-		p:set(0, 0, 1, oy)
-		p:toDevice()
-		thread.ops.paintSmart({self.mask:get(), i, p}, self)
-	end
-
 	local function processPaintMask(self)
 		self.procType = "dev"
 		local link = self.portOut[0].link
@@ -351,18 +344,27 @@ do
 
 			local i = t.inputSourceBlack(self, 6)
 
-			local p = t.autoTempBuffer(self, -1, 1, 1, 8) -- [x, y, value, flow, size, fall-off, range, fall-off]
 			local ox, oy = self.data.tweak.getCurrent()
+			local cx, cy, update = self.data.tweak.getCurrent()
+			local p = t.autoTempBuffer(self, -1, 1, 1, 10) -- [x, y, value, flow, size, fall-off, range, fall-off, sample x, sample y]
 
-			p:set(0, 0, 2, self.elem[2].value)
-			p:set(0, 0, 3, self.elem[3].value)
-			p:set(0, 0, 4, self.elem[4].value)
-			p:set(0, 0, 5, self.elem[5].value)
-			p:set(0, 0, 6, self.portIn[6].link and self.elem[6].value or -1) -- range -1: disabled
-			p:set(0, 0, 7, self.elem[7].value)
+			local ctrl = love.keyboard.isDown("lctrl") or love.keyboard.isDown("rctrl")
+			local alt = love.keyboard.isDown("lalt") or love.keyboard.isDown("ralt")
 
 			if update then
-				paint(self, i, p, ox, oy)
+				p:set(0, 0, 0, cx)
+				p:set(0, 0, 1, cy)
+				p:set(0, 0, 2, ctrl and 0 or self.elem[2].value)
+				p:set(0, 0, 3, self.elem[3].value)
+				p:set(0, 0, 4, self.elem[4].value)
+				p:set(0, 0, 5, self.elem[5].value)
+				p:set(0, 0, 6, self.portIn[6].link and self.elem[6].value or -1) -- range -1: disabled
+				p:set(0, 0, 7, self.elem[7].value)
+				p:set(0, 0, 8, alt and ox or cx)
+				p:set(0, 0, 9, alt and oy or cy)
+				p:toDevice()
+
+				thread.ops.paintSmart({link.data, i, p}, self)
 			end
 		end
 	end
@@ -371,14 +373,7 @@ do
 		local n = node:new("Paint Mask")
 
 		local sx, sy = t.imageShape()
-		local mask = data:new(sx, sy, 1)
-
-		for x = 0, sx-1 do
-			for y = 0, sy-1 do
-				mask:set(x, y, 0, 0)
-			end
-		end
-		mask:toDevice()
+		local mask = data:new(sx, sy, 1):toDevice()
 
 		pool.resize(sx, sy)
 		n.mask = pool.add(mask)
