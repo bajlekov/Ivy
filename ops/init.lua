@@ -330,63 +330,6 @@ function ops.autoWB(x, y)
 end
 
 
-do
-	local pool = require "tools.imagePool"
-
-	local function paint(self, p, ox, oy)
-		p:set(0, 0, 0, ox)
-		p:set(0, 0, 1, oy)
-		p:set(0, 0, 2, self.elem[1].value)
-		p:toDevice()
-		thread.ops.paint({self.mask:get(), p}, self)
-	end
-
-	local function processPaintMask(self)
-		self.procType = "dev"
-		local link = self.portOut[0].link
-
-		if link then
-			link.data = self.mask:get()
-			link:setData("Y", self.procType)
-
-			local ox, oy, update = self.data.tweak.getOrigin()
-			local p = t.autoTempBuffer(self, -1, 1, 1, 3) -- [x, y]
-
-			if update then
-				paint(self, p, ox, oy)
-			end
-		end
-	end
-
-	function ops.paintMask(x, y)
-		local n = node:new("Paint Mask")
-
-		local sx, sy = t.imageShape()
-		local mask = data:new(sx, sy, 1)
-
-		for x = 0, sx-1 do
-			for y = 0, sy-1 do
-				mask:set(x, y, 0, 0)
-			end
-		end
-		mask:toDevice()
-
-		pool.resize(sx, sy)
-		n.mask = pool.add(mask)
-
-		n:addPortOut(0, "Y")
-		n:addElem("float", 1, "Value", 0, 1, 1)
-
-		n.data.tweak = require "tools.tweak"(true)
-		n.data.tweak.toolButton(n, 2, "Paint")
-
-		n.compute = true
-		n.process = processPaintMask
-		n:setPos(x, y)
-		return n
-	end
-end
-
 
 do
 	local pool = require "tools.imagePool"
@@ -406,15 +349,17 @@ do
 			link.data = self.mask:get()
 			link:setData("Y", self.procType)
 
-			local i = t.inputSourceBlack(self, 0)
+			local i = t.inputSourceBlack(self, 6)
 
 			local ox, oy, update = self.data.tweak.getOrigin()
-			local p = t.autoTempBuffer(self, -1, 1, 1, 6) -- [x, y, range, sharpness, size, value]
+			local p = t.autoTempBuffer(self, -1, 1, 1, 8) -- [x, y, value, flow, size, fall-off, range, fall-off]
 
-			p:set(0, 0, 2, self.elem[1].value)
-			p:set(0, 0, 3, self.elem[2].value)
-			p:set(0, 0, 4, self.elem[3].value)
-			p:set(0, 0, 5, self.elem[4].value)
+			p:set(0, 0, 2, self.elem[2].value)
+			p:set(0, 0, 3, self.elem[3].value)
+			p:set(0, 0, 4, self.elem[4].value)
+			p:set(0, 0, 5, self.elem[5].value)
+			p:set(0, 0, 6, self.portIn[6].link and self.elem[6].value or -1) -- range -1: disabled
+			p:set(0, 0, 7, self.elem[7].value)
 
 			if update then
 				paint(self, i, p, ox, oy)
@@ -423,7 +368,7 @@ do
 	end
 
 	function ops.paintMaskSmart(x, y)
-		local n = node:new("Paint Smart")
+		local n = node:new("Paint Mask")
 
 		local sx, sy = t.imageShape()
 		local mask = data:new(sx, sy, 1)
@@ -438,16 +383,19 @@ do
 		pool.resize(sx, sy)
 		n.mask = pool.add(mask)
 
-		n:addPortIn(0, "LAB")
 		n:addPortOut(0, "Y")
-
-		n:addElem("float", 1, "Range", 0, 1, 0.2)
-		n:addElem("float", 2, "Sharpness", 0, 1, 0.5)
-		n:addElem("float", 3, "Size", 0, 512, 32)
-		n:addElem("float", 4, "Value", -1, 1, 1)
+		n:addPortIn(6, "LAB")
+		n.portIn[6].toggle = {[6] = true, [7] = true}
 
 		n.data.tweak = require "tools.tweak"(true)
-		n.data.tweak.toolButton(n, 5, "Paint")
+		n.data.tweak.toolButton(n, 1, "Paint")
+
+		n:addElem("float", 2, "Value", 0, 1, 1)
+		n:addElem("float", 3, "Flow", 0, 1, 1)
+		n:addElem("float", 4, "Brush Size", 0, 500, 50)
+		n:addElem("float", 5, "Fall-off", 0, 1, 0.5).last = true
+		n:addElem("float", 6, "Smart Range", 0, 1, 0.1).first = true
+		n:addElem("float", 7, "Fall-off", 0, 1, 0.5)
 
 		n.compute = true
 		n.process = processPaintMask
