@@ -362,7 +362,7 @@ do
 				p:set(0, 0, 7, self.elem[7].value)
 				p:set(0, 0, 8, alt and ox or cx)
 				p:set(0, 0, 9, alt and oy or cy)
-				p:toDevice()
+				p:toDevice(true)
 
 				thread.ops.paintSmart({link.data, i, p}, self)
 			end
@@ -392,7 +392,6 @@ do
 		n:addElem("float", 6, "Smart Range", 0, 1, 0.1).first = true
 		n:addElem("float", 7, "Fall-off", 0, 1, 0.5)
 
-		n.compute = true
 		n.process = processPaintMask
 		n:setPos(x, y)
 		return n
