@@ -109,6 +109,7 @@ end
 
 
 local function xyProcess(self)
+	self.procType = "dev"
 	local bi = t.inputSourceBlack(self, 1)
 	local wi = t.inputSourceWhite(self, 2)
 
@@ -133,6 +134,7 @@ function ops.xy(x, y)
 end
 
 local function radialProcess(self)
+	self.procType = "dev"
 	local x = t.inputParam(self, 1)
 	local y = t.inputParam(self, 2)
 
@@ -153,6 +155,7 @@ function ops.radial(x, y)
 end
 
 local function linearProcess(self)
+	self.procType = "dev"
 	local x = t.inputParam(self, 1)
 	local y = t.inputParam(self, 2)
 	local theta = t.inputParam(self, 3)
@@ -175,6 +178,7 @@ function ops.linear(x, y)
 end
 
 local function mirroredProcess(self)
+	self.procType = "dev"
 	local x = t.inputParam(self, 1)
 	local y = t.inputParam(self, 2)
 	local theta = t.inputParam(self, 3)
