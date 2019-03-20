@@ -839,6 +839,7 @@ end
 
 
 local function mixProcess(self)
+	self.procType = "dev"
 	assert(self.portOut[0].link)
 	local p1, p2, p3, p4
 	p1 = t.inputParam(self, 1)
