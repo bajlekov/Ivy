@@ -392,6 +392,47 @@ do
 		n:addElem("float", 6, "Smart Range", 0, 1, 0.1).first = true
 		n:addElem("float", 7, "Fall-off", 0, 1, 0.5)
 
+		n:addElem("button", 8, "Load", function()
+			local f = io.open("mask.bin", "rb")
+			local header = f:read(6*4)
+			local header_uint8 = ffi.new("uint8_t[6*4]", header)
+			header = ffi.cast("uint32_t*", header_uint8)
+			local x, y, z = header[0], header[1], header[2]
+			local sx, sy, sz = header[3], header[4], header[5]
+
+			local imgData = f:read("*a")
+			imgData = love.data.decompress("string", "lz4", imgData)
+
+			local img = data:new(x, y, z):allocHost()
+			img.sx = sx
+			img.sy = sy
+			img.sz = sz
+			ffi.copy(img.data, imgData)
+			img:toDevice(true)
+
+			n.mask = pool.add(img)
+			n.dirty = true
+		end)
+
+
+		n:addElem("button", 9, "Save", function()
+			n.mask:set()
+
+			local img = n.mask.full
+
+			local x, y, z = img.x, img.y, img.z
+			local sx, sy, sz = img.sx, img.sy, img.sz
+
+			local header = ffi.new("uint32_t[6]", x, y, z, sx, sy, sz)
+
+			local f = io.open("mask.bin", "wb")
+			f:write(ffi.string(header, 6*4))
+
+			local data = love.data.compress("string", "lz4", ffi.string(img.data, x*y*z*4))
+			f:write(data)
+			f:close()
+		end)
+
 		n.process = processPaintMask
 		n:setPos(x, y)
 		return n
