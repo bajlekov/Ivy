@@ -337,6 +337,7 @@ end
 
 do
 	local pool = require "tools.imagePool"
+	local ffi = require "ffi"
 
 	local function processPaintMask(self)
 		self.procType = "dev"
