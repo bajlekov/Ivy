@@ -372,11 +372,11 @@ do
 	function ops.paintMaskSmart(x, y)
 		local n = node:new("Paint Mask")
 
-		local sx, sy = t.imageShape()
-		local mask = data:new(sx, sy, 1):toDevice()
-
-		pool.resize(sx, sy)
-		n.mask = pool.add(mask)
+		do
+			local mask = data:new(1, 1, 1):toDevice()
+			pool.resize(sx, sy)
+			n.mask = pool.add(mask)
+		end
 
 		n:addPortOut(0, "Y")
 		n:addPortIn(6, "LAB")
