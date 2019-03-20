@@ -102,6 +102,27 @@ local function get(image, write)
 	end
 end
 
+local function set(image) -- refreshes full image with latest view and copies data to host memory
+	if image.view then
+		pasteView(image)
+
+		-- FIXME: complex workaround to synchronise host
+		--[[
+			The issue occurs if a OCL operation is queued, followed by a blocking data:toHost().
+			Due to a slight delay in the thread scheduler, the OCL operation is queued after the
+			blocking clEnqueueReadBuffer call, resulting in a failure to sync host memory!
+
+			Issuing a thread queue complete command and waiting for its completion ensures that
+			all OCL operations have finished. As this is handled locally, it should not affect
+			the main thread. Still a better approach is desired.
+		--]]
+		thread.ops.done()
+		while not thread.done() do love.timer.sleep(0.001) end
+
+		image.full:toHost(true)
+	end
+end
+
 local offset = data:new(1, 1, 3)
 offset:set(0, 0, 0, 0)
 offset:set(0, 0, 1, 0)
