@@ -102,17 +102,26 @@ local function get(image, write)
 	end
 end
 
+local offset = data:new(1, 1, 3)
+offset:set(0, 0, 0, 0)
+offset:set(0, 0, 1, 0)
+offset:set(0, 0, 2, 1) -- no scaling
+offset:toDevice()
 function pool.add(fullImage)
+	local new = data:new(pool.sx, pool.sy, fullImage.z)
+	thread.ops.paste({fullImage, new, offset}, "dev")
+
 	local image = {}
-	image.full = fullImage
+	image.full = new
 	image.view = false
 	image.x = 0
 	image.y = 0
 	image.w = 0
 	image.h = 0
 	image.get = get
+	image.set = set
 
-	pool.images[fullImage] = image
+	table.insert(pool.images, image)
 
 	return image
 end
