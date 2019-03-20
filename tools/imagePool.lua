@@ -23,6 +23,7 @@ local thread = require "thread"
 
 local pool = {}
 pool.images = {}
+setmetatable(pool.images, { __mode = 'v' }) -- weak values: do not prevent images from being garbage collected
 
 pool.sx = 0 -- full image size
 pool.sy = 0
