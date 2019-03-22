@@ -315,7 +315,7 @@ function process.allocBuffer(buffer)
 
 	local id = tonumber(ffi.cast("uintptr_t", buffer.data))
 
-	if type(buffer)=="table" and buffer.type=="data/OCL" and (not buffer.dataOCL or buffer.dataOCL==NULL) then
+	if type(buffer)=="table" and buffer.type=="data" and (not buffer.dataOCL or buffer.dataOCL==NULL) then
 		if allocatedBuffersList[id] then
 			allocatedBuffersList[id].keep = false
 			buffer.dataOCL = allocatedBuffersList[id].dataOCL
