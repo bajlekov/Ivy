@@ -53,28 +53,40 @@ data.initDev(context, queue)
 
 local schedule = {}
 
+-- end of device queue
+local lastid = false
+function schedule.done()
+	hostSyncCh:push("done")
+	if lastid then
+		messageCh:push{"end", lastid}
+	end
+	lastid = false
+end
+
+local function startID()
+	local id = hostDataCh:demand()
+	if lastid~=id then
+		if lastid then
+			messageCh:push{"end", lastid}
+		end
+		messageCh:push{"start", id}
+		lastid = id
+	end
+end
+
+
 -- OCL execution
 local opsDev = require "thread.workerDev"
 opsDev.initDev(device, context, queue)
 
-
-local lastid = false
 function schedule.dev()
-	local id = hostDataCh:demand()
+	startID()
 	local op = hostDataCh:demand()
 	assert(type(op) == "string", "Invalid OCL op of type ["..type(op).."]")
 
 	if opsDev[op] then
 		if settings.openclProfile then
 			debug.tic()
-		end
-
-		if lastid~=id then
-			if lastid then
-				messageCh:push{"end", lastid}
-			end
-			messageCh:push{"start", id}
-			lastid = id
 		end
 
 		opsDev[op]()
@@ -89,25 +101,16 @@ function schedule.dev()
 	end
 end
 
--- end of device queue
-function schedule.done()
-	hostSyncCh:push("done")
-	if lastid then
-		messageCh:push{"end", lastid}
-	end
-	lastid = false
-end
-
 
 -- single native thread
+local opsHost = require "thread.workerHost"
+
 function schedule.host()
-	local id = hostDataCh:demand()
+	startID()
 	local op = hostDataCh:demand()
 	assert(type(op) == "string", "Invalid Native op of type ["..type(op).."]")
 	if opsHost[op] then
-		messageCh:push{"start", id}
 		opsHost[op]()
-		messageCh:push{"end", id}
 	else
 		error("NATIVE WORKER ERROR: op ["..op.."] not an native function!\nHint: Check if function is correctly registered in workerNative.lua!")
 	end
@@ -133,9 +136,7 @@ local profile = settings.nativeProfile
 local profileOp
 
 function schedule.par()
-	local id = hostDataCh:demand()
-	messageCh:push{"start", id}
-
+	startID()
 	local done = false
 	if profile then
 		while hostDataCh:getCount() == 0 do end
@@ -198,7 +199,6 @@ function schedule.par()
 	if profile then
 		debug.toc(profileOp)
 	end
-	messageCh:push{"end", id}
 end
 
 
