@@ -102,7 +102,7 @@ function data:new(x, y, z) -- new image data
 end
 
 function data:allocHost()
-	if not self.data then
+	if not self.data or self.data==NULL then
 		self.data = alloc.trace.float32(self.x * self.y * self.z)
 		self.data_u32 = ffi.cast("uint32_t*", self.data)
 		self.data_i32 = ffi.cast("int32_t*", self.data)
