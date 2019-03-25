@@ -162,8 +162,8 @@ function data:toHost(blocking)
 end
 
 function data.meta.__tostring(a)
-	local host = a.data and "CPU" or ""
-	local device = a.dataOCL and (host and "/GPU" or "GPU") or ""
+	local host = (a.data and not a.data==NULL) and "CPU" or ""
+	local device = a.dataOCL and (host=="CPU" and "/GPU" or "GPU") or ""
 	return "Data["..a.x..", "..a.y..", "..a.z.."]"..a.cs.." ("..host..device..")"
 end
 
