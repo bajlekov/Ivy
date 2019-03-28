@@ -557,7 +557,7 @@ function ops.histogram(x, y)
 end
 
 local function waveformProcess(self)
-	self.proc = "dev"
+	self.procType = "dev"
 	local i = t.inputSourceBlack(self, 0)
 	local w = self.data.plot -- pre-allocated
 	local s = t.plainParam(self, 2)
@@ -581,7 +581,7 @@ function ops.waveform(x, y)
 end
 
 local function ABplotProcess(self)
-	self.proc = "dev"
+	self.procType = "dev"
 	local i = t.inputSourceBlack(self, 0)
 	local w = self.data.plot -- pre-allocated
 	local s = t.plainParam(self, 2)
