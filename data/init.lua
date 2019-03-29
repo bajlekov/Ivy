@@ -106,6 +106,7 @@ function data:allocHost()
 		self.data = alloc.trace.float32(self.x * self.y * self.z)
 		self.data_u32 = ffi.cast("uint32_t*", self.data)
 		self.data_i32 = ffi.cast("int32_t*", self.data)
+		self.__cpuDirty = true
 	end
 	return self
 end
