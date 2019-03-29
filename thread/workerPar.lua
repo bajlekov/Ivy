@@ -39,6 +39,7 @@ local threadMax = args[2]
 
 local dataCh = love.thread.getChannel("dataCh_worker"..threadNum)
 local syncCh = love.thread.getChannel("syncCh_worker"..threadNum)
+local lockCh = love.thread.getChannel("lockCh")
 
 local function round(x)
 	return math.floor(x+0.5)
@@ -109,20 +110,15 @@ function ops.sync()
 end
 
 function ops.lock()
-
+	assert(lockCh:demand()==1)
+	assert(lockCh:getCount()==0)
 end
 
 function ops.unlock()
-
+	assert(lockCh:getCount()==0)
+	lockCh:push(1)
 end
 
-
-local function atomicAdd(ch, buffer, x, y, z, v)
-	v = v + buffer:get(x, y, z)
-	buffer:set(x, y, z, v)
-end
-
-local atomicLock = love.thread.getChannel("atomicLock")
 
 function ops.stat_mean()
 	local p1 = getData()
@@ -148,9 +144,15 @@ function ops.stat_mean()
 	g = g/(p1.x*p1.y)
 	b = b/(p1.x*p1.y)
 
-	atomicLock:performAtomic(atomicAdd, p2, 0, 0, 0, r)
-	atomicLock:performAtomic(atomicAdd, p2, 0, 0, 1, g)
-	atomicLock:performAtomic(atomicAdd, p2, 0, 0, 2, b)
+	ops.lock()
+		r = r + p2:get(0, 0, 0)
+		p2:set(0, 0, 0, r)
+		g = g + p2:get(0, 0, 1)
+		p2:set(0, 0, 1, g)
+		b = b + p2:get(0, 0, 2)
+		p2:set(0, 0, 2, b)
+	ops.unlock()
+
 
 	syncCh:supply("step")
 end

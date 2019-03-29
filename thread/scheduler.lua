@@ -131,6 +131,8 @@ for i = 0, threadMax - 1 do
 
 	thread[i]:start(i, threadMax)
 end
+local lockCh = love.thread.getChannel("lockCh")
+lockCh:push(1)
 
 local profile = settings.nativeProfile
 local profileOp
