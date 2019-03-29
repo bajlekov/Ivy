@@ -45,38 +45,6 @@ local function round(x)
 	return math.floor(x+0.5)
 end
 
--- ISPC implementation of display
-assert(jit.arch=="x64", "Only x64 support yet")
-local ispc
-if jit.os == "Windows" then
-	ispc = ffi.load "ops/ispc/Windows/preview.dll"
-elseif jit.os == "Linux" then
-	ispc = ffi.load "ops/ispc/Linux/preview.so"
-end
-ffi.cdef [[
-  void preview(dataStruct*, imageStruct*, int, int);
-	void crop(dataStruct*, dataStruct*, dataStruct*, int, int);
-	void cropCorrect(dataStruct*, dataStruct*, dataStruct*, int, int);
-]]
-
-local ispc_cs
-if jit.os == "Windows" then
-	ispc_cs = ffi.load "ops/ispc/Windows/cs.dll"
-elseif jit.os == "Linux" then
-	ispc_cs = ffi.load "ops/ispc/Linux/cs.so"
-end
-ffi.cdef [[
-	void LRGB_SRGB(dataStruct*, dataStruct*, int, int);
-	void SRGB_LRGB(dataStruct*, dataStruct*, int, int);
-	void LRGB_XYZ(dataStruct*, dataStruct*, int, int);
-	void XYZ_LRGB(dataStruct*, dataStruct*, int, int);
-	void LAB_XYZ(dataStruct*, dataStruct*, int, int);
-	void XYZ_LAB(dataStruct*, dataStruct*, int, int);
-	void LAB_LCH(dataStruct*, dataStruct*, int, int);
-	void LCH_LAB(dataStruct*, dataStruct*, int, int);
-]]
-
-
 local function getData()
 	local d = dataCh:demand()
 	assert(type(d)=="table")
