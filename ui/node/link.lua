@@ -197,6 +197,7 @@ local function toDevice(buf)
 end
 
 local function toHost(buf)
+	buf:allocHost()
 	if buf.__cpuDirty then
 		thread.ops.syncHost(buf)
 		buf.__cpuDirty = false
