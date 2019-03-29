@@ -99,9 +99,9 @@ function process.load(file, append)
 
 				if v.node.graph.updateCurve then
 					v.node.graph:updateCurve()
-					if v.node.graph.ptsR then v.node.graph:updateCurve(1, v.node.graph.ptsR) end
-					if v.node.graph.ptsG then v.node.graph:updateCurve(2, v.node.graph.ptsG) end
-					if v.node.graph.ptsB then v.node.graph:updateCurve(3, v.node.graph.ptsB) end
+					if v.node.graph.curveR then v.node.graph:updateCurve(1, v.node.graph.curveR) print("update R") end
+					if v.node.graph.curveG then v.node.graph:updateCurve(2, v.node.graph.curveG) print("update G") end
+					if v.node.graph.curveB then v.node.graph:updateCurve(3, v.node.graph.curveB) print("update B") end
 				end
 			end
 		end
