@@ -679,7 +679,7 @@ do
 	end
 
 	local function proc(self)
-		self.procType = "dev"
+		self.procType = "host"
 		assert(self.portOut[0].link)
 		local i, o
 		i = t.inputSourceBlack(self, 0)
@@ -891,6 +891,7 @@ end
 
 
 local function gammaProcess(self)
+	self.procType = "dev"
 	assert(self.portOut[0].link)
 	local p1, p2, p3
 	p1 = t.inputSourceBlack(self, 0)
@@ -913,6 +914,7 @@ end
 ops.clut = {}
 local function genClut(lut)
 	local function clutProcess(self)
+		self.procType = "dev"
 		assert(self.portOut[0].link)
 		local p1, p2, p3, p4
 		p1 = t.inputSourceBlack(self, 0)
@@ -995,6 +997,7 @@ local function getChannelNames(cs)
 end
 
 local function decomposeProcess(self)
+	self.procType = "dev"
 	local p1, p2, p3, p4
 	p1 = t.inputSourceBlack(self, 0)
 	p2 = t.autoOutputSink(self, 1, p1.x, p1.y, 1)
@@ -1024,6 +1027,7 @@ ops.decomposeLAB = genDecompose("LAB")
 ops.decomposeLCH = genDecompose("LCH")
 
 local function composeProcess(self)
+	self.procType = "dev"
 	local p1, p2, p3, p4
 	p1 = t.inputParam(self, 1)
 	p2 = t.inputParam(self, 2)
@@ -1065,6 +1069,7 @@ ops.composeLCH = genCompose("LCH")
 
 
 local function mixRGBProcess(self)
+	self.procType = "dev"
 	local r = t.autoTempBuffer(self, 2, 1, 1, 3)
 	local g = t.autoTempBuffer(self, 5, 1, 1, 3)
 	local b = t.autoTempBuffer(self, 8, 1, 1, 3)

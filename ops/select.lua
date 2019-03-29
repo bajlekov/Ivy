@@ -58,6 +58,7 @@ return function(ops)
 	end
 
 	local function processChromaSelect(self)
+		self.procType = "dev"
 		local i = t.inputSourceBlack(self, 0)
 		local r = t.inputParam(self, 1)
 		local o = t.autoOutputSink(self, 0, i:shape())
