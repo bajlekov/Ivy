@@ -31,7 +31,7 @@ local unroll = require "tools.unroll"
 local filter = require "tools.filter"
 local alloc = require "data.alloc"
 
-local data = {type = "data/OCL"}
+local data = {type = "data"}
 data.meta = {__index = data}
 
 data.CS = {
@@ -102,10 +102,11 @@ function data:new(x, y, z) -- new image data
 end
 
 function data:allocHost()
-	if not self.data then
+	if not self.data or self.data==NULL then
 		self.data = alloc.trace.float32(self.x * self.y * self.z)
 		self.data_u32 = ffi.cast("uint32_t*", self.data)
 		self.data_i32 = ffi.cast("int32_t*", self.data)
+		self.__cpuDirty = true
 	end
 	return self
 end
@@ -162,7 +163,9 @@ function data:toHost(blocking)
 end
 
 function data.meta.__tostring(a)
-	return "Data/OCL["..a.x..", "..a.y..", "..a.z.."] ("..a.cs..")"
+	local host = (a.data and not a.data==NULL) and "CPU" or ""
+	local device = a.dataOCL and (host=="CPU" and "/GPU" or "GPU") or ""
+	return "Data["..a.x..", "..a.y..", "..a.z.."]"..a.cs.." ("..host..device..")"
 end
 
 function data:shape()

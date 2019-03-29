@@ -141,8 +141,6 @@ local nodeDFS = require "ui.node.dfs"
 local cycles = nodeDFS(node)
 
 
-local OCL = true
-
 local exifData
 local originalImage
 local RAW_SRGBmatrix
@@ -379,7 +377,7 @@ function love.update()
 		end
 	end
 
-	if thread.done(OCL) then
+	if thread.done() then
 		processReady = true
 		message = tempMessage
 
@@ -405,7 +403,11 @@ function love.update()
 			rescaleInputOutput()
 			imageOffset:toDevice()
 
-			--thread.ops.cropCorrectFisheye({originalImage, input.imageData, imageOffset}, OCL and "dev" or "par")
+			local pool = require "tools.imagePool"
+			pool.resize(originalImage.x, originalImage.y)
+			pool.crop(imageOffset.data[0], imageOffset.data[1], pipeline.input.imageData.x, pipeline.input.imageData.y)
+
+			--thread.ops.cropCorrectFisheye({originalImage, input.imageData, imageOffset}, "dev")
 
 			if panels.info.elem[15].value or panels.info.elem[16].value then
 				flags:set(0, 0, 0, panels.info.elem[15].value and 1 or 0)
@@ -457,7 +459,6 @@ function love.update()
 
 		for k, n in ipairs(dfs) do
 			if n.dirty then
-				n.procType = OCL and "dev" or "par" -- "dev": device, "host": host, "par": host parallel
 				n.state = "waiting"
 				n:process()
 				processTotal = processTotal + 1

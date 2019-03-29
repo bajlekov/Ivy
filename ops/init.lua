@@ -59,25 +59,6 @@ function ops.input(x, y, img)
 end
 
 
-local function cctProcess(self)
-	self.procType = "par"
-	local o = t.autoOutput(self, 0, 1, 1, 3)
-	local X, Y, Z = require "tools.cct"(self.elem[1].value)
-	print(X, Y, Z)
-	o:set(0, 0, 0, X)
-	o:set(0, 0, 1, Y)
-	o:set(0, 0, 2, Z)
-end
-
-function ops.cct(x, y)
-	local n = node:new("CCT")
-	n:addPortOut(0, "XYZ")
-	n:addElem("float", 1, "Temp.", 2000, 15000, 6500)
-	n.process = cctProcess
-	n:setPos(x, y)
-	return n
-end
-
 local cct = require "tools.cct"
 
 local function temperatureProcess(self)
@@ -109,6 +90,7 @@ end
 
 
 local function xyProcess(self)
+	self.procType = "dev"
 	local bi = t.inputSourceBlack(self, 1)
 	local wi = t.inputSourceWhite(self, 2)
 
@@ -133,6 +115,7 @@ function ops.xy(x, y)
 end
 
 local function radialProcess(self)
+	self.procType = "dev"
 	local x = t.inputParam(self, 1)
 	local y = t.inputParam(self, 2)
 
@@ -153,6 +136,7 @@ function ops.radial(x, y)
 end
 
 local function linearProcess(self)
+	self.procType = "dev"
 	local x = t.inputParam(self, 1)
 	local y = t.inputParam(self, 2)
 	local theta = t.inputParam(self, 3)
@@ -175,6 +159,7 @@ function ops.linear(x, y)
 end
 
 local function mirroredProcess(self)
+	self.procType = "dev"
 	local x = t.inputParam(self, 1)
 	local y = t.inputParam(self, 2)
 	local theta = t.inputParam(self, 3)
@@ -296,7 +281,7 @@ local function processAutoWB(self)
 	local i = t.inputSourceBlack(self, 0)
 	local o = t.autoOutputSink(self, 0, i:shape())
 
-	local ox, oy, update = self.data.tweak.getOrigin()
+	local ox, oy, update = self.data.tweak.getCurrent()
 	local p = t.autoTempBuffer(self, -1, 1, 1, 3) -- [x, y]
 	local s = t.autoTempBuffer(self, -2, 1, 1, 3) -- [r, g, b]
 	p:set(0, 0, 0, ox)
@@ -312,7 +297,7 @@ end
 
 function ops.autoWB(x, y)
 	local n = node:new("Sample WB")
-	n.data.tweak = require "tools.tweak"(true)
+	n.data.tweak = require "tools.tweak"()
 	n:addPortIn(0, "LRGB")
 	n:addPortOut(0, "LRGB")
 	n.data.tweak.toolButton(n, 1, "Sample WB")
@@ -330,107 +315,109 @@ function ops.autoWB(x, y)
 end
 
 
+
 do
-	local function paint(self, p, ox, oy)
-		p:set(0, 0, 0, ox)
-		p:set(0, 0, 1, oy)
-		p:set(0, 0, 2, self.elem[1].value)
-		p:toDevice()
-		thread.ops.paint({self.mask, p}, self)
-	end
+	local pool = require "tools.imagePool"
+	local ffi = require "ffi"
 
 	local function processPaintMask(self)
 		self.procType = "dev"
 		local link = self.portOut[0].link
-		assert(link)
-		link.data = self.mask
-		link:setData("Y", self.procType)
 
-		local ox, oy, update = self.data.tweak.getOrigin()
-		local p = t.autoTempBuffer(self, -1, 1, 1, 3) -- [x, y]
+		if link then
+			link.data = self.mask:get()
+			link:setData("Y", self.procType)
 
-		if update then
-			paint(self, p, ox, oy)
-		end
-	end
+			local i = t.inputSourceBlack(self, 6)
 
-	function ops.paintMask(x, y)
-		local n = node:new("[!] Paint mask")
-		n.data.tweak = require "tools.tweak"(true)
+			local ox, oy = self.data.tweak.getOrigin()
+			local cx, cy, update = self.data.tweak.getCurrent()
+			local p = t.autoTempBuffer(self, -1, 1, 1, 10) -- [x, y, value, flow, size, fall-off, range, fall-off, sample x, sample y]
 
-		local sx, sy = t.imageShape()
-		n.mask = data:new(sx, sy, 1)
-		n:addPortOut(0, "Y")
+			local ctrl = love.keyboard.isDown("lctrl") or love.keyboard.isDown("rctrl")
+			local alt = love.keyboard.isDown("lalt") or love.keyboard.isDown("ralt")
 
-		for x = 0, sx-1 do
-			for y = 0, sy-1 do
-				n.mask:set(x, y, 0, 0)
+			if update then
+				p:set(0, 0, 0, cx)
+				p:set(0, 0, 1, cy)
+				p:set(0, 0, 2, ctrl and 0 or self.elem[2].value)
+				p:set(0, 0, 3, self.elem[3].value)
+				p:set(0, 0, 4, self.elem[4].value)
+				p:set(0, 0, 5, self.elem[5].value)
+				p:set(0, 0, 6, self.portIn[6].link and self.elem[6].value or -1) -- range -1: disabled
+				p:set(0, 0, 7, self.elem[7].value)
+				p:set(0, 0, 8, alt and ox or cx)
+				p:set(0, 0, 9, alt and oy or cy)
+				p:toDevice(true)
+
+				thread.ops.paintSmart({link.data, i, p}, self)
 			end
-		end
-		n.mask:toDevice()
-
-		n:addElem("float", 1, "Value", 0, 1, 1)
-		n.data.tweak.toolButton(n, 2, "Paint")
-
-		n.process = processPaintMask
-		n:setPos(x, y)
-		return n
-	end
-end
-
-
-do
-	local function paint(self, i, p, ox, oy)
-		p:set(0, 0, 0, ox)
-		p:set(0, 0, 1, oy)
-		p:toDevice()
-		thread.ops.paintSmart({self.mask, i, p}, self)
-	end
-
-	local function processPaintMask(self)
-		self.procType = "dev"
-		local link = self.portOut[0].link
-		assert(link)
-		link.data = self.mask
-		link:setData("Y", self.procType)
-
-		local i = t.inputSourceBlack(self, 0)
-
-		local ox, oy, update = self.data.tweak.getOrigin()
-		local p = t.autoTempBuffer(self, -1, 1, 1, 6) -- [x, y, range, sharpness, size, value]
-
-		p:set(0, 0, 2, self.elem[1].value)
-		p:set(0, 0, 3, self.elem[2].value)
-		p:set(0, 0, 4, self.elem[3].value)
-		p:set(0, 0, 5, self.elem[4].value)
-
-		if update then
-			paint(self, i, p, ox, oy)
 		end
 	end
 
 	function ops.paintMaskSmart(x, y)
-		local n = node:new("[!] Paint mask")
-		n.data.tweak = require "tools.tweak"(true)
+		local n = node:new("Paint Mask")
 
-		local sx, sy = t.imageShape()
-		n.mask = data:new(sx, sy, 1)
-		n:addPortIn(0, "LAB")
-		n:addPortOut(0, "Y")
-
-		n:addElem("float", 1, "Range", 0, 1, 0.2)
-		n:addElem("float", 2, "Sharpness", 0, 1, 0.5)
-		n:addElem("float", 3, "Size", 0, 512, 32)
-		n:addElem("float", 4, "Value", -1, 1, 1)
-
-		for x = 0, sx-1 do
-			for y = 0, sy-1 do
-				n.mask:set(x, y, 0, 0)
-			end
+		do
+			local mask = data:new(1, 1, 1):toDevice()
+			pool.resize(sx, sy)
+			n.mask = pool.add(mask)
 		end
-		n.mask:toDevice()
 
-		n.data.tweak.toolButton(n, 5, "Paint")
+		n:addPortOut(0, "Y")
+		n:addPortIn(6, "LAB")
+		n.portIn[6].toggle = {[6] = true, [7] = true}
+
+		n.data.tweak = require "tools.tweak"()
+		n.data.tweak.toolButton(n, 1, "Paint")
+
+		n:addElem("float", 2, "Value", 0, 1, 1)
+		n:addElem("float", 3, "Flow", 0, 1, 1)
+		n:addElem("float", 4, "Brush Size", 0, 500, 50)
+		n:addElem("float", 5, "Fall-off", 0, 1, 0.5).last = true
+		n:addElem("float", 6, "Smart Range", 0, 1, 0.1).first = true
+		n:addElem("float", 7, "Fall-off", 0, 1, 0.5)
+
+		n:addElem("button", 8, "Load", function()
+			local f = io.open("mask.bin", "rb")
+			local header = f:read(6*4)
+			local header_uint8 = ffi.new("uint8_t[6*4]", header)
+			header = ffi.cast("uint32_t*", header_uint8)
+			local x, y, z = header[0], header[1], header[2]
+			local sx, sy, sz = header[3], header[4], header[5]
+
+			local imgData = f:read("*a")
+			imgData = love.data.decompress("string", "lz4", imgData)
+
+			local img = data:new(x, y, z):allocHost()
+			img.sx = sx
+			img.sy = sy
+			img.sz = sz
+			ffi.copy(img.data, imgData)
+			img:toDevice(true)
+
+			n.mask = pool.add(img)
+			n.dirty = true
+		end)
+
+
+		n:addElem("button", 9, "Save", function()
+			n.mask:set()
+
+			local img = n.mask.full
+
+			local x, y, z = img.x, img.y, img.z
+			local sx, sy, sz = img.sx, img.sy, img.sz
+
+			local header = ffi.new("uint32_t[6]", x, y, z, sx, sy, sz)
+
+			local f = io.open("mask.bin", "wb")
+			f:write(ffi.string(header, 6*4))
+
+			local data = love.data.compress("string", "lz4", ffi.string(img.data, x*y*z*4))
+			f:write(data)
+			f:close()
+		end)
 
 		n.process = processPaintMask
 		n:setPos(x, y)
@@ -512,9 +499,9 @@ end
 function ops.localLaplacian(x, y)
 	local n = node:new("Detail")
 	n:addPortIn(0, "LAB"):addPortOut(0, "LAB")
-	n:addPortIn(1, "Y"):addElem("float", 1, "Detail", 0, 2, 1)
-	n:addPortIn(2, "Y"):addElem("float", 2, "Shadows", 0, 2, 1)
-	n:addPortIn(3, "Y"):addElem("float", 3, "Highlights", 0, 2, 1)
+	n:addPortIn(1, "Y"):addElem("float", 1, "Detail", -1, 1, 0)
+	n:addPortIn(2, "Y"):addElem("float", 2, "Shadows", -1, 1, 0)
+	n:addPortIn(3, "Y"):addElem("float", 3, "Highlights", -1, 1, 0)
 	n:addPortIn(4, "Y"):addElem("float", 4, "Range", 0, 1, 0.2)
 	n.process = localLaplacianProcess
 	n:setPos(x, y)
@@ -551,7 +538,7 @@ function ops.histogram(x, y)
 end
 
 local function waveformProcess(self)
-	self.proc = "dev"
+	self.procType = "dev"
 	local i = t.inputSourceBlack(self, 0)
 	local w = self.data.plot -- pre-allocated
 	local s = t.plainParam(self, 2)
@@ -575,7 +562,7 @@ function ops.waveform(x, y)
 end
 
 local function ABplotProcess(self)
-	self.proc = "dev"
+	self.procType = "dev"
 	local i = t.inputSourceBlack(self, 0)
 	local w = self.data.plot -- pre-allocated
 	local s = t.plainParam(self, 2)
@@ -692,7 +679,7 @@ do
 	end
 
 	local function proc(self)
-		self.procType = "dev"
+		self.procType = "host"
 		assert(self.portOut[0].link)
 		local i, o
 		i = t.inputSourceBlack(self, 0)
@@ -879,6 +866,7 @@ end
 
 
 local function mixProcess(self)
+	self.procType = "dev"
 	assert(self.portOut[0].link)
 	local p1, p2, p3, p4
 	p1 = t.inputParam(self, 1)
@@ -902,48 +890,8 @@ function ops.mix(x, y)
 end
 
 
-
-local function invertProcess(self)
-	assert(self.portOut[0].link)
-	local p1, p2
-	p1 = t.inputSourceBlack(self, 0)
-	p2 = t.autoOutput(self, 0, p1:shape())
-	p2.cs = p1.cs
-	thread.ops.invert({p1, p2}, self)
-end
-
-function ops.invert(x, y)
-	local n = node:new("Invert")
-	n:addPortIn(0, "Y__")
-	n:addPortOut(0)
-	n.process = invertProcess
-	n:setPos(x, y)
-	return n
-end
-
-
---[[
-local function smoothstepProcess(self)
-	assert(self.portOut[0].link)
-	local p1, p2
-	p1 = t.inputSourceBlack(self, 0)
-	p2 = t.autoOutput(self, 0, p1:shape())
-	thread.ops.smoothstep({p1, p2}, self)
-end
-
-function ops.smoothstep(x, y)
-	local n = node:new("Smoothstep")
-	n:addPortIn(0)
-	n:addPortOut(0)
-	n.process = smoothstepProcess
-	n:setPos(x, y)
-	return n
-end
---]]
-
-
-
 local function gammaProcess(self)
+	self.procType = "dev"
 	assert(self.portOut[0].link)
 	local p1, p2, p3
 	p1 = t.inputSourceBlack(self, 0)
@@ -966,6 +914,7 @@ end
 ops.clut = {}
 local function genClut(lut)
 	local function clutProcess(self)
+		self.procType = "dev"
 		assert(self.portOut[0].link)
 		local p1, p2, p3, p4
 		p1 = t.inputSourceBlack(self, 0)
@@ -1029,54 +978,6 @@ function ops.image(x, y, image)
 end
 
 
-local function fwtProcessForward(self)
-	assert(self.portOut[0].link)
-	local p1, p2
-	p1 = t.inputSourceBlack(self, 0)
-	p2 = t.autoOutput(self, 0, p1:shape())
-	thread.ops.fwtHaarForward({p1, p2}, self)
-end
-
-function ops.fwtForward(x, y)
-	local n = node:new("FWT Forward")
-	n:addPortIn(0)
-	n:addPortOut(0)
-	n.process = fwtProcessForward
-	n:setPos(x, y)
-	return n
-end
-
-
-
-local function fwtProcessInverse(self)
-	assert(self.portOut[0].link)
-	local p1, p2
-	p1 = t.inputSourceBlack(self, 0)
-	p2 = t.autoOutput(self, 0, p1:shape())
-	local f1, f2, f3, f4, f5
-	f1 = t.inputParam(self, 1)
-	f2 = t.inputParam(self, 2)
-	f3 = t.inputParam(self, 3)
-	f4 = t.inputParam(self, 4)
-	f5 = t.inputParam(self, 5)
-	thread.ops.fwtHaarInverse({p1, p2, f1, f2, f3, f4, f5}, self)
-end
-
-function ops.fwtInverse(x, y)
-	local n = node:new("FWT Inverse")
-	n:addPortIn(0)
-	n:addPortOut(0)
-	n:addPortIn(1):addElem("float", 1, "Level 1", 0, 3, 1)
-	n:addPortIn(2):addElem("float", 2, "Level 2", 0, 3, 1)
-	n:addPortIn(3):addElem("float", 3, "Level 3", 0, 3, 1)
-	n:addPortIn(4):addElem("float", 4, "Level 4", 0, 3, 1)
-	n:addPortIn(5):addElem("float", 5, "Level 5", 0, 3, 1)
-	n.process = fwtProcessInverse
-	n:setPos(x, y)
-	return n
-end
-
-
 local channelNames = {
 	SRGB = {"sRGB", "R", "G", "B"},
 	LRGB = {"Linear sRGB", "R", "G", "B"},
@@ -1096,6 +997,7 @@ local function getChannelNames(cs)
 end
 
 local function decomposeProcess(self)
+	self.procType = "dev"
 	local p1, p2, p3, p4
 	p1 = t.inputSourceBlack(self, 0)
 	p2 = t.autoOutputSink(self, 1, p1.x, p1.y, 1)
@@ -1125,6 +1027,7 @@ ops.decomposeLAB = genDecompose("LAB")
 ops.decomposeLCH = genDecompose("LCH")
 
 local function composeProcess(self)
+	self.procType = "dev"
 	local p1, p2, p3, p4
 	p1 = t.inputParam(self, 1)
 	p2 = t.inputParam(self, 2)
@@ -1166,6 +1069,7 @@ ops.composeLCH = genCompose("LCH")
 
 
 local function mixRGBProcess(self)
+	self.procType = "dev"
 	local r = t.autoTempBuffer(self, 2, 1, 1, 3)
 	local g = t.autoTempBuffer(self, 5, 1, 1, 3)
 	local b = t.autoTempBuffer(self, 8, 1, 1, 3)
@@ -1194,6 +1098,10 @@ function ops.mixRGB(x, y)
 	n:addPortIn(5, "LRGB")
 	n:addPortIn(8, "LRGB")
 	n:addPortOut(0, "LRGB")
+	n.portIn[2].toggle = {[1] = false, [2] = false, [3] = false}
+	n.portIn[5].toggle = {[4] = false, [5] = false, [6] = false}
+	n.portIn[8].toggle = {[7] = false, [8] = false, [9] = false}
+
 	n:addElem("float", 1, "R(r)", - 2, 3, 1)
 	n:addElem("float", 2, "R(g)", - 2, 3, 0)
 	n:addElem("float", 3, "R(b)", - 2, 3, 0).last = true
@@ -1208,65 +1116,7 @@ function ops.mixRGB(x, y)
 	return n
 end
 
-
-
-local function adjustLCHProcess(self)
-	self.procType = "par"
-	local p1, p2, l, c, h
-	p1 = t.inputSourceBlack(self, 0)
-	l = t.inputParam(self, 1)
-	c = t.inputParam(self, 2)
-	h = t.inputParam(self, 3)
-	local x, y, z = data.superSize(p1, l, c, h)
-	p2 = t.autoOutput(self, 0, x, y, 3)
-	thread.ops.adjustlch({p1, p2, l, c, h}, self)
-end
-
-function ops.adjustLCH(x, y)
-	local n = node:new("Adjust LCH")
-	n:addPortIn(0)
-	n:addPortOut(0)
-	n:addPortIn(1):addElem("float", 1, "L factor", 0, 3, 1)
-	n:addPortIn(2):addElem("float", 2, "C factor", 0, 3, 1)
-	n:addPortIn(3):addElem("float", 3, "H offset", - 1, 1, 0)
-	n.process = adjustLCHProcess
-	n:setPos(x, y)
-	return n
-end
-
-
-
-local cs = require "tools.cs"
-local function colorChange(self)
-	local r = self.elem[1].value
-	local g = self.elem[2].value
-	local b = self.elem[3].value
-	r, g, b = cs.LRGB.SRGB(r, g, b)
-	self.elem[4].value = {r, g, b, 1}
-end
-
-local function colorProcess(self)
-	local c = t.autoTempBuffer(self, 1, 1, 1, 3)
-	c:set(0, 0, 0, self.elem[1].value)
-	c:set(0, 0, 1, self.elem[2].value)
-	c:set(0, 0, 2, self.elem[3].value)
-	c:toDevice()
-	self.portOut[4].link.data = c
-end
-
-function ops.color(x, y)
-	local n = node:new("Color")
-	n:addElem("float", 1, "Red", 0, 1, 1)
-	n:addElem("float", 2, "Green", 0, 1, 1)
-	n:addElem("float", 3, "Blue", 0, 1, 1)
-	n:addPortOut(4):addElem("color", 4, "Color")
-	n.process = colorProcess
-	n.onChange = colorChange
-	n:setPos(x, y)
-	return n
-end
-
-
+-- TODO: allocate temporary buffers in scheduler only
 local function downsize(x, y, z)
 	if not y then
 		x, y, z = x:shape()
@@ -1468,6 +1318,27 @@ function ops.RLdeconvolution(x, y)
 	n:addPortIn(1, "Y"):addElem("float", 1, "Radius", 0, 2, 0.75)
 	n:addPortIn(2, "Y"):addElem("float", 2, "Strength", 0, 20, 5)
 	n.process = RLdeconvolutionProcess
+	n:setPos(x, y)
+	return n
+end
+
+local function shockFilterProcess(self)
+	self.procType = "dev"
+	local i, o, w, f
+	i = t.inputSourceBlack(self, 0)
+	o = t.autoOutput(self, 0, i:shape())
+	w = t.inputParam(self, 1)
+	f = t.inputParam(self, 2)
+	thread.ops.shockFilter({i, o, w, f}, self)
+end
+
+function ops.shockFilter(x, y)
+	local n = node:new("Shock Filter")
+	n:addPortIn(0, "LAB")
+	n:addPortOut(0, "LAB")
+	n:addPortIn(1, "Y"):addElem("float", 1, "Radius", 0, 1, 0.5)
+	n:addPortIn(2, "Y"):addElem("float", 2, "Strength", 0, 1, 0.2)
+	n.process = shockFilterProcess
 	n:setPos(x, y)
 	return n
 end

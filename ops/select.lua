@@ -30,7 +30,7 @@ return function(ops)
 		local o = t.autoOutputSink(self, 0, i:shape())
 		local m = t.autoOutputSink(self, 4, i.x, i.y, 1)
 
-		local ox, oy, update = self.data.tweak.getOrigin()
+		local ox, oy, update = self.data.tweak.getCurrent()
 		local p = t.autoTempBuffer(self, - 1, 1, 1, 3) -- [x, y]
 		local s = t.autoTempBuffer(self, - 2, 1, 1, 3) -- [r, g, b]
 		p:set(0, 0, 0, ox)
@@ -45,7 +45,7 @@ return function(ops)
 
 	function ops.hueSelect(x, y)
 		local n = node:new("Hue Select")
-		n.data.tweak = require "tools.tweak"(true)
+		n.data.tweak = require "tools.tweak"()
 		n:addPortIn(0, "LCH")
 		n:addPortOut(0, "LCH")
 		n:addPortIn(1, "Y"):addElem("float", 1, "Range", 0, 1, 0.2)
@@ -58,12 +58,13 @@ return function(ops)
 	end
 
 	local function processChromaSelect(self)
+		self.procType = "dev"
 		local i = t.inputSourceBlack(self, 0)
 		local r = t.inputParam(self, 1)
 		local o = t.autoOutputSink(self, 0, i:shape())
 		local m = t.autoOutputSink(self, 4, i.x, i.y, 1)
 
-		local ox, oy, update = self.data.tweak.getOrigin()
+		local ox, oy, update = self.data.tweak.getCurrent()
 		local p = t.autoTempBuffer(self, - 1, 1, 1, 3) -- [x, y]
 		local s = t.autoTempBuffer(self, - 2, 1, 1, 3) -- [r, g, b]
 		p:set(0, 0, 0, ox)
@@ -78,7 +79,7 @@ return function(ops)
 
 	function ops.chromaSelect(x, y)
 		local n = node:new("Chroma Select")
-		n.data.tweak = require "tools.tweak"(true)
+		n.data.tweak = require "tools.tweak"()
 		n:addPortIn(0, "LCH")
 		n:addPortOut(0, "LCH")
 		n:addPortIn(1, "Y"):addElem("float", 1, "Range", 0, 1, 0.2)
@@ -97,7 +98,7 @@ return function(ops)
 		local o = t.autoOutputSink(self, 0, i:shape())
 		local m = t.autoOutputSink(self, 4, i.x, i.y, 1)
 
-		local ox, oy, update = self.data.tweak.getOrigin()
+		local ox, oy, update = self.data.tweak.getCurrent()
 		local p = t.autoTempBuffer(self, - 1, 1, 1, 3) -- [x, y]
 		local s = t.autoTempBuffer(self, - 2, 1, 1, 3) -- [r, g, b]
 		p:set(0, 0, 0, ox)
@@ -112,7 +113,7 @@ return function(ops)
 
 	function ops.lightnessSelect(x, y)
 		local n = node:new("Lightness Select")
-		n.data.tweak = require "tools.tweak"(true)
+		n.data.tweak = require "tools.tweak"()
 		n:addPortIn(0, "LCH")
 		n:addPortOut(0, "LCH")
 		n:addPortIn(1, "Y"):addElem("float", 1, "Range", 0, 1, 0.2)
@@ -131,7 +132,7 @@ return function(ops)
 		local o = t.autoOutputSink(self, 0, i:shape())
 		local m = t.autoOutputSink(self, 3, i.x, i.y, 1)
 
-		local ox, oy = self.data.tweak.getOrigin()
+		local ox, oy = self.data.tweak.getCurrent()
 		local p = t.autoTempBuffer(self, - 1, 1, 1, 3) -- [x, y, scale]
 		local scale = math.min(math.max(o.x, m.x), math.max(o.y, m.y))
 		p:set(0, 0, 0, ox)
@@ -144,7 +145,7 @@ return function(ops)
 
 	function ops.distanceSelect(x, y)
 		local n = node:new("Distance Select")
-		n.data.tweak = require "tools.tweak"(true)
+		n.data.tweak = require "tools.tweak"()
 		n:addPortIn(0, "LCH")
 		n:addPortOut(0, "LCH")
 		n:addPortIn(1, "Y"):addElem("float", 1, "Distance", 0, 1, 0.2)
@@ -163,7 +164,7 @@ return function(ops)
 		local o = t.autoOutputSink(self, 0, i:shape())
 		local m = t.autoOutputSink(self, 5, i.x, i.y, 1)
 
-		local ox, oy, update = self.data.tweak.getOrigin()
+		local ox, oy, update = self.data.tweak.getCurrent()
 		local p = t.autoTempBuffer(self, - 1, 1, 1, 3) -- [x, y, scale]
 		local s = t.autoTempBuffer(self, - 2, 1, 1, 3) -- [r, g, b]
 		local scale = math.min(math.max(o.x, m.x), math.max(o.y, m.y))
@@ -180,7 +181,7 @@ return function(ops)
 
 	function ops.smartSelect(x, y)
 		local n = node:new("Smart Select")
-		n.data.tweak = require "tools.tweak"(true)
+		n.data.tweak = require "tools.tweak"()
 		n:addPortIn(0, "LAB")
 		n:addPortOut(0, "LAB")
 		n:addPortIn(1, "Y"):addElem("float", 1, "Range", 0, 1, 0.2)
@@ -200,7 +201,7 @@ return function(ops)
 		local o = t.autoOutputSink(self, 0, i:shape())
 		local m = t.autoOutputSink(self, 4, i.x, i.y, 1)
 
-		local ox, oy, update = self.data.tweak.getOrigin()
+		local ox, oy, update = self.data.tweak.getCurrent()
 		local p = t.autoTempBuffer(self, - 1, 1, 1, 3) -- [x, y]
 		local s = t.autoTempBuffer(self, - 2, 1, 1, 3) -- [r, g, b]
 		p:set(0, 0, 0, ox)
@@ -219,7 +220,7 @@ return function(ops)
 
 	function ops.colorSelect(x, y)
 		local n = node:new("Color Select")
-		n.data.tweak = require "tools.tweak"(true)
+		n.data.tweak = require "tools.tweak"()
 		n:addPortIn(0, "LAB")
 		n:addPortOut(0, "LAB")
 		n:addPortIn(1, "Y"):addElem("float", 1, "Range", 0, 1, 0.2)

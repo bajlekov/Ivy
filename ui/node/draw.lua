@@ -122,6 +122,8 @@ local function draw(self, element)
 
 	for i = 1, self.elem.n do
 		if self.portIn[i] then
+
+			-- toggle matching elements
 			if self.portIn[i].link then
 				self.elem[i].disabled = true
 				love.graphics.setColor(style.portOnColor)
@@ -129,6 +131,19 @@ local function draw(self, element)
 				self.elem[i].disabled = false
 				love.graphics.setColor(style.portOffColor)
 			end
+			-- override elem toggles with toggle table
+			if self.portIn[i].toggle then
+				for k, v in pairs(self.portIn[i].toggle) do
+					if self.elem[k] then
+						if v then
+							self.elem[k].disabled = not self.portIn[i].link
+						else
+							self.elem[k].disabled = self.portIn[i].link
+						end
+					end
+				end
+			end
+
 			love.graphics.rectangle("fill", x - style.nodeBorder - (style.elemHeight) / 2, y + style.titleHeight + style.elemHeight * (i - 1), (style.elemHeight) / 2, style.elemHeight - style.elemBorder, 3, 3)
 			love.graphics.rectangle("fill", x - style.nodeBorder - (style.elemHeight) / 2, y + style.titleHeight + style.elemHeight * (i - 1), (style.elemHeight) / 2 - 3, style.elemHeight - style.elemBorder)
 			if self.portIn[i - 1] and i ~= 1 then

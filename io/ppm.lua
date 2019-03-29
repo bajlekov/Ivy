@@ -80,21 +80,8 @@ local function fromString1(stringData, sx, sy, scale, linear)
 	return bufferData
 end
 
-function ppm.read(fileName, linear)
-	local file = io.open(fileName, (ffi.os == "Windows" and "rb" or "r"))
-	assert(file:read("*l") == "P6", "wrong image format!")
-	skipComment(file)
-	local sx, sy, scale = file:read("*n", "*n", "*n", "*l")
-	local stringData = file:read("*a")
-	file:close()
-	return fromString3(stringData, sx, sy, scale, linear)
-end
-
-
 function ppm.readStream(file, linear, scaleOverride)
-	-- P5 for B/W raw image
 	local fileType = file:read("*l")
-
 	assert(fileType == "P6" or fileType == "P5", "wrong image format!")
 
 	local str = ""
@@ -102,6 +89,7 @@ function ppm.readStream(file, linear, scaleOverride)
 		str = file:read("*l")
 	end
 	local sx, sy = str:match("(%d+)%s(%d+)")
+
 	str = file:read("*l")
 	local scale = str:match("(%d+)")
 	sx, sy, scale = tonumber(sx), tonumber(sy), tonumber(scale)
@@ -113,6 +101,11 @@ function ppm.readStream(file, linear, scaleOverride)
 	elseif fileType == "P5" then
 		return fromString1(stringData, sx, sy, scaleOverride or scale, linear)
 	end
+end
+
+function ppm.read(fileName, linear, scaleOverride)
+	local file = io.open(fileName, (ffi.os == "Windows" and "rb" or "r"))
+	return ppm.readStream(file, linear, scaleOverride)
 end
 
 return ppm

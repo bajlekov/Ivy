@@ -52,9 +52,9 @@ kernel void transform(global float *I,
   const int z = get_global_id(2);
 
   float i = $I[x, y, z];
-  float d = $D[x, y, z];
-  float s = $S[x, y, z];
-  float h = $H[x, y, z];
+  float d = $D[x, y, z]+1.0f;
+  float s = $S[x, y, z]+1.0f;
+  float h = $H[x, y, z]+1.0f;
   float r = $R[x, y, z];
 
   float o = i - m;
