@@ -59,25 +59,6 @@ function ops.input(x, y, img)
 end
 
 
-local function cctProcess(self)
-	self.procType = "par"
-	local o = t.autoOutput(self, 0, 1, 1, 3)
-	local X, Y, Z = require "tools.cct"(self.elem[1].value)
-	print(X, Y, Z)
-	o:set(0, 0, 0, X)
-	o:set(0, 0, 1, Y)
-	o:set(0, 0, 2, Z)
-end
-
-function ops.cct(x, y)
-	local n = node:new("CCT")
-	n:addPortOut(0, "XYZ")
-	n:addElem("float", 1, "Temp.", 2000, 15000, 6500)
-	n.process = cctProcess
-	n:setPos(x, y)
-	return n
-end
-
 local cct = require "tools.cct"
 
 local function temperatureProcess(self)
@@ -909,47 +890,6 @@ function ops.mix(x, y)
 end
 
 
-
-local function invertProcess(self)
-	assert(self.portOut[0].link)
-	local p1, p2
-	p1 = t.inputSourceBlack(self, 0)
-	p2 = t.autoOutput(self, 0, p1:shape())
-	p2.cs = p1.cs
-	thread.ops.invert({p1, p2}, self)
-end
-
-function ops.invert(x, y)
-	local n = node:new("Invert")
-	n:addPortIn(0, "Y__")
-	n:addPortOut(0)
-	n.process = invertProcess
-	n:setPos(x, y)
-	return n
-end
-
-
---[[
-local function smoothstepProcess(self)
-	assert(self.portOut[0].link)
-	local p1, p2
-	p1 = t.inputSourceBlack(self, 0)
-	p2 = t.autoOutput(self, 0, p1:shape())
-	thread.ops.smoothstep({p1, p2}, self)
-end
-
-function ops.smoothstep(x, y)
-	local n = node:new("Smoothstep")
-	n:addPortIn(0)
-	n:addPortOut(0)
-	n.process = smoothstepProcess
-	n:setPos(x, y)
-	return n
-end
---]]
-
-
-
 local function gammaProcess(self)
 	assert(self.portOut[0].link)
 	local p1, p2, p3
@@ -1031,54 +971,6 @@ function ops.image(x, y, image)
 	end)
 
 	n.process = imageProcess
-	n:setPos(x, y)
-	return n
-end
-
-
-local function fwtProcessForward(self)
-	assert(self.portOut[0].link)
-	local p1, p2
-	p1 = t.inputSourceBlack(self, 0)
-	p2 = t.autoOutput(self, 0, p1:shape())
-	thread.ops.fwtHaarForward({p1, p2}, self)
-end
-
-function ops.fwtForward(x, y)
-	local n = node:new("FWT Forward")
-	n:addPortIn(0)
-	n:addPortOut(0)
-	n.process = fwtProcessForward
-	n:setPos(x, y)
-	return n
-end
-
-
-
-local function fwtProcessInverse(self)
-	assert(self.portOut[0].link)
-	local p1, p2
-	p1 = t.inputSourceBlack(self, 0)
-	p2 = t.autoOutput(self, 0, p1:shape())
-	local f1, f2, f3, f4, f5
-	f1 = t.inputParam(self, 1)
-	f2 = t.inputParam(self, 2)
-	f3 = t.inputParam(self, 3)
-	f4 = t.inputParam(self, 4)
-	f5 = t.inputParam(self, 5)
-	thread.ops.fwtHaarInverse({p1, p2, f1, f2, f3, f4, f5}, self)
-end
-
-function ops.fwtInverse(x, y)
-	local n = node:new("FWT Inverse")
-	n:addPortIn(0)
-	n:addPortOut(0)
-	n:addPortIn(1):addElem("float", 1, "Level 1", 0, 3, 1)
-	n:addPortIn(2):addElem("float", 2, "Level 2", 0, 3, 1)
-	n:addPortIn(3):addElem("float", 3, "Level 3", 0, 3, 1)
-	n:addPortIn(4):addElem("float", 4, "Level 4", 0, 3, 1)
-	n:addPortIn(5):addElem("float", 5, "Level 5", 0, 3, 1)
-	n.process = fwtProcessInverse
 	n:setPos(x, y)
 	return n
 end
@@ -1219,65 +1111,7 @@ function ops.mixRGB(x, y)
 	return n
 end
 
-
-
-local function adjustLCHProcess(self)
-	self.procType = "par"
-	local p1, p2, l, c, h
-	p1 = t.inputSourceBlack(self, 0)
-	l = t.inputParam(self, 1)
-	c = t.inputParam(self, 2)
-	h = t.inputParam(self, 3)
-	local x, y, z = data.superSize(p1, l, c, h)
-	p2 = t.autoOutput(self, 0, x, y, 3)
-	thread.ops.adjustlch({p1, p2, l, c, h}, self)
-end
-
-function ops.adjustLCH(x, y)
-	local n = node:new("Adjust LCH")
-	n:addPortIn(0)
-	n:addPortOut(0)
-	n:addPortIn(1):addElem("float", 1, "L factor", 0, 3, 1)
-	n:addPortIn(2):addElem("float", 2, "C factor", 0, 3, 1)
-	n:addPortIn(3):addElem("float", 3, "H offset", - 1, 1, 0)
-	n.process = adjustLCHProcess
-	n:setPos(x, y)
-	return n
-end
-
-
-
-local cs = require "tools.cs"
-local function colorChange(self)
-	local r = self.elem[1].value
-	local g = self.elem[2].value
-	local b = self.elem[3].value
-	r, g, b = cs.LRGB.SRGB(r, g, b)
-	self.elem[4].value = {r, g, b, 1}
-end
-
-local function colorProcess(self)
-	local c = t.autoTempBuffer(self, 1, 1, 1, 3)
-	c:set(0, 0, 0, self.elem[1].value)
-	c:set(0, 0, 1, self.elem[2].value)
-	c:set(0, 0, 2, self.elem[3].value)
-	c:toDevice()
-	self.portOut[4].link.data = c
-end
-
-function ops.color(x, y)
-	local n = node:new("Color")
-	n:addElem("float", 1, "Red", 0, 1, 1)
-	n:addElem("float", 2, "Green", 0, 1, 1)
-	n:addElem("float", 3, "Blue", 0, 1, 1)
-	n:addPortOut(4):addElem("color", 4, "Color")
-	n.process = colorProcess
-	n.onChange = colorChange
-	n:setPos(x, y)
-	return n
-end
-
-
+-- TODO: allocate temporary buffers in scheduler only
 local function downsize(x, y, z)
 	if not y then
 		x, y, z = x:shape()
