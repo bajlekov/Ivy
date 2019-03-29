@@ -86,7 +86,7 @@ do
       scheduler = "par"
     end
 
-    assert(scheduler=="dev" or scheduler=="par" or scheduler=="host", "Invalid scheduler "..debug.traceback())
+    assert(scheduler=="dev" or scheduler=="par" or scheduler=="host", "Invalid scheduler \""..scheduler.."\"")
 
     dataCh:push(scheduler)
     dataCh:push(nodeID)
