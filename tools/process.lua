@@ -79,7 +79,11 @@ function process.load(file, append)
 			-- set elem values
 			for k, e in pairs(v.elem) do
 				if type(k)=="number" then
-					v.node.elem[k].value = e
+					local elem = v.node.elem[k]
+					elem.value = e
+					if elem.value and elem.action then
+						elem.action()
+					end
 				end
 			end
 
