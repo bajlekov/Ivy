@@ -34,7 +34,7 @@ kernel void display(global float *p1, global uchar *p2, global float *p3, global
   const int x = get_global_id(0);
   const int y = get_global_id(1);
 
-	float3 v = $p1[x, y]SRGB;
+	float3 v = $p1[x, y]LRGB;
 	if ( p3[0]==1 && (v.x>1.0001f || v.y>1.0001f || v.z>1.0001f) ) {
 		v = (float3)(0.0f);
 	}
@@ -42,9 +42,24 @@ kernel void display(global float *p1, global uchar *p2, global float *p3, global
 		v = (float3)(1.0f);
 	}
 
-  uchar r = (uchar)round(clamp(v.x, 0.0f, 1.0f)*255.0f);
-  uchar g = (uchar)round(clamp(v.y, 0.0f, 1.0f)*255.0f);
-  uchar b = (uchar)round(clamp(v.z, 0.0f, 1.0f)*255.0f);
+	float m = fmax(v.x, fmax(v.y, v.z));
+	float Y = LRGBtoY(v);
+	if (m>1.0f) {
+		if (Y>1.0f) {
+			v = (float3)1.0f;
+		} else {
+			v = v/m;
+			float Ys = LRGBtoY(v); // Ysaturated
+			float f = (Y-Ys)/(1.0f-Ys);
+			v = f*1.0f + (1.0f-f)*v;
+		}
+	}
+
+	v = LRGBtoSRGB(clamp(v, 0.0f, 1.0f));
+
+  uchar r = (uchar)round(v.x*255.0f);
+  uchar g = (uchar)round(v.y*255.0f);
+  uchar b = (uchar)round(v.z*255.0f);
 
 	const int idx = x*4 + ($p2.y$-y-1)*$p2.x$*4;
   p2[idx + 0] = r;
