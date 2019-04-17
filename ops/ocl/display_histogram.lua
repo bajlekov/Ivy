@@ -45,14 +45,11 @@ kernel void display(global float *p1, global uchar *p2, global float *p3, global
 	float m = fmax(v.x, fmax(v.y, v.z));
 	float Y = LRGBtoY(v);
 	if (m>1.0f) {
-		if (Y>1.0f) {
-			v = (float3)1.0f;
-		} else {
-			v = v/m;
-			float Ys = LRGBtoY(v); // Ysaturated
-			float f = (Y-Ys)/(1.0f-Ys);
-			v = f*1.0f + (1.0f-f)*v;
-		}
+		v = v/m;
+		float Ys = LRGBtoY(v); // Ysaturated
+		float f = (Y-Ys)/(1.0f-Ys);
+		f = tanh(f);
+		v = f*1.0f + (1.0f-f)*v;
 	}
 
 	v = LRGBtoSRGB(clamp(v, 0.0f, 1.0f));
