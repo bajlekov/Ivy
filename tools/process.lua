@@ -88,14 +88,12 @@ function process.load(file, append)
 			end
 
 			-- curve handling
-			if v.elem.graph then
+			if v.elem.graph and v.elem.graph.type=="curve" then
 				v.node.graph.curve.points = v.elem.graph.pts
 				if v.node.graph.curveR then v.node.graph.curveR.points = v.elem.graph.ptsR end
 				if v.node.graph.curveG then v.node.graph.curveG.points = v.elem.graph.ptsG end
 				if v.node.graph.curveB then v.node.graph.curveB.points = v.elem.graph.ptsB end
 				v.node.graph.channel = v.elem.graph.channel
-				v.node.graph.x = v.elem.graph.x
-				v.node.graph.y = v.elem.graph.y
 
 				if v.node.graph.updateCurve then
 					v.node.graph:updateCurve()
@@ -103,6 +101,16 @@ function process.load(file, append)
 					if v.node.graph.curveG then v.node.graph:updateCurve(2, v.node.graph.curveG) print("update G") end
 					if v.node.graph.curveB then v.node.graph:updateCurve(3, v.node.graph.curveB) print("update B") end
 				end
+			end
+
+			if v.elem.graph and v.elem.graph.type=="equalizer" then
+				v.node.graph.pts = v.elem.graph.pts
+				v.node.graph.channel = v.elem.graph.channel
+			end
+
+			if v.elem.graph and v.elem.graph.type=="colorwheel" then
+				v.node.graph.x = v.elem.graph.x
+				v.node.graph.y = v.elem.graph.y
 			end
 		end
 
@@ -187,14 +195,25 @@ function process.save(name)
 
 		if t.graph then
 			e.graph = {}
-			e.graph.pts = t.graph.curve.points
+			e.graph.type = t.graph.type
 
-			e.graph.ptsR = t.graph.curveR and t.graph.curveR.points
-			e.graph.ptsG = t.graph.curveG and t.graph.curveG.points
-			e.graph.ptsB = t.graph.curveB and t.graph.curveB.points
-			e.graph.channel = t.graph.channel
-			e.graph.x = t.graph.x
-			e.graph.y = t.graph.y
+			if t.graph.type=="curve" then
+				e.graph.pts = t.graph.curve.points
+				e.graph.ptsR = t.graph.curveR and t.graph.curveR.points
+				e.graph.ptsG = t.graph.curveG and t.graph.curveG.points
+				e.graph.ptsB = t.graph.curveB and t.graph.curveB.points
+				e.graph.channel = t.graph.channel
+			end
+
+			if t.graph.type=="equalizer" then
+				e.graph.pts = t.graph.pts
+				e.graph.channel = t.graph.channel
+			end
+
+			if t.graph.type=="colorwheel" then
+				e.graph.x = t.graph.x
+				e.graph.y = t.graph.y
+			end
 		end
 
 		for i = 0, t.elem.n do
