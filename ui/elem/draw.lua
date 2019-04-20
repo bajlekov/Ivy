@@ -18,16 +18,7 @@
 local draw = {}
 
 local style = require("ui.style")
-
-local function tint(c, t)
-	if not t then return c end
-	local r, g, b, a
-	r = c[1] * 0.7 + t[1] * 0.3
-	g = c[2] * 0.7 + t[2] * 0.3
-	b = c[3] * 0.7 + t[3] * 0.3
-	a = 1
-	return r, g, b, a
-end
+local tint = style.tint
 
 local function drawRoundedVertical(x, y, w, h, top, bottom)
 	if top then

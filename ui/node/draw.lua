@@ -16,6 +16,7 @@
 ]]
 
 local style = require("ui.style")
+local tint = style.tint
 
 local drawElem = require("ui.elem.draw")
 local event = require "ui.node.event"

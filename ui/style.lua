@@ -109,4 +109,14 @@ style.labelFont = love.graphics.newFont(style.labelFont, style.elemHeight - styl
 style.messageFont = love.graphics.newFont(style.messageFont, style.elemHeight - style.elemBorder*2)
 style.noticeFont = love.graphics.newFont(style.noticeFont, 32)
 
+function style.tint(c, t)
+	if not t then return c end
+	local r, g, b, a
+	r = c[1] * 0.7 + t[1] * 0.3
+	g = c[2] * 0.7 + t[2] * 0.3
+	b = c[3] * 0.7 + t[3] * 0.3
+	a = 1
+	return r, g, b, a
+end
+
 return style
