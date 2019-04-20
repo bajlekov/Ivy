@@ -72,8 +72,7 @@ local function draw(self, element)
 			love.graphics.rectangle("fill", x - 1, y - 1, w + 2, h + 2, 3, 3)
 		end
 
-		local r, g, b = style.nodeColor[1], style.nodeColor[2], style.nodeColor[3]
-		love.graphics.setColor(r, g, b, 1)
+		love.graphics.setColor(tint(style.nodeColor, self.tint))
 		love.graphics.rectangle("fill", x, y, w, h, 3, 3)
 	end
 
@@ -82,7 +81,7 @@ local function draw(self, element)
 	end
 
 	-- draw title
-	drawElem.title(x, y, nodeWidth, style.titleHeight - style.nodeBorder, self.title)
+	drawElem.title(x, y, nodeWidth, style.titleHeight - style.nodeBorder, self.title, self.tint)
 
 	-- status indicator
 	if self.state == "waiting" then
@@ -103,9 +102,9 @@ local function draw(self, element)
 
 	if self.portIn[0] then
 		if self.portIn[0].link then
-			love.graphics.setColor(style.portOnColor)
+			love.graphics.setColor(tint(style.portOnColor, self.tint))
 		else
-			love.graphics.setColor(style.portOffColor)
+			love.graphics.setColor(tint(style.portOffColor, self.tint))
 		end
 		love.graphics.rectangle("fill", x - style.nodeBorder - (style.elemHeight) / 2, y + style.titleHeight - style.elemHeight - style.nodeBorder + style.elemBorder, (style.elemHeight) / 2, style.elemHeight - style.elemBorder, 3, 3)
 		love.graphics.rectangle("fill", x - style.nodeBorder - (style.elemHeight) / 2, y + style.titleHeight - style.elemHeight - style.nodeBorder + style.elemBorder, (style.elemHeight) / 2 - 3, style.elemHeight - style.elemBorder)
@@ -113,9 +112,9 @@ local function draw(self, element)
 
 	if self.portOut[0] then
 		if self.portOut[0].link then
-			love.graphics.setColor(style.portOnColor)
+			love.graphics.setColor(tint(style.portOnColor, self.tint))
 		else
-			love.graphics.setColor(style.portOffColor)
+			love.graphics.setColor(tint(style.portOffColor, self.tint))
 		end
 		love.graphics.rectangle("fill", x + nodeWidth + style.nodeBorder, y + style.titleHeight - style.elemHeight - style.nodeBorder + style.elemBorder, (style.elemHeight) / 2, style.elemHeight - style.elemBorder, 3, 3)
 		love.graphics.rectangle("fill", x + nodeWidth + style.nodeBorder + 3, y + style.titleHeight - style.elemHeight - style.nodeBorder + style.elemBorder, (style.elemHeight) / 2 - 3, style.elemHeight - style.elemBorder)
@@ -127,10 +126,10 @@ local function draw(self, element)
 			-- toggle matching elements
 			if self.portIn[i].link then
 				self.elem[i].disabled = true
-				love.graphics.setColor(style.portOnColor)
+				love.graphics.setColor(tint(style.portOnColor, self.tint))
 			else
 				self.elem[i].disabled = false
-				love.graphics.setColor(style.portOffColor)
+				love.graphics.setColor(tint(style.portOffColor, self.tint))
 			end
 			-- override elem toggles with toggle table
 			if self.portIn[i].toggle then
@@ -156,9 +155,9 @@ local function draw(self, element)
 		end
 		if self.portOut[i] then
 			if self.portOut[i].link then
-				love.graphics.setColor(style.portOnColor)
+				love.graphics.setColor(tint(style.portOnColor, self.tint))
 			else
-				love.graphics.setColor(style.portOffColor)
+				love.graphics.setColor(tint(style.portOffColor, self.tint))
 			end
 			love.graphics.rectangle("fill", x + nodeWidth + style.nodeBorder, y + style.titleHeight + style.elemHeight * (i - 1), (style.elemHeight) / 2, style.elemHeight - style.elemBorder, 3, 3)
 			love.graphics.rectangle("fill", x + nodeWidth + style.nodeBorder + 3, y + style.titleHeight + style.elemHeight * (i - 1), (style.elemHeight) / 2 - 3, style.elemHeight - style.elemBorder)

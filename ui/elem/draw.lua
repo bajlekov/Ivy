@@ -218,8 +218,8 @@ function draw.color(elem, x, y, w, h)
 	love.graphics.printf(elem.name, x + 2, y + 2, w - 4, "left")
 end
 
-function draw.title(x, y, w, h, title)
-	love.graphics.setColor(style.titleColor)
+function draw.title(x, y, w, h, title, tintColor)
+	love.graphics.setColor(tint(style.titleColor, tintColor))
 	love.graphics.rectangle("fill", x, y, w, h, 3, 3)
 	love.graphics.setColor(style.titleFontColor)
 	love.graphics.setFont(style.titleFont)
