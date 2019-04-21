@@ -966,7 +966,7 @@ function ops.image(x, y, image)
 	n:addPortOut(0, "LRGB")
 	n:addElem("text", 1, image or "-", "")
 	n:addElem("button", 2, "Open", function()
-		n.data.imageName = require "lib.zenity".fileOpen()
+		n.data.imageName = require "lib.fileDialog".fileOpen()
 		n.data.image = loadImage(n.data.imageName)
 		n.elem[1].left = n.data.imageName:gsub("^.*[/\\]", "")
 		n.dirty = true

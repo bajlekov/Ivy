@@ -105,21 +105,19 @@ helpMenu.w = 201
 menu:addElem("dropdown", 4, "Help", helpMenu)
 
 fileMenu:addElem("button", 1, "Load Image...", function()
-	local file = require "lib.zenity".fileOpen({
-		title = "Load input image from file:",
-		filename = "img.jpg",
-		filter = "*",
-	})
+	local file = require "lib.fileDialog".fileOpen(
+		"Load input image from file:",
+		"img.jpg",
+		"*")
 	if file then
 		love.filedropped(file)
 	end
 end)
 fileMenu:addElem("button", 2, "Save Image...", function(x, y)
-	local file = require "lib.zenity".fileSave({
-		title = "Save output image to file:",
-		filename = "out.png",
-		filter = "*.png",
-	})
+	local file = require "lib.fileDialog".fileSave(
+		"Save output image to file:",
+		"out.png",
+		"*.png")
 
 	if file then
 		require "ui.notice".blocking("Saving image: "..file)
@@ -143,31 +141,28 @@ end)
 
 processMenu:addElem("button", 1, "New Process...", function() require "tools.process".new() end )
 processMenu:addElem("button", 2, "Load Process...", function()
-	local file = require "lib.zenity".fileOpen({
-		title = "Load process pipeline from file:",
-		filename = "process.lua",
-		filter = "*.lua",
-	})
+	local file = require "lib.fileDialog".fileOpen(
+		"Load process pipeline from file:",
+		"process.lua",
+		"*.lua")
 	if file then
 		require "tools.process".load(file)
 	end
 end )
 processMenu:addElem("button", 3, "Append Process...", function()
-	local file = require "lib.zenity".fileOpen({
-		title = "Append process pipeline from file:",
-		filename = "process.lua",
-		filter = "*.lua",
-	})
+	local file = require "lib.fileDialog".fileOpen(
+		"Append process pipeline from file:",
+		"process.lua",
+		"*.lua")
 	if file then
 		require "tools.process".load(file, true)
 	end
 end )
 processMenu:addElem("button", 4, "Save Process...", function()
-	local file = require "lib.zenity".fileSave({
-		title = "Save process pipeline to file:",
-		filename = "process.lua",
-		filter = "*.lua",
-	})
+	local file = require "lib.fileDialog".fileSave(
+		"Save process pipeline to file:",
+		"process.lua",
+		"*.lua")
 	if file then
 		require "tools.process".save(file)
 	end
