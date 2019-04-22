@@ -54,13 +54,14 @@ function fileDialog.fileOpen(title, path, filter, description)
 		end
 	end
 
-	return ffi.string(tfd.tinyfd_openFileDialog(
+	local str = tfd.tinyfd_openFileDialog(
 		title,
 		path,
 		type(filter)=="table" and #filter or 0,
 		filterList,
 		description,
-		0))
+		0)
+	return str~=NULL and ffi.string(str) or nil
 end
 
 function fileDialog.fileSave(title, path, filter, description)
@@ -76,15 +77,13 @@ function fileDialog.fileSave(title, path, filter, description)
 		end
 	end
 
-	return ffi.string(tfd.tinyfd_saveFileDialog(
+	local str = tfd.tinyfd_saveFileDialog(
 		title,
 		path,
 		type(filter)=="table" and #filter or 0,
 		filterList,
-		description))
+		description)
+	return str~=NULL and ffi.string(str) or nil
 end
-
---fileDialog.fileOpen("Title", "", {"*.jpg", "*.tif"}, "Image Files")
---fileDialog.fileSave("Title", "", {"*.jpg", "*.tif"}, "Image Files")
 
 return fileDialog
