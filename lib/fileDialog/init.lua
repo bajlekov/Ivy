@@ -22,7 +22,9 @@ local fileDialog = {}
 local tfd = ffi.load("lib/fileDialog/Windows/tfd.dll")
 
 ffi.cdef[[
-	char* tinyfd_openFileDialog(
+	int tinyfd_winUtf8;
+
+	char const * tinyfd_openFileDialog(
 		char const * const aTitle , /* NULL or "" */
 		char const * const aDefaultPathAndFile , /* NULL or "" */
 		int aNumOfFilterPatterns , /* 0 */
@@ -32,7 +34,7 @@ ffi.cdef[[
 			/* in case of multiple files, the separator is | */
 			/* returns NULL on cancel */
 
-	char const * tinyfd_saveFileDialog(
+	char * const tinyfd_saveFileDialog(
 		char const * const aTitle , /* NULL or "" */
 		char const * const aDefaultPathAndFile , /* NULL or "" */
 		int aNumOfFilterPatterns , /* 0 */
@@ -40,6 +42,8 @@ ffi.cdef[[
 		char const * const aSingleFilterDescription ) ; /* NULL | "text files" */
 			/* returns NULL on cancel */
 ]]
+
+tfd.tinyfd_winUtf8 = 1
 
 function fileDialog.fileOpen(title, path, filter, description)
 	if type(filter)=="string" then filter = {filter} end
