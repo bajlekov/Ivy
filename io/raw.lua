@@ -17,6 +17,7 @@
 
 local ffi = require "ffi"
 local data = require "data"
+local fs = require "lib.fs"
 
 local raw = {}
 
@@ -33,7 +34,14 @@ function raw.read(name)
 	if type(name) ~= "string" then
 		name = name:getFilename()
 	end
-	assert(libraw.libraw_open_file(rawData, name)==0)
+
+	local file = fs.open(name, "r")
+	local fileSize = file:attr("size")
+
+	local fileData = ffi.new("uint8_t[?]", fileSize)
+	file:read(fileData, fileSize)
+
+	assert(libraw.libraw_open_buffer(rawData, fileData, fileSize)==0)
 
 	libraw.libraw_set_output_bps(rawData, 16) -- 16-bit output
 	libraw.libraw_set_output_color(rawData, 0) -- RAW color space
