@@ -75,9 +75,16 @@ float3 XYZ_LRGB(float3 i) {
 }
 
 float XYZ_Y(float3 i) { return i.y; }
-float3 Y_LRGB(float i) {
-	return (float3)(i);
+float3 Y_XYZ(float i) {
+	float3 o;
+	o.x = i*(M[0]+M[1]+M[2]);
+	o.y = i;
+	o.z = i*(M[6]+M[7]+M[8]);
+	return o;
 }
+float3 Y_LRGB(float i) { return (float3)(i); }
+float3 Y_SRGB(float i) { return (float3)(srgb(i));}
+float LRGB_Y(float3 i) { return i.x*M[3] + i.y*M[4] + i.z*M[5]; }
 
 #define wp_x 0.95042854537718f
 #define wp_y 1.0f
@@ -112,6 +119,10 @@ float3 XYZ_LAB(float3 i) {
 	return o;
 }
 
+float Y_L(float i) {
+	return 1.16f*lab(i) - 0.16f;
+}
+
 float3 LAB_XYZ(float3 i) {
 	float3 o;
 	o.y = (i.x + 0.16f)/1.16f;
@@ -121,6 +132,10 @@ float3 LAB_XYZ(float3 i) {
 	o.y = wp_y*xyz(o.y);
 	o.z = wp_z*xyz(o.z);
 	return o;
+}
+
+float L_Y(float i) {
+	return xyz((i + 0.16f)/1.16f);
 }
 
 #define M_2PI   6.283185307179586f
@@ -161,10 +176,10 @@ float3 SRGBtoLCH(float3 i) {
 	return LAB_LCH(XYZ_LAB(LRGB_XYZ(SRGB_LRGB(i))));
 }
 float SRGBtoY(float3 i) {
-	return XYZ_Y(LRGB_XYZ(SRGB_LRGB(i)));
+	return LRGB_Y(SRGB_LRGB(i));
 }
 float SRGBtoL(float3 i) {
-	return LXX_L(XYZ_LAB(LRGB_XYZ(SRGB_LRGB(i))));
+	return Y_L(LRGB_Y(SRGB_LRGB(i)));
 }
 
 float3 LRGBtoSRGB(float3 i) {
@@ -181,10 +196,10 @@ float3 LRGBtoLCH(float3 i) {
 	return LAB_LCH(XYZ_LAB(LRGB_XYZ(i)));
 }
 float LRGBtoY(float3 i) {
-	return XYZ_Y(LRGB_XYZ(i));
+	return LRGB_Y(i);
 }
 float LRGBtoL(float3 i) {
-	return LXX_L(XYZ_LAB(LRGB_XYZ(i)));
+	return Y_L(LRGB_Y(i));
 }
 
 
@@ -205,7 +220,7 @@ float XYZtoY(float3 i) {
 	return XYZ_Y(i);
 }
 float XYZtoL(float3 i) {
-	return LXX_L(XYZ_LAB(i));
+	return Y_L(XYZ_Y(i));
 }
 
 float3 LABtoSRGB(float3 i) {
@@ -222,7 +237,7 @@ float3 LABtoLCH(float3 i) {
 	return LAB_LCH(i);
 }
 float LABtoY(float3 i) {
-	return XYZ_Y(LAB_XYZ(i)); //TODO: optimize converting L-channel only
+	return L_Y(LXX_L(i));
 }
 float LABtoL(float3 i) {
 	return LXX_L(i);
@@ -242,40 +257,40 @@ float3 LCHtoLAB(float3 i) {
 }
 float3 LCHtoLCH(float3 i) { return i; }
 float LCHtoY(float3 i) {
-	return XYZ_Y(LAB_XYZ(LCH_LAB(i))); //TODO: optimize converting L-channel only
+	return L_Y(LXX_L(i));
 }
 float LCHtoL(float3 i) {
 	return LXX_L(i);
 }
 
 float3 YtoSRGB(float i) {
-	return LRGB_SRGB(Y_LRGB(i));
+	return Y_SRGB(i);
 }
 float3 YtoLRGB(float i) {
 	return Y_LRGB(i);
 }
 float3 YtoXYZ(float i) {
-	return LRGB_XYZ(Y_LRGB(i));
+	return Y_XYZ(i);
 }
 float3 YtoLAB(float i) {
-	return XYZ_LAB(LRGB_XYZ(Y_LRGB(i))); //TODO: optimize converting L-channel only
+	return L_LXX(Y_L(i));
 }
 float3 YtoLCH(float i) {
-	return LAB_LCH(XYZ_LAB(LRGB_XYZ(Y_LRGB(i)))); //TODO: optimize converting L-channel only
+	return L_LXX(Y_L(i));
 }
 float YtoY(float i) { return i; }
 float YtoL(float i) {
-	return LXX_L(XYZ_LAB(LRGB_XYZ(Y_LRGB(i)))); //TODO: optimize converting L-channel only
+	return Y_L(i);
 }
 
 float3 LtoSRGB(float i) {
-	return LRGB_SRGB(XYZ_LRGB(LAB_XYZ(L_LXX(i))));
+	return Y_SRGB(L_Y(i));
 }
 float3 LtoLRGB(float i) {
-	return XYZ_LRGB(LAB_XYZ(L_LXX(i)));
+	return Y_LRGB(L_Y(i));
 }
 float3 LtoXYZ(float i) {
-	return LAB_XYZ(L_LXX(i)); //TODO: optimize converting L-channel only
+	return Y_XYZ(L_Y(i));
 }
 float3 LtoLAB(float i) {
 	return L_LXX(i);
@@ -284,6 +299,6 @@ float3 LtoLCH(float i) {
 	return L_LXX(i);
 }
 float LtoY(float i) {
-	return XYZ_Y(LAB_XYZ(L_LXX(i))); //TODO: optimize converting L-channel only
+	return L_Y(i);
 }
 float LtoL(float i) { return i; }
