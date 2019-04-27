@@ -54,11 +54,34 @@ function raw.read(name)
 
 	libraw.libraw_unpack(rawData)
 
+	rawData.rawdata.ioparams.raw_color = 1 -- always force raw output!
+	rawData.params.no_auto_scale = 1 -- do not rescale values!
+
 	libraw.libraw_dcraw_process(rawData)
 
 	local img = libraw.libraw_dcraw_make_mem_image(rawData, NULL)
 	local w = img.width
 	local h = img.height
+
+	local range = rawData.color.maximum - rawData.color.black
+	local mr, mg, mb = rawData.color.pre_mul[0], rawData.color.pre_mul[1], rawData.color.pre_mul[2]
+	local wr, wg, wb = rawData.color.cam_mul[0], rawData.color.cam_mul[1], rawData.color.cam_mul[2]
+	local mm = math.min(mr, mg, mb)
+	mr, mg, mb = mr/mm, mg/mm, mb/mm
+
+	local buffer = data:new(w, h, 3)
+
+	for x = 0, w-1 do
+		for y = 0, h-1 do
+			local r = (img.data[((x+y*w)*3 + 0)*2] + img.data[((x+y*w)*3 + 0)*2 + 1]*256)/range
+			local g = (img.data[((x+y*w)*3 + 1)*2] + img.data[((x+y*w)*3 + 1)*2 + 1]*256)/range
+			local b = (img.data[((x+y*w)*3 + 2)*2] + img.data[((x+y*w)*3 + 2)*2 + 1]*256)/range
+
+			buffer:set(x, h-y-1, 0, r*mr) -- pre-multiply RAW values
+			buffer:set(x, h-y-1, 1, g*mg)
+			buffer:set(x, h-y-1, 2, b*mb)
+		end
+	end
 
 	local M = ffi.new("float[3][4]") -- RAW to sRGB matrix
 	for i = 0, 2 do
@@ -67,11 +90,7 @@ function raw.read(name)
 		end
 	end
 
-	local W = ffi.new("float[3]", {
-		rawData.color.cam_mul[0] / rawData.color.pre_mul[0],
-		rawData.color.cam_mul[1] / rawData.color.pre_mul[1],
-		rawData.color.cam_mul[2] / rawData.color.pre_mul[2],
-	}) -- WB coefficients in RAW space
+	local W = ffi.new("float[3]", wr/mr, wg/mg, wb/mb) -- WB coefficients in RAW space
 	do
 		local W_min = math.min(
 			W[0]*M[0][0] + W[1]*M[0][1] + W[2]*M[0][2],
@@ -84,37 +103,6 @@ function raw.read(name)
 	end
 	print(W[0], W[1], W[2])
 
-	local buffer = data:new(w, h, 3)
-
-	local WB = false
-	local sRGB = false
-
-	for x = 0, w-1 do
-		for y = 0, h-1 do
-			local ri = (img.data[((x+y*w)*3 + 0)*2] + img.data[((x+y*w)*3 + 0)*2 + 1]*256)/65535
-			local gi = (img.data[((x+y*w)*3 + 1)*2] + img.data[((x+y*w)*3 + 1)*2 + 1]*256)/65535
-			local bi = (img.data[((x+y*w)*3 + 2)*2] + img.data[((x+y*w)*3 + 2)*2 + 1]*256)/65535
-
-			if WB then
-				ri = ri * W[0]
-				gi = gi * W[1]
-				bi = bi * W[2]
-			end
-
-			local ro = ri
-			local go = gi
-			local bo = bi
-			if sRGB then
-				ro = ri*M[0][0] + gi*M[0][1] + bi*M[0][2]
-				go = ri*M[1][0] + gi*M[1][1] + bi*M[1][2]
-				bo = ri*M[2][0] + gi*M[2][1] + bi*M[2][2]
-			end
-
-			buffer:set(x, h-y-1, 0, ro)
-			buffer:set(x, h-y-1, 1, go)
-			buffer:set(x, h-y-1, 2, bo)
-		end
-	end
 
 	local SRGBmatrix = data:new(3, 4, 1)
 	local WBmultipliers = data:new(1, 1, 3)
