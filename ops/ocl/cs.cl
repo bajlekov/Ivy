@@ -302,3 +302,20 @@ float LtoY(float i) {
 	return L_Y(i);
 }
 float LtoL(float i) { return i; }
+
+
+float3 YtoL_3(float3 i) {
+	float3 o;
+	o.x = Y_L(i.x);
+	o.y = Y_L(i.y);
+	o.z = Y_L(i.z);
+	return o;
+}
+
+float3 LtoY_3(float3 i) {
+	float3 o;
+	o.x = L_Y(i.x);
+	o.y = L_Y(i.y);
+	o.z = L_Y(i.z);
+	return o;
+}
