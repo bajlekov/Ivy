@@ -86,10 +86,10 @@ float3 Y_LRGB(float i) { return (float3)(i); }
 float3 Y_SRGB(float i) { return (float3)(srgb(i));}
 float LRGB_Y(float3 i) { return i.x*M[3] + i.y*M[4] + i.z*M[5]; }
 
-#define wp_x 0.95042854537718f
+#define wp_x 0.95047f // http://brucelindbloom.com/index.html?Eqn_ChromAdapt.html
 #define wp_y 1.0f
-#define wp_z 1.0889003707981f
-#define E (216.0f/24389.0f)
+#define wp_z 1.08883f
+#define E (216.0f/24389.0f) // http://www.brucelindbloom.com/index.html?LContinuity.html
 #define K (24389.0f/27.0f)
 
 float lab(float v) {
