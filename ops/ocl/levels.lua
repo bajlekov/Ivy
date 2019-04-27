@@ -30,7 +30,7 @@ kernel void levels_RGB(
   const int x = get_global_id(0);
   const int y = get_global_id(1);
 
-  float3 v = $i[x, y];
+	$$ i.z==3 and "float3" or "float" $$ v = $i[x, y];
   // calculate f(0) and f'(0)
   v = v - $bpi[x, y];
   v = v / ($wpi[x, y]-$bpi[x, y]);
