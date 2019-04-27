@@ -34,6 +34,9 @@ kernel void convert(global float *I, global float *M, global float *W, global fl
 	}
 
 	if (flags[3]>0.5f) {
+		ri = clamp(ri, 0.0f, 1.0f);
+		gi = clamp(gi, 0.0f, 1.0f);
+		bi = clamp(bi, 0.0f, 1.0f);
 		$I[x, y, 0] = ri*$M[0, 0, 0] + gi*$M[0, 1, 0] + bi*$M[0, 2, 0];
 		$I[x, y, 1] = ri*$M[1, 0, 0] + gi*$M[1, 1, 0] + bi*$M[1, 2, 0];
 		$I[x, y, 2] = ri*$M[2, 0, 0] + gi*$M[2, 1, 0] + bi*$M[2, 2, 0];
