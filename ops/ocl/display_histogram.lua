@@ -35,21 +35,23 @@ kernel void display(global float *p1, global uchar *p2, global float *p3, global
   const int y = get_global_id(1);
 
 	float3 v = $p1[x, y]LRGB;
-	if ( p3[0]==1 && (v.x>1.0001f || v.y>1.0001f || v.z>1.0001f) ) {
+	if ( p3[0]>0.5f && (v.x>1.0001f || v.y>1.0001f || v.z>1.0001f) ) {
 		v = (float3)(0.0f);
 	}
-	if ( p3[0]==1 && (v.x<-0.0001f || v.y<-0.0001f || v.z<-0.0001f) ) {
+	if ( p3[0]>0.5f && (v.x<-0.0001f || v.y<-0.0001f || v.z<-0.0001f) ) {
 		v = (float3)(1.0f);
 	}
 
-	float m = fmax(v.x, fmax(v.y, v.z));
-	float Y = LRGBtoY(v);
-	if (m>1.0f) {
-		v = v/m;
-		float Ys = LRGBtoY(v); // Ysaturated
-		float f = (Y-Ys)/(1.0f-Ys);
-		f = tanh(f);
-		v = f*1.0f + (1.0f-f)*v;
+	if (p3[0]<0.5f) {
+		float m = fmax(v.x, fmax(v.y, v.z));
+		float Y = LRGBtoY(v);
+		if (m>1.0f) {
+			v = v/m;
+			float Ys = LRGBtoY(v); // Ysaturated
+			float f = (Y-Ys)/clamp(1.0f-Ys, 0.0001f, 1.0f);
+			f = tanh(f);
+			v = f*1.0f + (1.0f-f)*v;
+		}
 	}
 
 	v = LRGBtoSRGB(clamp(v, 0.0f, 1.0f));
