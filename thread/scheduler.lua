@@ -103,6 +103,7 @@ end
 
 
 -- single native thread
+--[[
 local opsHost = require "thread.workerHost"
 
 function schedule.host()
@@ -115,6 +116,7 @@ function schedule.host()
 		error("NATIVE WORKER ERROR: op ["..op.."] not an native function!\nHint: Check if function is correctly registered in workerNative.lua!")
 	end
 end
+--]]
 
 
 -- parallel native worker channels

@@ -679,7 +679,7 @@ do
 	end
 
 	local function proc(self)
-		self.procType = "host"
+		self.procType = "dev"
 		assert(self.portOut[0].link)
 		local i, o
 		i = t.inputSourceBlack(self, 0)
