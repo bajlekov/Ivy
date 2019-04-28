@@ -743,6 +743,26 @@ do
 
 end
 
+local function poissonProcess(self)
+	self.procType = "host"
+	assert(self.portOut[0].link)
+	local i, l, o
+	i = t.inputSourceBlack(self, 0)
+	l = t.plainParam(self, 1)
+	o = t.autoOutput(self, 0, i:shape())
+	thread.ops.poisson({i, l, o}, self)
+end
+
+function ops.poisson(x, y)
+	local n = node:new("Photon Noise")
+	n:addPortIn(0, "LRGB")
+	n:addPortIn(1, "Y"):addElem("float", 1, "Lambda", 0, 1, 0.1)
+	n:addPortOut(0, "LRGB")
+	n.process = poissonProcess
+	n:setPos(x, y)
+	return n
+end
+
 local function exposureProcess(self)
 	self.procType = "dev"
 	assert(self.portOut[0].link)

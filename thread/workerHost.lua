@@ -66,5 +66,50 @@ do
 	end
 end
 
+-- poisson noise
+do
+	local fun = julia.evalString [[
+		using PoissonRandom
+
+		function(i, l, o)
+			l = l[1, 1, 1]
+
+			if l<0.001
+				o .= i
+				return
+			else
+				l = 10/(l^2)
+			end
+
+			try
+
+				o .= pois_rand.(Float64.(i .* l)) ./ l #convert to Float64 due to bug in PoissonRandom
+
+			catch ex
+				println("Exception: ", ex)
+				println()
+				bt = catch_backtrace();
+				for ip in bt
+					for fr in StackTraces.lookup(ip)
+						println(fr)
+					end
+				end
+			end
+		end
+	]]
+	julia.gcPush(mul)
+
+	function ops.poisson()
+		debug.tic()
+		julia.gcDisable()
+		local i = getArray()
+		local l = getArray()
+		local o = getArray()
+		assert(dataCh:demand()=="execute")
+		julia.evalFunction(fun, i, l, o)
+		julia.gcEnable()
+		debug.toc("jl_poisson")
+	end
+end
 
 return ops
