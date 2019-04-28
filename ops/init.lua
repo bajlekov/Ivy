@@ -1348,10 +1348,10 @@ local function sharpenProcess(self)
 	local i, f, s, c, o
 	i = t.inputSourceBlack(self, 0)
 	f = t.inputParam(self, 1)
-	s = t.inputParam(self, 3)
+	s = t.inputParam(self, 2)
 	o = t.autoOutput(self, 0, i:shape())
 	thread.ops.diffuse({i, f, s, o}, self)
-	for i = 2, self.elem[2].value do
+	for i = 2, 5 do
 		thread.ops.diffuse({o, f, s, o}, self)
 	end
 end
@@ -1361,8 +1361,7 @@ function ops.sharpen(x, y)
 	n:addPortIn(0, "LAB")
 	n:addPortOut(0, "LAB")
 	n:addPortIn(1, "Y"):addElem("float", 1, "Strength", 0, 1, 0.5)
-	n:addElem("int", 2, "Iterations", 1, 9, 5)
-	n:addPortIn(3, "Y"):addElem("float", 3, "Reduce Noise", 0, 1, 0)
+	n:addPortIn(2, "Y"):addElem("float", 2, "Reduce Noise", 0, 1, 0)
 	n.process = sharpenProcess
 	n.w = 100
 	n:setPos(x, y)
