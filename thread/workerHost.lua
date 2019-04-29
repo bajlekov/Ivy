@@ -43,6 +43,27 @@ local function getArray()
 	return julia.array(data.fromChTable(buf))
 end
 
+
+local wrapfun = julia.evalString [[
+	function(f, arg...)
+		try
+
+			return f(arg...)
+
+		catch ex
+			println("Exception: ", ex)
+			println()
+			bt = catch_backtrace();
+			for ip in bt
+				for fr in StackTraces.lookup(ip)
+					println(fr)
+				end
+			end
+		end
+	end
+]]
+
+
 -- mean
 do
 	local fun = julia.evalString [[
@@ -61,7 +82,7 @@ do
 		local a = getArray()
 		local b = getArray()
 		assert(dataCh:demand()=="execute")
-		julia.evalFunction(fun, a, b)
+		julia.evalFunction(wrapfun, fun, a, b)
 		debug.toc("jl_stat_mean")
 	end
 end
@@ -81,20 +102,7 @@ do
 				l = 10/(l^2)
 			end
 
-			try
-
-				o .= pois_rand.(Float64.(i .* l)) ./ l #convert to Float64 due to bug in PoissonRandom
-
-			catch ex
-				println("Exception: ", ex)
-				println()
-				bt = catch_backtrace();
-				for ip in bt
-					for fr in StackTraces.lookup(ip)
-						println(fr)
-					end
-				end
-			end
+			o .= pois_rand.(Float64.(i .* l)) ./ l #convert to Float64 due to bug in PoissonRandom
 		end
 	]]
 	julia.gcPush(mul)
@@ -106,7 +114,7 @@ do
 		local l = getArray()
 		local o = getArray()
 		assert(dataCh:demand()=="execute")
-		julia.evalFunction(fun, i, l, o)
+		julia.evalFunction(wrapfun, fun, i, l, o)
 		julia.gcEnable()
 		debug.toc("jl_poisson")
 	end
