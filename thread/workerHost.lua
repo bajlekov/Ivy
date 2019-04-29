@@ -120,4 +120,29 @@ do
 	end
 end
 
+do
+	local fun = julia.evalString [[
+		function __normal(i, s)
+			return i + s^2*0.1*randn()
+		end
+
+		function(i, s, o)
+			o .= __normal.(i, s)
+		end
+	]]
+	julia.gcPush(mul)
+
+	function ops.normal()
+		debug.tic()
+		julia.gcDisable()
+		local i = getArray()
+		local s = getArray()
+		local o = getArray()
+		assert(dataCh:demand()=="execute")
+		julia.evalFunction(wrapfun, fun, i, s, o)
+		julia.gcEnable()
+		debug.toc("jl_normal")
+	end
+end
+
 return ops

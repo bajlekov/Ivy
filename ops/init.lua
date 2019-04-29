@@ -763,6 +763,26 @@ function ops.poisson(x, y)
 	return n
 end
 
+local function normalProcess(self)
+	self.procType = "host"
+	assert(self.portOut[0].link)
+	local i, s, o
+	i = t.inputSourceBlack(self, 0)
+	s = t.inputParam(self, 1)
+	o = t.autoOutput(self, 0, i:shape())
+	thread.ops.normal({i, s, o}, self)
+end
+
+function ops.normal(x, y)
+	local n = node:new("Thermal Noise")
+	n:addPortIn(0, "LRGB")
+	n:addPortIn(1, "LRGB"):addElem("float", 1, "Sigma", 0, 1, 0)
+	n:addPortOut(0, "LRGB")
+	n.process = normalProcess
+	n:setPos(x, y)
+	return n
+end
+
 local function exposureProcess(self)
 	self.procType = "dev"
 	assert(self.portOut[0].link)
