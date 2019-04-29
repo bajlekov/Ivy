@@ -488,6 +488,8 @@ function love.update()
 
 		love.window.requestAttention() -- highlight when processing is completed
 	end
+
+	require "tools.tutorial".update()
 end
 
 
@@ -633,6 +635,8 @@ function love.draw()
 		--require "ui.notice".overlay(("Processing... [%d%%]"):format(processComplete / processTotal * 100))
 		require "ui.notice".overlay("Processing...")
 	end
+
+	require "tools.tutorial".draw()
 end
 
 
