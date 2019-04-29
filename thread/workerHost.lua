@@ -92,17 +92,17 @@ do
 	local fun = julia.evalString [[
 		using PoissonRandom
 
-		function(i, l, o)
-			l = l[1, 1, 1]
-
+		function __poisson(i, l)
 			if l<0.001
-				o .= i
-				return
+				return i
 			else
-				l = 10/(l^2)
+				l = 10/l^2
+				return pois_rand(Float64(i*l))/l  #convert to Float64 due to bug in PoissonRandom
 			end
+		end
 
-			o .= pois_rand.(Float64.(i .* l)) ./ l #convert to Float64 due to bug in PoissonRandom
+		function(i, l, o)
+			o .= __poisson.(i, l)
 		end
 	]]
 	julia.gcPush(mul)
