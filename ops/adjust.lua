@@ -31,15 +31,15 @@ local function curve_flat(c)
 end
 
 local f = {
-	LL = {"lightnessAdjust", "L", "L", "Lightness", "lightness", curve_slope},
-	LC = {"lightnessAdjust", "L", "C", "Lightness", "chroma", curve_flat},
-	LH = {"lightnessAdjust", "L", "H", "Lightness", "hue", curve_flat},
-	CL = {"chromaAdjust", "C", "L", "Chroma", "lightness", curve_flat},
-	CC = {"chromaAdjust", "C", "C", "Chroma", "chroma", curve_slope},
-	CH = {"chromaAdjust", "C", "H", "Chroma", "hue", curve_flat},
-	HL = {"hueAdjust", "H", "L", "Hue", "lightness", curve_flat},
-	HC = {"hueAdjust", "H", "C", "Hue", "chroma", curve_flat},
-	HH = {"hueAdjust", "H", "H", "Hue", "hue", curve_flat},
+	LL = {"lightnessAdjust", "L", "L", "Lightness", "lightness"},
+	LC = {"lightnessAdjust", "L", "C", "Lightness", "chroma"},
+	LH = {"lightnessAdjust", "L", "H", "Lightness", "hue"},
+	CL = {"chromaAdjust", "C", "L", "Chroma", "lightness"},
+	CC = {"chromaAdjust", "C", "C", "Chroma", "chroma"},
+	CH = {"chromaAdjust", "C", "H", "Chroma", "hue"},
+	HL = {"hueAdjust", "H", "L", "Hue", "lightness"},
+	HC = {"hueAdjust", "H", "C", "Hue", "chroma"},
+	HH = {"hueAdjust", "H", "H", "Hue", "hue"},
 }
 
 return function(ops)
@@ -88,7 +88,7 @@ return function(ops)
 			n.data.tweak.toolButton(n, 2, "Adjust "..v[5])
 
 			n.data.curve = data:new(1, 1, 256)
-			v[6](n.data.curve)
+			for i = 0, 255 do n.data.curve:set(0, 0, i, 0.5) end
 			n.data.curve:toDevice()
 
 			require "ui.graph".curveView(n)
