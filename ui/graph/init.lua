@@ -108,6 +108,11 @@ function graph.histogram(node)
 	graph.type = "histogram"
 end
 
+function graph.curveView(node) -- same as histogram, single curve
+	local graph = graph.new(node, 150, 100)
+	graph.type = "curveView"
+end
+
 function graph.colorwheel(node)
 	local graph = graph.new(node, 100, 100)
 	graph.type = "colorwheel"
