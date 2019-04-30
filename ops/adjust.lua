@@ -91,6 +91,8 @@ return function(ops)
 			v[6](n.data.curve)
 			n.data.curve:toDevice()
 
+			require "ui.graph".curveView(n)
+
 			n.process = process
 			n:setPos(x, y)
 			return n

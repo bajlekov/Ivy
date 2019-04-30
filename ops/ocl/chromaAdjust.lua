@@ -40,6 +40,7 @@ kernel void chromaAdjust(global float *P, global float *S, global float *R, glob
 local function execute()
 	proc:getAllBuffers("P", "S", "R", "C")
 	proc:executeKernel("chromaAdjust", {1, 1, 256})
+	proc.buffers.C:toHost(true)
 end
 
 local function init(d, c, q)

@@ -40,6 +40,7 @@ kernel void hueAdjust(global float *P, global float *S, global float *R, global 
 local function execute()
 	proc:getAllBuffers("P", "S", "R", "C")
 	proc:executeKernel("hueAdjust", {1, 1, 256})
+	proc.buffers.C:toHost(true)
 end
 
 local function init(d, c, q)

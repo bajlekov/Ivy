@@ -40,6 +40,7 @@ kernel void lightnessAdjust(global float *P, global float *S, global float *R, g
 local function execute()
 	proc:getAllBuffers("P", "S", "R", "C")
 	proc:executeKernel("lightnessAdjust", {1, 1, 256})
+	proc.buffers.C:toHost(true)
 end
 
 local function init(d, c, q)
