@@ -18,17 +18,7 @@
 local proc = require "lib.opencl.process".new()
 
 local source = [[
-float range(float a, float b, float s) {
-  float x = (a-b)*s;
-  x = clamp(x, -1.0f, 1.0f);
-  float x2 = x*x;
-  float x4 = x2*x2;
-  return (1.0f-2.0f*x2+x4);
-}
-
-float range_circular(float a, float b, float s) {
-  return range(a, b, s) + range(a, b-1, s) + range(a, b+1, s);
-}
+#include "range.cl"
 
 kernel void hueAdjust(global float *P, global float *S, global float *R, global float *C) {
 	const int z = get_global_id(2);
@@ -37,8 +27,7 @@ kernel void hueAdjust(global float *P, global float *S, global float *R, global 
 	float a = S[2];
 	float b = z/255.0f;
 
-	float r = 1.0f/R[0];
-	float f = range_circular(a, b, r);
+	float f = range(a-b, R[0], 1.0f);
 
 	float i = C[z];
 

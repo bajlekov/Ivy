@@ -18,13 +18,7 @@
 local proc = require "lib.opencl.process".new()
 
 local source = [[
-float range(float a, float b, float s) {
-  float x = (a-b)*s;
-  x = clamp(x, -1.0f, 1.0f);
-  float x2 = x*x;
-  float x4 = x2*x2;
-  return (1.0f-2.0f*x2+x4);
-}
+#include "range.cl"
 
 kernel void lightnessAdjust(global float *P, global float *S, global float *R, global float *C) {
 	const int z = get_global_id(2);
@@ -33,8 +27,7 @@ kernel void lightnessAdjust(global float *P, global float *S, global float *R, g
 	float a = S[0];
 	float b = z/255.0f;
 
-	float r = 1.0f/R[0];
-	float f = range(a, b, r);
+	float f = range(a-b, R[0], 1.0f);
 
 	float i = C[z];
 
