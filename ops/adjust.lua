@@ -56,7 +56,7 @@ return function(ops)
 			local ox, oy = self.data.tweak.getOrigin()
 			local update = self.data.tweak.getUpdate()
 			local dx, dy = self.data.tweak.getTweak()
-			local p = t.autoTempBuffer(self, -1, 1, 1, 4) -- [x, y, dx, dy]
+			local p = t.autoTempBuffer(self, -1, 1, 1, 5) -- [x, y, dx, dy, mod]
 			local s = t.autoTempBuffer(self, -2, 1, 1, 3) -- [r, g, b]
 			p:set(0, 0, 2, dx)
 			p:set(0, 0, 3, dy)
@@ -69,10 +69,14 @@ return function(ops)
 			end
 
 			if dy ~= 0 then
+				local ctrl = love.keyboard.isDown("lctrl") or love.keyboard.isDown("rctrl")
+				local alt = love.keyboard.isDown("lalt") or love.keyboard.isDown("ralt")
+
 				p:set(0, 0, 2, dx)
 				p:set(0, 0, 3, dy)
+				p:set(0, 0, 4, (ctrl and 1) or (alt and 2) or 0)
 				p:toDevice()
-				thread.ops[v[1]]({p, s, r, c}, self)
+				thread.ops[v[1]]({p, s, r, c}, self) -- allow for tweak (+), smooth (alt) and reset (ctrl)
 			end
 
 			thread.ops["curve"..k]({i, c, o}, self)

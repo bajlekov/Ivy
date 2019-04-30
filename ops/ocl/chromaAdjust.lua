@@ -31,7 +31,13 @@ kernel void chromaAdjust(global float *P, global float *S, global float *R, glob
 
 	float i = C[z];
 
-	float o = i + f*p;
+	float o;
+	if (P[4]==1) {
+		p = clamp(fabs(p)*5.0f, -1.0f, 1.0f);
+		o = (1.0f-f*p)*i + f*p*0.5f; // clear
+	} else {
+		o = i + f*p;
+	}
 
 	C[z] = clamp(o, 0.0f, 1.0f);
 }
