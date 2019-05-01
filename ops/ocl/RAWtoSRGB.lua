@@ -18,6 +18,8 @@
 local proc = require "lib.opencl.process".new()
 
 local source = [[
+#include "cs.cl"
+
 kernel void convert(global float *I, global float *M, global float *W, global float *flags)
 {
 	const int x = get_global_id(0);
@@ -33,13 +35,27 @@ kernel void convert(global float *I, global float *M, global float *W, global fl
 		bi = bi * $W[0, 0, 2];
 	}
 
-	if (flags[3]>0.5f) {
+	if (flags[5]>0.5f) {
+		float3 i = (float3)(ri, gi, bi);
+		float3 ci = fmin(i, 1.0f);
+		float3 r = ci/LRGBtoY(ci);
+		i = LRGBtoY(i)*r;
+		ri = i.x;
+		gi = i.y;
+		bi = i.z;
+	} else {
 		ri = clamp(ri, 0.0f, 1.0f);
 		gi = clamp(gi, 0.0f, 1.0f);
 		bi = clamp(bi, 0.0f, 1.0f);
-		$I[x, y, 0] = ri*$M[0, 0, 0] + gi*$M[0, 1, 0] + bi*$M[0, 2, 0];
-		$I[x, y, 1] = ri*$M[1, 0, 0] + gi*$M[1, 1, 0] + bi*$M[1, 2, 0];
-		$I[x, y, 2] = ri*$M[2, 0, 0] + gi*$M[2, 1, 0] + bi*$M[2, 2, 0];
+	}
+
+	if (flags[3]>0.5f) {
+		float ro = ri*$M[0, 0, 0] + gi*$M[0, 1, 0] + bi*$M[0, 2, 0];
+		float go = ri*$M[1, 0, 0] + gi*$M[1, 1, 0] + bi*$M[1, 2, 0];
+		float bo = ri*$M[2, 0, 0] + gi*$M[2, 1, 0] + bi*$M[2, 2, 0];
+		$I[x, y, 0] = ro;
+		$I[x, y, 1] = go;
+		$I[x, y, 2] = bo;
 	} else {
 		$I[x, y, 0] = ri;
 		$I[x, y, 1] = gi;

@@ -55,7 +55,8 @@ info:addElem("bool", 15, "Geometric distortion correction", true)
 info:addElem("bool", 16, "Chromatic aberration correction", true)
 info:addElem("text", 17, "[NYI] Vignetting correction")
 info:addElem("bool", 18, "RAW color space", false)
-info:addElem("bool", 19, "Camera WB", false)
+info:addElem("bool", 19, "Camera white balance", false)
+info:addElem("bool", 20, "Reconstruct highlights", false)
 
 do
 	local a = toolbox:addElem("bool", 1, "Move image", false)
