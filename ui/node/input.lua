@@ -233,4 +233,13 @@ function input.press(mouse)
 	end
 end
 
+function input.hover(mouse)
+	for n in node.stack:traverseDown() do
+		if mouseOverNode(n, mouse.x, mouse.y) then
+			return n
+		end
+	end
+	return false
+end
+
 return input

@@ -34,4 +34,8 @@ function input.press(mouse)
 	end
 end
 
+function input.hover(mouse)
+	return frame.baseFrame:getFrame(mouse.x, mouse.y)
+end
+
 return input
