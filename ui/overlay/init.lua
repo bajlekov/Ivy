@@ -54,6 +54,7 @@ function overlay:addElem(type, ...)
 end
 
 function overlay.show(frame, mouse) -- frame: reference frame for x, y coordinates
+	require "ui.cursor".arrow()
 	overlay.default()
 	overlay.frame.visible = true
 	overlay.frame.x = mouse.lx + frame.x
