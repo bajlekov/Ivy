@@ -639,8 +639,11 @@ end
 
 
 
--- image panning function
-local function imagePan(dx, dy)
+
+local widget = require "ui.widget"
+widget.setFrame(panels.image)
+
+function widget.imagePan(dx, dy)
 	if scrollable then
 		local ox, oy = imageOffset:get(0, 0, 0), imageOffset:get(0, 0, 1)
 		ox = ox - dx / displayScale
@@ -651,80 +654,55 @@ local function imagePan(dx, dy)
 	end
 end
 
--- register frame callbacks
-local function imagePanDragCallback(mouse) imagePan(mouse.dx, mouse.dy) end
-local function imagePanCallback(frame, mouse) return imagePanDragCallback end
-
---TODO: keep track of drag changes
---TODO: set x, y to false after click release
-
-function imageSample.coord(x, y)
+function widget.imageCoord(x, y)
 	x = (x - previewImage.drawOffset.x) / previewImage.scale
 	y = (y - previewImage.drawOffset.y) / previewImage.scale
 	y = previewImage.y - y
 	x = math.floor(math.min(math.max(x, 0), previewImage.x - 1))
 	y = math.floor(math.min(math.max(y, 0), previewImage.y - 1))
-	imageSample.ix = x
-	imageSample.iy = y
+	widget.image.x = x
+	widget.image.y = y
 	return x, y
 end
 
--- color picker function
-function imageSample.sample(x, y)
-	x, y = imageSample.coord(x, y)
-	imageSample.r = previewImage:get(x, y, 0)
-	imageSample.g = previewImage:get(x, y, 1)
-	imageSample.b = previewImage:get(x, y, 2)
-	panels.hist.panel.elem[1].name = ("R: %03d\tG: %03d\tB: %03d"):format(imageSample.r, imageSample.g, imageSample.b)
-	panels.hist.panel.elem[1].value[1] = imageSample.r / 255
-	panels.hist.panel.elem[1].value[2] = imageSample.g / 255
-	panels.hist.panel.elem[1].value[3] = imageSample.b / 255
+function widget.imageSample(x, y)
+	x, y = widget.imageCoord(x, y)
+	widget.sample.r = previewImage:get(x, y, 0)
+	widget.sample.g = previewImage:get(x, y, 1)
+	widget.sample.b = previewImage:get(x, y, 2)
+	panels.hist.panel.elem[1].name = ("R: %03d\tG: %03d\tB: %03d"):format(
+		widget.sample.r,
+		widget.sample.g,
+		widget.sample.b
+	)
+	panels.hist.panel.elem[1].value[1] = widget.sample.r / 255
+	panels.hist.panel.elem[1].value[2] = widget.sample.g / 255
+	panels.hist.panel.elem[1].value[3] = widget.sample.b / 255
 end
 
-local function imageSampleReleaseCallback()
-	imageSample.dx = 0
-	imageSample.dy = 0
-end
-local function imageSampleDragCallback(mouse)
-	imageSample.dx = mouse.x - mouse.ox
-	imageSample.dy = mouse.y - mouse.oy
-	imageSample.sample(imageSample.x + imageSample.dx, imageSample.y + imageSample.dy)
-	return imageSampleReleaseCallback
-end
-local function imageSampleCallback(frame, mouse)
-	local x = mouse.lx
-	local y = mouse.ly
-	imageSample.x = x
-	imageSample.y = y
-	imageSample.sample(x, y)
-	return imageSampleDragCallback
-end
+widget.imagePanTool(panels.toolbox.elem[1])
+widget.colorSampleTool(panels.toolbox.elem[2])
 
-panels.image.onSpaceAction = imagePanCallback
-panels.toolbox.elem[1].onChange = function(elem) if elem.value then panels.image.onAction = imagePanCallback end end
-panels.toolbox.elem[2].onChange = function(elem) if elem.value then panels.image.onAction = imageSampleCallback end print("color picker") end
-
-for k, v in pairs(imageSample.exclusive) do
+for k, v in pairs(widget.exclusive) do
 	v.value = false
 end
 panels.toolbox.elem[1].value = true
 panels.toolbox.elem[1]:onChange()
-panels.image.onContext = overlay.show
+
+panels.image.onContext = overlay.show -- register node-add menu
 
 
 local uiInput = require "ui.input"
-
 local mousePressed = false
-local cursor = require "ui.cursor"
 
 function love.mousemoved(x, y, dx, dy)
 	uiInput.mouseMoved(x / settings.scaleUI, y / settings.scaleUI, dx / settings.scaleUI, dy / settings.scaleUI)
 
 	if not mousePressed then
-		if uiInput.mouseOverFrame(panels.image) then
-			cursor.cross()
+		if uiInput.mouseOverFrame(widget.frame) then
+			widget.enable()
 		else
-			cursor.arrow()
+			widget.disable()
 		end
 	end
 
@@ -735,10 +713,10 @@ end
 
 function love.mousepressed(x, y, button, isTouch)
 	if not mousePressed then
-		if uiInput.mouseOverFrame(panels.image) then
-			cursor.cross()
+		if uiInput.mouseOverFrame(widget.frame) then
+			widget.enable()
 		else
-			cursor.arrow()
+			widget.disable()
 		end
 	end
 
@@ -754,10 +732,10 @@ function love.mousereleased(x, y, button, isTouch)
 	cycles = nodeDFS(node) -- populate cycle indication
 	dirtyImage = true
 
-	if uiInput.mouseOverFrame(panels.image) then
-		cursor.cross()
+	if uiInput.mouseOverFrame(widget.frame) then
+		widget.enable()
 	else
-		cursor.arrow()
+		widget.disable()
 	end
 end
 

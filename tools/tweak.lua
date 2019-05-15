@@ -15,7 +15,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ]]
 
--- todo move imageSampleCoord to here! register previewImage
+local widget = require "ui.widget"
 
 local function tweak()
 	local o = {}
@@ -28,27 +28,25 @@ local function tweak()
 
 	local update = false
 
-	local function imageSampleReleaseCallback()
+	local function tweakReleaseCallback()
 		dx, dy = 0, 0
 	end
 
-	local function imageSampleDragCallback(mouse)
+	local function tweakDragCallback(mouse)
 		node.dirty = true
 		local shift = love.keyboard.isDown("lshift") or love.keyboard.isDown("rshift")
 		dx = dx + (shift and mouse.dx/10 or mouse.dx)
 		dy = dy + (shift and mouse.dy/10 or mouse.dy)
 		update = true
-		cx, cy = imageSample.coord(mouse.lx - mouse.ox + mouse.x, mouse.ly - mouse.oy + mouse.y)
-		return imageSampleReleaseCallback
+		cx, cy = widget.imageCoord(mouse.lx - mouse.ox + mouse.x, mouse.ly - mouse.oy + mouse.y)
 	end
 
-	local function imageSamplePressCallback(frame, mouse)
+	local function tweakPressCallback(mouse)
 		node.dirty = true
 		update = true
     dx, dy = 0, 0
-    ox, oy = imageSample.coord(mouse.lx, mouse.ly)
+    ox, oy = widget.imageCoord(mouse.lx, mouse.ly)
 		cx, cy = ox, oy
-    return imageSampleDragCallback
   end
 
 	function o.getOrigin()
@@ -73,17 +71,20 @@ local function tweak()
 	local function setToolCallback(elem)
 		if elem.value then
 			node = elem.parent
-			imageSample.panel.onAction = imageSamplePressCallback
+
+			-- dynamically register callback functions
+			widget.mode = "tweak"
+			widget.press.tweak = tweakPressCallback
+			widget.drag.tweak = tweakDragCallback
+			widget.release.tweak = tweakReleaseCallback
+
 			dx, dy = 0, 0
 		end
 	end
 	function o.toolButton(node, idx, name)
-		local b = node:addElem("bool", idx, name, false)
-    table.insert(imageSample.exclusive, b)
-    for k, v in ipairs(imageSample.exclusive) do
-      v.exclusive = imageSample.exclusive
-    end
-    b.onChange = setToolCallback
+		local elem = node:addElem("bool", idx, name, false)
+    widget.setExclusive(elem)
+    elem.onChange = setToolCallback
 	end
 
 	return o

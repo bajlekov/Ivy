@@ -78,19 +78,6 @@ toolbox:addElem("dropdown", 5, "Add node", nodeAddOverlay:copy())
 require "ops.custom"("node", true)
 
 
--- track exclusive set of tools operating on the image panel
-global("imageSample")
-imageSample = {
-	x = 0, y = 0,
-	ix = 0, iy = 0,
-	r = 0, g = 0, b = 0,
-	dx = 0, dy = 0,
-	exclusive = {toolbox.elem[1], toolbox.elem[2]},
-	panel = image,
-}
-setmetatable(imageSample.exclusive, {__mode = "v"}) -- important to not anchor these elems!!!
-
-
 -- TODO: move to menu
 local fileMenu = Overlay:new()
 fileMenu.w = 201
