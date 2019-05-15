@@ -90,14 +90,15 @@ local function tweak(mode, p1)
 				widget.draw.tweak.cursor = function(mouse)
 					local x, y = love.mouse.getPosition( )
 
-					-- FIXME: adjust to image scale!
+					local scale = require "tools.pipeline".output.image.scale
+
 					love.graphics.setLineWidth(4)
 					love.graphics.setColor(0, 0, 0, 0.3)
-					love.graphics.circle("line", x, y, p1.value)
+					love.graphics.circle("line", x, y, p1.value*scale)
 
 					love.graphics.setLineWidth(2)
 					love.graphics.setColor(style.gray9)
-					love.graphics.circle("line", x, y, p1.value)
+					love.graphics.circle("line", x, y, p1.value*scale)
 
 				end
 			else
