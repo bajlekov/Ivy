@@ -714,23 +714,51 @@ panels.image.onContext = overlay.show
 
 local uiInput = require "ui.input"
 
+local mousePressed = false
+local cursor = require "ui.cursor"
+
 function love.mousemoved(x, y, dx, dy)
 	uiInput.mouseMoved(x / settings.scaleUI, y / settings.scaleUI, dx / settings.scaleUI, dy / settings.scaleUI)
+
+	if not mousePressed then
+		if uiInput.mouseOverFrame(panels.image) then
+			cursor.cross()
+		else
+			cursor.arrow()
+		end
+	end
+
 	if love.mouse.isDown(1) then
 		dirtyImage = true
 	end
 end
 
 function love.mousepressed(x, y, button, isTouch)
+	if not mousePressed then
+		if uiInput.mouseOverFrame(panels.image) then
+			cursor.cross()
+		else
+			cursor.arrow()
+		end
+	end
+
+	mousePressed = true
 	uiInput.mousePressed(x / settings.scaleUI, y / settings.scaleUI, button)
 	dirtyImage = true
 	cycles = {} -- clear cycle indication
 end
 
 function love.mousereleased(x, y, button, isTouch)
+	mousePressed = false
 	uiInput.mouseReleased(x / settings.scaleUI, y / settings.scaleUI, button)
 	cycles = nodeDFS(node) -- populate cycle indication
 	dirtyImage = true
+
+	if uiInput.mouseOverFrame(panels.image) then
+		cursor.cross()
+	else
+		cursor.arrow()
+	end
 end
 
 function pipeline.update()
