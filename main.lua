@@ -660,24 +660,18 @@ function widget.imageCoord(x, y)
 	y = previewImage.y - y
 	x = math.floor(math.min(math.max(x, 0), previewImage.x - 1))
 	y = math.floor(math.min(math.max(y, 0), previewImage.y - 1))
-	widget.image.x = x
-	widget.image.y = y
 	return x, y
 end
 
 function widget.imageSample(x, y)
 	x, y = widget.imageCoord(x, y)
-	widget.sample.r = previewImage:get(x, y, 0)
-	widget.sample.g = previewImage:get(x, y, 1)
-	widget.sample.b = previewImage:get(x, y, 2)
-	panels.hist.panel.elem[1].name = ("R: %03d\tG: %03d\tB: %03d"):format(
-		widget.sample.r,
-		widget.sample.g,
-		widget.sample.b
-	)
-	panels.hist.panel.elem[1].value[1] = widget.sample.r / 255
-	panels.hist.panel.elem[1].value[2] = widget.sample.g / 255
-	panels.hist.panel.elem[1].value[3] = widget.sample.b / 255
+	local r = previewImage:get(x, y, 0)
+	local g = previewImage:get(x, y, 1)
+	local b = previewImage:get(x, y, 2)
+	panels.hist.panel.elem[1].name = ("R: %03d\tG: %03d\tB: %03d"):format(r, g, b)
+	panels.hist.panel.elem[1].value[1] = r / 255
+	panels.hist.panel.elem[1].value[2] = g / 255
+	panels.hist.panel.elem[1].value[3] = b / 255
 end
 
 widget.imagePanTool(panels.toolbox.elem[1])

@@ -25,30 +25,14 @@ local widget = {}
 
 widget.mode = "move"
 widget.active = false
-widget.panel = nil
+widget.frame = nil
 
 widget.exclusive = {}
 setmetatable(widget.exclusive, {__mode = "v"})
-
 function widget.setExclusive(elem)
 	table.insert(widget.exclusive, elem)
 	elem.exclusive = widget.exclusive
 end
-
-widget.mouse = {}
-widget.mouse.x = 0
-widget.mouse.y = 0
-widget.mouse.dx = 0
-widget.mouse.dy = 0
-
-widget.image = {}
-widget.image.x = 0
-widget.image.y = 0
-
-widget.sample = {}
-widget.sample.r = 0
-widget.sample.g = 0
-widget.sample.b = 0
 
 local cursor = require "ui.cursor"
 
@@ -76,15 +60,17 @@ function widget.drag.imagePan(mouse)
 end
 
 -- color sample callbacks
-function widget.press.colorSample(mouse)
-	widget.mouse.x = mouse.lx
-	widget.mouse.y = mouse.ly
-	widget.imageSample(widget.mouse.x, widget.mouse.y)
-end
-function widget.drag.colorSample(mouse)
-	widget.mouse.x = widget.mouse.x + mouse.dx
-	widget.mouse.y = widget.mouse.y + mouse.dy
-	widget.imageSample(widget.mouse.x, widget.mouse.y)
+do
+	local x, y
+	function widget.press.colorSample(mouse)
+		x, y = mouse.lx, mouse.ly
+		widget.imageSample(x, y)
+	end
+	function widget.drag.colorSample(mouse)
+		x = x + mouse.dx
+		y = y + mouse.dy
+		widget.imageSample(x, y)
+	end
 end
 
 local oldmode = false
