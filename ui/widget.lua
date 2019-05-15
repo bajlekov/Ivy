@@ -23,7 +23,7 @@
 
 local widget = {}
 
-widget.mode = "move"
+widget.mode = "imagePan"
 widget.active = false
 widget.frame = nil
 
