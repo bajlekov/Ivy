@@ -88,7 +88,7 @@ return function(ops)
 			n:addPortOut(0, "LCH")
 			n:addPortIn(1, "Y"):addElem("float", 1, v[4].." range", 0, 1, 0.2)
 
-			n.data.tweak = require "tools.tweak"()
+			n.data.tweak = require "tools.tweak"("adjust")
 			n.data.tweak.toolButton(n, 2, "Adjust "..v[5])
 
 			n.data.curve = data:new(1, 1, 256)

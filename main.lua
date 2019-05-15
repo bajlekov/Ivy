@@ -615,6 +615,8 @@ function love.draw()
 
 	end
 
+	require "ui.widget".drawCursor()
+
 	-- draw nodes
 	for n in node.stack:traverseUp() do
 		n:draw("link out")

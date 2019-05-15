@@ -36,15 +36,35 @@ end
 
 local cursor = require "ui.cursor"
 
+widget.cursor = {}
+widget.cursor.imagePan = cursor.sizeA
+widget.cursor.colorSample = cursor.cross
+
 function widget.enable()
 	widget.active = true
-	cursor.cross()
+	if love.keyboard.isDown("space") then
+		widget.cursor.imagePan()
+	elseif widget.cursor[widget.mode] then
+		widget.cursor[widget.mode]()
+	end
 end
 
 function widget.disable()
 	widget.active = false
 	cursor.arrow()
 end
+
+widget.draw = {}
+widget.draw.tweak = {}
+
+function widget.drawCursor()
+	if widget.active and not love.keyboard.isDown("space") then
+		if widget.draw[widget.mode] and widget.draw[widget.mode].cursor then
+			widget.draw[widget.mode].cursor()
+		end
+	end
+end
+
 
 function widget.imageCoord() error("widget.imageCoord() not registered yet!") end
 function widget.imagePan() error("widget.imagePan() not registered yet!") end

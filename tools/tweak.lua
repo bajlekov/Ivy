@@ -16,8 +16,10 @@
 ]]
 
 local widget = require "ui.widget"
+local cursor = require "ui.cursor"
+local style = require "ui.style"
 
-local function tweak()
+local function tweak(mode, p1)
 	local o = {}
 
 	local node
@@ -30,6 +32,7 @@ local function tweak()
 
 	local function tweakReleaseCallback()
 		dx, dy = 0, 0
+		widget.cursor.tweak()
 	end
 
 	local function tweakDragCallback(mouse)
@@ -47,6 +50,9 @@ local function tweak()
     dx, dy = 0, 0
     ox, oy = widget.imageCoord(mouse.lx, mouse.ly)
 		cx, cy = ox, oy
+		if mode=="adjust" then
+			cursor.sizeV()
+		end
   end
 
 	function o.getOrigin()
@@ -77,6 +83,26 @@ local function tweak()
 			widget.press.tweak = tweakPressCallback
 			widget.drag.tweak = tweakDragCallback
 			widget.release.tweak = tweakReleaseCallback
+
+			widget.cursor.tweak = cursor.cross
+
+			if mode=="paint" then
+				widget.draw.tweak.cursor = function(mouse)
+					local x, y = love.mouse.getPosition( )
+
+					-- FIXME: adjust to image scale!
+					love.graphics.setLineWidth(4)
+					love.graphics.setColor(0, 0, 0, 0.3)
+					love.graphics.circle("line", x, y, p1.value)
+
+					love.graphics.setLineWidth(2)
+					love.graphics.setColor(style.gray9)
+					love.graphics.circle("line", x, y, p1.value)
+
+				end
+			else
+				widget.draw.tweak.cursor = nil
+			end
 
 			dx, dy = 0, 0
 		end
