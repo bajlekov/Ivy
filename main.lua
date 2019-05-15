@@ -738,7 +738,21 @@ function pipeline.update()
 end
 
 local fullscreen = false
+function love.keyreleased(key)
+	if uiInput.mouseOverFrame(widget.frame) then
+		widget.enable()
+	else
+		widget.disable()
+	end
+end
+
 function love.keypressed(key)
+	if uiInput.mouseOverFrame(widget.frame) then
+		widget.enable()
+	else
+		widget.disable()
+	end
+
 	if key == "1" then
 		displayScale = 1
 		print("Scale: 100%")
