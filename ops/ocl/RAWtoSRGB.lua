@@ -50,9 +50,9 @@ kernel void convert(global float *I, global float *M, global float *W, global fl
 	}
 
 	if (flags[3]>0.5f) {
-		float ro = ri*$M[0, 0, 0] + gi*$M[0, 1, 0] + bi*$M[0, 2, 0];
-		float go = ri*$M[1, 0, 0] + gi*$M[1, 1, 0] + bi*$M[1, 2, 0];
-		float bo = ri*$M[2, 0, 0] + gi*$M[2, 1, 0] + bi*$M[2, 2, 0];
+		float ro = max(ri*$M[0, 0, 0] + gi*$M[0, 1, 0] + bi*$M[0, 2, 0], 0.0f);
+		float go = max(ri*$M[1, 0, 0] + gi*$M[1, 1, 0] + bi*$M[1, 2, 0], 0.0f);
+		float bo = max(ri*$M[2, 0, 0] + gi*$M[2, 1, 0] + bi*$M[2, 2, 0], 0.0f);
 		$I[x, y, 0] = ro;
 		$I[x, y, 1] = go;
 		$I[x, y, 2] = bo;
