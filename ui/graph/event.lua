@@ -16,6 +16,7 @@
 ]]
 
 local event = {}
+local cursor = require "ui.cursor"
 
 event.press = {}
 event.move = {}
@@ -27,10 +28,15 @@ function event.press.curve(graph, mouse)
 	local y = 1 - (graph.py - 2) / 146
 	pt = graph.curve:getPt(x, y)
 
-	if not pt and mouse.button==1 then
-		pt = graph.curve:addPt(x, y)
-		graph:updateCurve()
+	if mouse.button==1 then
+		cursor.sizeA()
+		if not pt then
+			pt = graph.curve:addPt(x, y)
+			graph:updateCurve()
+		end
 	end
+
+
 
 	if pt and mouse.button==2 then
 		graph.curve:removePt(pt)
@@ -48,7 +54,7 @@ function event.move.curve(graph, mouse)
 end
 
 function event.release.curve(graph, mouse)
-
+	cursor.arrow()
 end
 
 
@@ -58,8 +64,9 @@ function event.press.equalizer(graph, mouse)
 
 	local ch = graph.channel
 	for k, v in ipairs(graph.pts[ch]) do
-		if x < (k-0.5)/8 + 1/16 and x > (k-0.5)/8 - 1/16 and y < v + 1/16 and y > v - 1/16 then
+		if x < (k-0.5)/8 + 1/16 and x > (k-0.5)/8 - 1/16 then -- and y < v + 1/16 and y > v - 1/16 then
 			if mouse.button==1 then
+				cursor.sizeV()
 				pt = k
 			elseif mouse.button==2 then
 				graph.pts[ch][k] = graph.default[ch] or 0.5
@@ -87,10 +94,15 @@ function event.move.equalizer(graph, mouse)
 	end
 end
 
+function event.release.equalizer(graph, mouse)
+	cursor.arrow()
+end
 
 
 function event.press.colorwheel(graph, mouse)
-	if mouse.button==2 then
+	if mouse.button==1 then
+		cursor.sizeA()
+	elseif mouse.button==2 then
 		graph.x = 0
 		graph.y = 0
 	end
@@ -112,6 +124,10 @@ function event.move.colorwheel(graph, mouse)
 
 		graph.x, graph.y = x, y
 	end
+end
+
+function event.release.colorwheel(graph, mouse)
+	cursor.arrow()
 end
 
 
