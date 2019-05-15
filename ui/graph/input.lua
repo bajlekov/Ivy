@@ -31,7 +31,7 @@ local function dragCallback(mouse)
 	if event.move[moveGraph.type] then
 		event.move[moveGraph.type](moveGraph, mouse)
 	end
-	return releaseCallback(mouse)
+	return releaseCallback
 end
 
 function input.press(graph, x, y, mouse)
