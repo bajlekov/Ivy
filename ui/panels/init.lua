@@ -55,7 +55,8 @@ info:addElem("bool", 15, "Geometric distortion correction", true)
 info:addElem("bool", 16, "Chromatic aberration correction", true)
 info:addElem("text", 17, "[NYI] Vignetting correction")
 info:addElem("bool", 18, "RAW color space", false)
-info:addElem("bool", 19, "Camera WB", false)
+info:addElem("bool", 19, "Camera white balance", false)
+info:addElem("bool", 20, "Reconstruct highlights", false)
 
 do
 	local a = toolbox:addElem("bool", 1, "Move image", false)
@@ -75,19 +76,6 @@ end
 local nodeAddOverlay = require "ui.panels.nodeAddMenu"
 toolbox:addElem("dropdown", 5, "Add node", nodeAddOverlay:copy())
 require "ops.custom"("node", true)
-
-
--- track exclusive set of tools operating on the image panel
-global("imageSample")
-imageSample = {
-	x = 0, y = 0,
-	ix = 0, iy = 0,
-	r = 0, g = 0, b = 0,
-	dx = 0, dy = 0,
-	exclusive = {toolbox.elem[1], toolbox.elem[2]},
-	panel = image,
-}
-setmetatable(imageSample.exclusive, {__mode = "v"}) -- important to not anchor these elems!!!
 
 
 -- TODO: move to menu

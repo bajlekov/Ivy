@@ -126,6 +126,7 @@ end
 function curve:sample(x)
 	local ax, bx, cx
 	local ay, by, cy
+	local n = #self.points
 
 	if #self.points==2 then -- linear interpolation
 		ax = self.points[1].x
@@ -134,6 +135,26 @@ function curve:sample(x)
 		ay = self.points[1].y
 		cy = self.points[2].y
 		return ay + (cy - ay)*t
+	end
+
+	if x < self.points[1].x then
+		if self.points[2].x - self.points[1].x<1e-5 then
+			return self.points[1].y > self.points[2].y and 1 or 0
+		end
+		local ox = self.points[1].x - x
+		local dx = self.points[2].x - self.points[1].x
+		local dy = self.points[2].y - self.points[1].y
+		return self.points[1].y - ox * dy / dx
+	end
+
+	if x > self.points[n].x then
+		if self.points[n].x - self.points[n-1].x<1e-5 then
+			return self.points[n].y > self.points[n-1].y and 1 or 0
+		end
+		local ox = x - self.points[n].x
+		local dx = self.points[n-1].x - self.points[n].x
+		local dy = self.points[n-1].y - self.points[n].y
+		return self.points[n].y + ox * dy / dx
 	end
 
 	if #self.points==3 then -- bezier interpolation of 3 points
@@ -158,7 +179,6 @@ function curve:sample(x)
 		return y(ay, by, cy, t)
 	end
 
-	local n = #self.points
 	if x > (self.points[n-2].x + self.points[n-1].x)/2 then
 		ax = (self.points[n-2].x + self.points[n-1].x)/2
 		bx = self.points[n-1].x

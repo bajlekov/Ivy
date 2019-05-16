@@ -15,24 +15,41 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ]]
 
-local cursor = {x = 0, y = 0}
+local cursor = {}
 
-love.mouse.setVisible(false)
+local arrow = love.mouse.getSystemCursor("arrow")
+local sizeH = love.mouse.getSystemCursor("sizewe")
+local sizeV = love.mouse.getSystemCursor("sizens")
+local sizeA = love.mouse.getSystemCursor("sizeall")
+local cross = love.mouse.getSystemCursor("crosshair")
 
-function cursor:draw()
-  ---[[
-  love.graphics.setLineWidth(0.5)
-  love.graphics.setColor(255, 255, 255, 255)
-  love.graphics.line(self.x-5, self.y+0.5, self.x-2, self.y+0.5)
-  love.graphics.line(self.x+6, self.y+0.5, self.x+3, self.y+0.5)
-  love.graphics.line(self.x+0.5, self.y-5, self.x+0.5, self.y-2)
-  love.graphics.line(self.x+0.5, self.y+6, self.x+0.5, self.y+3)
-  --]]
+function cursor.arrow()
+  love.mouse.setVisible(true)
+  love.mouse.setCursor(arrow)
 end
 
-function cursor:update(x, y)
-  self.x = x
-  self.y = y
+function cursor.sizeH()
+  love.mouse.setVisible(true)
+  love.mouse.setCursor(sizeH)
+end
+
+function cursor.sizeV()
+  love.mouse.setVisible(true)
+  love.mouse.setCursor(sizeV)
+end
+
+function cursor.sizeA()
+  love.mouse.setVisible(true)
+  love.mouse.setCursor(sizeA)
+end
+
+function cursor.cross()
+  love.mouse.setVisible(true)
+  love.mouse.setCursor(cross)
+end
+
+function cursor.none()
+  love.mouse.setVisible(false)
 end
 
 return cursor

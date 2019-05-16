@@ -35,7 +35,7 @@ kernel void curveLL(global float *I, global float *C, global float *O)
 	float factor = lowIdx==highIdx ? 1.0f : (i*255.0f-lowIdx)/(highIdx-lowIdx);
 	float o = lowVal*(1.0f - factor) + highVal*factor;
 
-	$O[x, y, 0] = o;
+	$O[x, y, 0] = $I[x, y, 0]*o*2.0f;
   $O[x, y, 1] = $I[x, y, 1];
 	$O[x, y, 2] = $I[x, y, 2];
 }

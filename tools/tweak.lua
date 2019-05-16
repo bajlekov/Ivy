@@ -15,9 +15,11 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ]]
 
--- todo move imageSampleCoord to here! register previewImage
+local widget = require "ui.widget"
+local cursor = require "ui.cursor"
+local style = require "ui.style"
 
-local function tweak()
+local function tweak(mode, p1, p2)
 	local o = {}
 
 	local node
@@ -28,27 +30,29 @@ local function tweak()
 
 	local update = false
 
-	local function imageSampleReleaseCallback()
+	local function tweakReleaseCallback()
 		dx, dy = 0, 0
+		widget.cursor.tweak()
 	end
 
-	local function imageSampleDragCallback(mouse)
+	local function tweakDragCallback(mouse)
 		node.dirty = true
 		local shift = love.keyboard.isDown("lshift") or love.keyboard.isDown("rshift")
 		dx = dx + (shift and mouse.dx/10 or mouse.dx)
 		dy = dy + (shift and mouse.dy/10 or mouse.dy)
 		update = true
-		cx, cy = imageSample.coord(mouse.lx - mouse.ox + mouse.x, mouse.ly - mouse.oy + mouse.y)
-		return imageSampleReleaseCallback
+		cx, cy = widget.imageCoord(mouse.lx - mouse.ox + mouse.x, mouse.ly - mouse.oy + mouse.y)
 	end
 
-	local function imageSamplePressCallback(frame, mouse)
+	local function tweakPressCallback(mouse)
 		node.dirty = true
 		update = true
     dx, dy = 0, 0
-    ox, oy = imageSample.coord(mouse.lx, mouse.ly)
+    ox, oy = widget.imageCoord(mouse.lx, mouse.ly)
 		cx, cy = ox, oy
-    return imageSampleDragCallback
+		if mode=="adjust" then
+			cursor.sizeV()
+		end
   end
 
 	function o.getOrigin()
@@ -73,17 +77,79 @@ local function tweak()
 	local function setToolCallback(elem)
 		if elem.value then
 			node = elem.parent
-			imageSample.panel.onAction = imageSamplePressCallback
+
+			-- dynamically register callback functions
+			widget.mode = "tweak"
+			widget.press.tweak = tweakPressCallback
+			widget.drag.tweak = tweakDragCallback
+			widget.release.tweak = tweakReleaseCallback
+
+			if mode=="paint" then
+				widget.cursor.tweak = cursor.none
+				widget.draw.tweak.cursor = function(mouse)
+					local x, y = love.mouse.getPosition( )
+
+					love.graphics.setLineWidth(4)
+					love.graphics.setColor(0, 0, 0, 0.3)
+					love.graphics.circle("fill", x, y, 4)
+
+					love.graphics.setLineWidth(2)
+					love.graphics.setColor(style.gray9)
+					love.graphics.circle("fill", x, y, 3)
+
+					local fx, fy = widget.frame.x, widget.frame.y
+					local ix, iy, iw, ih = widget.imagePos() -- take into account frame offsets
+					x = math.clamp(x, ix+fx, ix+iw+fx)
+					y = math.clamp(y, iy+fy, iy+ih+fy)
+
+					local scale = require "tools.pipeline".output.image.scale
+
+					local a, b, c, d, e = 0, math.pi*0.5, math.pi, math.pi*1.5, math.pi*2
+					local r1, r2 = p1.value*scale, p1.value*(1-p2.value)*scale
+					local w1, w2 = 0.2, 0.5
+					love.graphics.setLineJoin("bevel")
+
+					love.graphics.setLineWidth(4)
+					love.graphics.setColor(0, 0, 0, 0.3)
+					--love.graphics.circle("line", x, y, p1.value*scale)
+					love.graphics.arc("line", "open", x, y, r2, a+w2, b-w2)
+					love.graphics.arc("line", "open", x, y, r2, b+w2, c-w2)
+					love.graphics.arc("line", "open", x, y, r2, c+w2, d-w2)
+					love.graphics.arc("line", "open", x, y, r2, d+w2, e-w2)
+
+					love.graphics.arc("line", "open", x, y, r1, a+w1, c-w1)
+					love.graphics.arc("line", "open", x, y, r1, c+w1, e-w1)
+
+					love.graphics.line(x+10, y, x-10, y)
+					love.graphics.line(x, y+10, x, y-10)
+
+					love.graphics.setLineWidth(2)
+					love.graphics.setColor(style.gray9)
+					--love.graphics.circle("line", x, y, p1.value*scale)
+					love.graphics.arc("line", "open", x, y, r2, a+w2, b-w2)
+					love.graphics.arc("line", "open", x, y, r2, b+w2, c-w2)
+					love.graphics.arc("line", "open", x, y, r2, c+w2, d-w2)
+					love.graphics.arc("line", "open", x, y, r2, d+w2, e-w2)
+
+					love.graphics.arc("line", "open", x, y, r1, a+w1, c-w1)
+					love.graphics.arc("line", "open", x, y, r1, c+w1, e-w1)
+
+					love.graphics.line(x+10, y, x-10, y)
+					love.graphics.line(x, y+10, x, y-10)
+
+				end
+			else
+				widget.cursor.tweak = cursor.cross
+				widget.draw.tweak.cursor = nil
+			end
+
 			dx, dy = 0, 0
 		end
 	end
 	function o.toolButton(node, idx, name)
-		local b = node:addElem("bool", idx, name, false)
-    table.insert(imageSample.exclusive, b)
-    for k, v in ipairs(imageSample.exclusive) do
-      v.exclusive = imageSample.exclusive
-    end
-    b.onChange = setToolCallback
+		local elem = node:addElem("bool", idx, name, false)
+    widget.setExclusive(elem)
+    elem.onChange = setToolCallback
 	end
 
 	return o

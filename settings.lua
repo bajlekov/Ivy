@@ -12,6 +12,7 @@ do local _={
   nodeAutoConnect=true,
   openclBuildParams="-cl-std=CL1.2 -Iops/ocl ",
   openclDebug=false,
+  openclCache=false,
   openclDevice=1,
   openclLowMemory=false,
   openclPlatform=3,

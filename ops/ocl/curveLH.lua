@@ -37,7 +37,7 @@ kernel void curveLH(global float *I, global float *C, global float *O)
 
 	$O[x, y, 0] = $I[x, y, 0];
   $O[x, y, 1] = $I[x, y, 1];
-	$O[x, y, 2] = $I[x, y, 2] + o-0.5f;
+	$O[x, y, 2] = $I[x, y, 2] + o - 0.5f;
 }
 ]]
 

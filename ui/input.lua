@@ -59,11 +59,11 @@ end
 
 
 function input.mouseMoved(x, y, dx, dy)
+  inputEvent.x = x
+  inputEvent.y = y
+  inputEvent.dx = dx
+  inputEvent.dy = dy
   if moveCallback then
-    inputEvent.x = x
-    inputEvent.y = y
-    inputEvent.dx = dx
-    inputEvent.dy = dy
     releaseCallback = moveCallback(inputEvent)
   end
 end
@@ -81,6 +81,13 @@ function input.mouseReleased(x, y)
 
   moveCallback = false
   releaseCallback = false
+end
+
+
+function input.mouseOverFrame(frame)
+  if overlayInput.hover(inputEvent) then return false end
+  if nodeInput.hover(inputEvent) then return false end
+  return frameInput.hover(inputEvent)==frame
 end
 
 return input

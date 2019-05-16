@@ -368,15 +368,15 @@ do
 		n:addPortIn(6, "LAB")
 		n.portIn[6].toggle = {[6] = true, [7] = true}
 
-		n.data.tweak = require "tools.tweak"()
-		n.data.tweak.toolButton(n, 1, "Paint")
-
 		n:addElem("float", 2, "Value", 0, 1, 1)
 		n:addElem("float", 3, "Flow", 0, 1, 1)
 		n:addElem("float", 4, "Brush Size", 0, 500, 50)
 		n:addElem("float", 5, "Fall-off", 0, 1, 0.5).last = true
 		n:addElem("float", 6, "Smart Range", 0, 1, 0.1).first = true
 		n:addElem("float", 7, "Fall-off", 0, 1, 0.5)
+
+		n.data.tweak = require "tools.tweak"("paint", n.elem[4], n.elem[5])
+		n.data.tweak.toolButton(n, 1, "Paint")
 
 		n:addElem("button", 8, "Load", function()
 			local f = io.open("mask.bin", "rb")
@@ -418,6 +418,9 @@ do
 			f:write(data)
 			f:close()
 		end)
+
+		-- FIXME: the node needs to be updated on image resize/move for the image pool resize to trigger when no input connected (not in smart mode)
+		n.refresh = true
 
 		n.process = processPaintMask
 		n:setPos(x, y)

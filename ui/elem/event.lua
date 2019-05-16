@@ -16,6 +16,7 @@
 ]]
 
 local style = require "ui.style"
+local cursor = require "ui.cursor"
 
 local event = {}
 
@@ -35,6 +36,7 @@ function event.press.float(elem, mouse)
 		elem.value = elem.default
 		dirty(elem)
 	else
+		cursor.sizeH()
 		originalElementValue = elem.value
 	end
 	elem.tint = style.orange
@@ -54,7 +56,10 @@ function event.move.float(elem, mouse)
 		dirty(elem)
 	end
 end
-function event.release.float(elem) elem.tint = nil end
+function event.release.float(elem)
+	cursor.arrow()
+	elem.tint = nil
+end
 
 function event.press.int(elem, mouse)
 	if mouse.button == 2 then
