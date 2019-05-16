@@ -665,6 +665,14 @@ function widget.imageCoord(x, y)
 	return x, y
 end
 
+function widget.imagePos()
+	local x = previewImage.drawOffset.x
+	local y = previewImage.drawOffset.y
+	local w = previewImage.x * previewImage.scale
+	local h = previewImage.y * previewImage.scale
+	return x, y, w, h
+end
+
 function widget.imageSample(x, y)
 	x, y = widget.imageCoord(x, y)
 	local r = previewImage:get(x, y, 0)

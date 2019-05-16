@@ -67,6 +67,7 @@ end
 
 
 function widget.imageCoord() error("widget.imageCoord() not registered yet!") end
+function widget.imagePos() error("widget.imagePos() not registered yet!") end
 function widget.imagePan() error("widget.imagePan() not registered yet!") end
 function widget.imageSample() error("widget.imageSample() not registered yet!") end
 
