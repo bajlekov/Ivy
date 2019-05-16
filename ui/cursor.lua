@@ -24,23 +24,32 @@ local sizeA = love.mouse.getSystemCursor("sizeall")
 local cross = love.mouse.getSystemCursor("crosshair")
 
 function cursor.arrow()
+  love.mouse.setVisible(true)
   love.mouse.setCursor(arrow)
 end
 
 function cursor.sizeH()
+  love.mouse.setVisible(true)
   love.mouse.setCursor(sizeH)
 end
 
 function cursor.sizeV()
+  love.mouse.setVisible(true)
   love.mouse.setCursor(sizeV)
 end
 
 function cursor.sizeA()
+  love.mouse.setVisible(true)
   love.mouse.setCursor(sizeA)
 end
 
 function cursor.cross()
+  love.mouse.setVisible(true)
   love.mouse.setCursor(cross)
+end
+
+function cursor.none()
+  love.mouse.setVisible(false)
 end
 
 return cursor
