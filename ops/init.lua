@@ -375,7 +375,7 @@ do
 		n:addElem("float", 6, "Smart Range", 0, 1, 0.1).first = true
 		n:addElem("float", 7, "Fall-off", 0, 1, 0.5)
 
-		n.data.tweak = require "tools.tweak"("paint", n.elem[4])
+		n.data.tweak = require "tools.tweak"("paint", n.elem[4], n.elem[5])
 		n.data.tweak.toolButton(n, 1, "Paint")
 
 		n:addElem("button", 8, "Load", function()
