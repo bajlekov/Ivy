@@ -420,7 +420,7 @@ do
 		end)
 
 		-- FIXME: the node needs to be updated on image resize/move for the image pool resize to trigger when no input connected (not in smart mode)
-		n.compute = true
+		n.refresh = true
 
 		n.process = processPaintMask
 		n:setPos(x, y)

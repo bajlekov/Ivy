@@ -399,8 +399,6 @@ function love.update()
 		t1 = love.timer.getTime()
 
 		if loadInputImage then -- load cropped image if not already cached
-			loadInputImage = false
-
 			rescaleInputOutput()
 			imageOffset:toDevice()
 
@@ -453,6 +451,10 @@ function love.update()
 				n.dirty = true
 				table.insert(outputs, n)
 			end
+			if n.refresh and loadInputImage then
+				n.dirty = true
+				table.insert(outputs, n)
+			end
 		end
 
 		processTotal = 1
@@ -484,8 +486,8 @@ function love.update()
 		thread.ops.done()
 
 		processComplete = 0
-
 		processReady = false
+		loadInputImage = false
 		dirtyImage = false
 
 		love.window.requestAttention() -- highlight when processing is completed
