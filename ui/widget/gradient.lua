@@ -103,6 +103,7 @@ local function gradient(mode, p1, p2, p3, p4) -- x, y, a, w
 		local x, y = getXYpos()
 		local d2 = (x-mouse.x)^2 + (y-mouse.y)^2
 		if d2<50^2 then
+			cursor.sizeA()
 			XYgrabbed = true
 			local fx, fy = widget.frame.x, widget.frame.y
 			local ix, iy = widget.imageCoord(mouse.x - fx, mouse.y - fy)
@@ -115,6 +116,7 @@ local function gradient(mode, p1, p2, p3, p4) -- x, y, a, w
 		local ax, ay = getApos()
 		local d2 = (ax-mouse.x)^2 + (ay-mouse.y)^2
 		if d2<20^2 then
+			cursor.sizeV()
 			Agrabbed = true
 			p3.value = math.atan2(-mouse.y+y, mouse.x-x)/math.pi
 			node.dirty = true
@@ -123,6 +125,7 @@ local function gradient(mode, p1, p2, p3, p4) -- x, y, a, w
 		local wx, wy, dx, dy = getWpos()
 		local d2 = (wx-mouse.x)^2 + (wy-mouse.y)^2
 		if d2<20^2 then
+			cursor.sizeV()
 			Wgrabbed = true
 			local d = (mouse.x-x)*dx + (mouse.y-y)*dy
 			p4.value = d/1024
