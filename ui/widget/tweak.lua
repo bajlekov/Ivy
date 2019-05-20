@@ -102,34 +102,20 @@ local function tweak(mode, p1, p2)
 					x = math.clamp(x, ix+fx, ix+iw+fx)
 					y = math.clamp(y, iy+fy, iy+ih+fy)
 
+					love.graphics.setScissor(ix+fx, iy+fy, iw, ih)
+
 					local scale = require "tools.pipeline".output.image.scale
 
 					local a, b, c, d, e = 0, math.pi*0.5, math.pi, math.pi*1.5, math.pi*2
 					local r1, r2 = p1.value*scale, p1.value*(1-p2.value)*scale
-					local w1, w2 = 0.2, 0.5
+					local w1, w2 = 0.2, 1
 					love.graphics.setLineJoin("bevel")
 
-					love.graphics.setLineWidth(4)
-					love.graphics.setColor(0, 0, 0, 0.3)
-					--love.graphics.circle("line", x, y, p1.value*scale)
-					love.graphics.arc("line", "open", x, y, r2, a+w2, b-w2)
-					love.graphics.arc("line", "open", x, y, r2, b+w2, c-w2)
-					love.graphics.arc("line", "open", x, y, r2, c+w2, d-w2)
-					love.graphics.arc("line", "open", x, y, r2, d+w2, e-w2)
-
-					love.graphics.arc("line", "open", x, y, r1, a+w1, c-w1)
-					love.graphics.arc("line", "open", x, y, r1, c+w1, e-w1)
-
-					love.graphics.line(x+10, y, x-10, y)
-					love.graphics.line(x, y+10, x, y-10)
-
 					love.graphics.setLineWidth(2)
-					love.graphics.setColor(style.gray9)
-					--love.graphics.circle("line", x, y, p1.value*scale)
-					love.graphics.arc("line", "open", x, y, r2, a+w2, b-w2)
-					love.graphics.arc("line", "open", x, y, r2, b+w2, c-w2)
-					love.graphics.arc("line", "open", x, y, r2, c+w2, d-w2)
-					love.graphics.arc("line", "open", x, y, r2, d+w2, e-w2)
+					love.graphics.setColor(0, 0, 0, 0.3)
+
+					love.graphics.arc("line", "open", x, y, r2, a+w2, c-w2)
+					love.graphics.arc("line", "open", x, y, r2, c+w2, e-w2)
 
 					love.graphics.arc("line", "open", x, y, r1, a+w1, c-w1)
 					love.graphics.arc("line", "open", x, y, r1, c+w1, e-w1)
@@ -137,6 +123,19 @@ local function tweak(mode, p1, p2)
 					love.graphics.line(x+10, y, x-10, y)
 					love.graphics.line(x, y+10, x, y-10)
 
+					love.graphics.setLineWidth(1)
+					love.graphics.setColor(style.gray9)
+
+					love.graphics.arc("line", "open", x, y, r2, a+w2, c-w2)
+					love.graphics.arc("line", "open", x, y, r2, c+w2, e-w2)
+
+					love.graphics.arc("line", "open", x, y, r1, a+w1, c-w1)
+					love.graphics.arc("line", "open", x, y, r1, c+w1, e-w1)
+
+					love.graphics.line(x+10, y, x-10, y)
+					love.graphics.line(x, y+10, x, y-10)
+
+					love.graphics.setScissor()
 				end
 			else
 				widget.cursor.tweak = cursor.cross
