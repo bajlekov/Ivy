@@ -257,8 +257,7 @@ function love.filedropped(file)
 	loadInputImage = true
 	dirtyImage = true
 
-	local t = require "ops.tools"
-	t.imageShapeSet(pipeline.input.imageData.x, pipeline.input.imageData.y, pipeline.input.imageData.z)
+	require "ops.tools".imageShapeSet(pipeline.input.imageData.x, pipeline.input.imageData.y, pipeline.input.imageData.z)
 end
 
 -- trigger image load at start
@@ -416,6 +415,7 @@ function love.update()
 			else
 				thread.ops.crop({originalImage, pipeline.input.imageData, imageOffset}, "dev")
 			end
+			require "ops.tools".imageShapeSet(pipeline.input.imageData.x, pipeline.input.imageData.y, pipeline.input.imageData.z)
 
 			if RAW_SRGBmatrix and RAW_WBmultipliers  then
 				flags:set(0, 0, 3, panels.info.elem[18].value and 0 or 1)
