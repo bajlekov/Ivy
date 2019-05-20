@@ -140,11 +140,12 @@ local function linearProcess(self)
 	local x = t.inputParam(self, 1)
 	local y = t.inputParam(self, 2)
 	local theta = t.inputParam(self, 3)
+	local w = t.inputParam(self, 4)
 
 	local sx, sy = t.imageShape()
 	local o = t.autoOutputSink(self, 0, sx, sy, 1)
 
-	thread.ops.linear({x, y, theta, o}, self)
+	thread.ops.linear({x, y, theta, w, o}, self)
 end
 
 function ops.linear(x, y)
@@ -153,6 +154,11 @@ function ops.linear(x, y)
 	n:addPortIn(1, "Y"):addElem("float", 1, "X", 0, 1, 0.5)
 	n:addPortIn(2, "Y"):addElem("float", 2, "Y", 0, 1, 0.5)
 	n:addPortIn(3, "Y"):addElem("float", 3, "θ", -1, 1, 0)
+	n:addPortIn(4, "Y"):addElem("float", 4, "Width", 0, 1, 0)
+
+	n.widget = require "ui.widget.gradient"("linear", n.elem[1], n.elem[2], n.elem[3], n.elem[4])
+	n.widget.toolButton(n, 5, "Manipulate")
+
 	n.process = linearProcess
 	n:setPos(x, y)
 	return n
