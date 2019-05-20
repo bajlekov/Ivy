@@ -102,7 +102,7 @@ local function tweak(mode, p1, p2)
 					x = math.clamp(x, ix+fx, ix+iw+fx)
 					y = math.clamp(y, iy+fy, iy+ih+fy)
 
-					love.graphics.setScissor(ix+fx, iy+fy, iw, ih)
+					love.graphics.setScissor(ix+fx, iy+fy, iw+1, ih+1)
 
 					local scale = require "tools.pipeline".output.image.scale
 
