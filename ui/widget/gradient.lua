@@ -55,8 +55,9 @@ local function gradient(mode, p1, p2, p3, p4) -- x, y, a, w
 		a = a + 0.5
 		local dx = math.cos(a*math.pi)
 		local dy = -math.sin(a*math.pi)
-		x = x + dx*w*1024
-		y = y + dy*w*1024
+		local _, _, s = widget.imageSize()
+		x = x + dx*w*1024*s
+		y = y + dy*w*1024*s
 		return x, y, dx, dy
 	end
 
@@ -91,7 +92,8 @@ local function gradient(mode, p1, p2, p3, p4) -- x, y, a, w
 			local dx = math.cos(a*math.pi)
 			local dy = -math.sin(a*math.pi)
 			local d = (mouse.x-x)*dx + (mouse.y-y)*dy
-			p4.value = d/1024
+			local _, _, s = widget.imageSize()
+			p4.value = d/1024/s
 			node.dirty = true
 		end
 
@@ -104,9 +106,9 @@ local function gradient(mode, p1, p2, p3, p4) -- x, y, a, w
 			XYgrabbed = true
 			local fx, fy = widget.frame.x, widget.frame.y
 			local ix, iy = widget.imageCoord(mouse.x - fx, mouse.y - fy)
-			local w, h = widget.imageSize()
-			p1.value = ix/w
-			p2.value = 1-iy/h
+			local w, h, s = widget.imageSize()
+			p1.value = ix/w/s
+			p2.value = 1-iy/h/s
 			node.dirty = true
 		end
 
