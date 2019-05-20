@@ -159,6 +159,7 @@ function ops.linear(x, y)
 	n.widget = require "ui.widget.gradient"("linear", n.elem[1], n.elem[2], n.elem[3], n.elem[4])
 	n.widget.toolButton(n, 5, "Manipulate")
 
+	n.refresh = true
 	n.process = linearProcess
 	n:setPos(x, y)
 	return n
