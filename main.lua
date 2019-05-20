@@ -675,6 +675,13 @@ function widget.imagePos()
 	return x, y, w, h
 end
 
+function widget.imageSize()
+	local w = previewImage.x
+	local h = previewImage.y
+	local s = previewImage.scale
+	return w, h, s
+end
+
 function widget.imageSample(x, y)
 	x, y = widget.imageCoord(x, y)
 	local r = previewImage:get(x, y, 0)
