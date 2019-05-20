@@ -165,9 +165,9 @@ local function gradient(mode, p1, p2, p3, p4) -- x, y, a, w
 
 					love.graphics.circle("line", ax, ay, 20)
 
-					love.graphics.line(wx+20*dx, wy+20*dy, wx+100*dx, wy+100*dy)
-					love.graphics.line(wx-20*dx, wy-20*dy, wx-300*dx, wy-300*dy)
-					love.graphics.line(wx2+300*dx, wy2+300*dy, wx2-100*dx, wy2-100*dy)
+					love.graphics.line(wx+20*dx, wy+20*dy, wx+50*dx, wy+50*dy)
+					love.graphics.line(wx-20*dx, wy-20*dy, wx-250*dx, wy-250*dy)
+					love.graphics.line(wx2+250*dx, wy2+250*dy, wx2-50*dx, wy2-50*dy)
 
 					love.graphics.circle("line", wx, wy, 20)
 
@@ -181,9 +181,9 @@ local function gradient(mode, p1, p2, p3, p4) -- x, y, a, w
 
 					love.graphics.circle("line", ax, ay, 20)
 
-					love.graphics.line(wx+20*dx, wy+20*dy, wx+100*dx, wy+100*dy)
-					love.graphics.line(wx-20*dx, wy-20*dy, wx-300*dx, wy-300*dy)
-					love.graphics.line(wx2+300*dx, wy2+300*dy, wx2-100*dx, wy2-100*dy)
+					love.graphics.line(wx+20*dx, wy+20*dy, wx+50*dx, wy+50*dy)
+					love.graphics.line(wx-20*dx, wy-20*dy, wx-250*dx, wy-250*dy)
+					love.graphics.line(wx2+250*dx, wy2+250*dy, wx2-50*dx, wy2-50*dy)
 
 					love.graphics.circle("line", wx, wy, 20)
 
