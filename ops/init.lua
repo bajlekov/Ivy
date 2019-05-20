@@ -297,7 +297,7 @@ end
 
 function ops.autoWB(x, y)
 	local n = node:new("Sample WB")
-	n.data.tweak = require "tools.tweak"()
+	n.data.tweak = require "ui.widget.tweak"()
 	n:addPortIn(0, "LRGB")
 	n:addPortOut(0, "LRGB")
 	n.data.tweak.toolButton(n, 1, "Sample WB")
@@ -375,7 +375,7 @@ do
 		n:addElem("float", 6, "Smart Range", 0, 1, 0.1).first = true
 		n:addElem("float", 7, "Fall-off", 0, 1, 0.5)
 
-		n.data.tweak = require "tools.tweak"("paint", n.elem[4], n.elem[5])
+		n.data.tweak = require "ui.widget.tweak"("paint", n.elem[4], n.elem[5])
 		n.data.tweak.toolButton(n, 1, "Paint")
 
 		n:addElem("button", 8, "Load", function()
