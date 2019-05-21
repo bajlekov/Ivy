@@ -752,6 +752,12 @@ function love.mousereleased(x, y, button, isTouch)
 	end
 end
 
+function love.wheelmoved(x, y)
+	if uiInput.mouseOverFrame(widget.frame) or widget.active then
+		dirtyImage = dirtyImage or widget.wheelmoved(x, y)
+	end
+end
+
 function pipeline.update()
   dirtyImage = true
 end

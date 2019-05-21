@@ -75,6 +75,7 @@ function widget.imageSample() error("widget.imageSample() not registered yet!") 
 widget.press = {}
 widget.drag = {}
 widget.release = {}
+widget.scroll = {}
 
 -- image pan callbacks
 function widget.drag.imagePan(mouse)
@@ -114,6 +115,12 @@ local function widgetAction(frame, mouse)
 	end
 	if widget.press[widget.mode] then widget.press[widget.mode](mouse) end
 	return widgetDragCallback
+end
+
+function widget.wheelmoved(x, y)
+	if widget.scroll[widget.mode] then
+		return widget.scroll[widget.mode](x, y)
+	end
 end
 
 
