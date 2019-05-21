@@ -54,6 +54,12 @@ local function tweak(mode, p1, p2)
 			cursor.sizeV()
 		end
   end
+	local function tweakScrollCallback(x, y)
+		if p1 then
+			local shift = love.keyboard.isDown("lshift") or love.keyboard.isDown("rshift")
+			p1.value = math.max(p1.value + (shift and 1 or 10) * y, 0)
+		end
+	end
 
 	function o.getOrigin()
 		return ox, oy
@@ -83,6 +89,7 @@ local function tweak(mode, p1, p2)
 			widget.press.tweak = tweakPressCallback
 			widget.drag.tweak = tweakDragCallback
 			widget.release.tweak = tweakReleaseCallback
+			widget.scroll.tweak = tweakScrollCallback
 
 			if mode=="paint" then
 				widget.cursor.tweak = cursor.none
