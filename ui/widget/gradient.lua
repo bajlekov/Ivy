@@ -133,6 +133,11 @@ local function gradient(mode, p1, p2, p3, p4) -- x, y, a, w
 		end
 
 	end
+	local function gradientScrollCallback(x, y)
+		p4.value = p4.value + 0.02 * y
+		node.dirty = true
+		return true
+	end
 
 	local function setToolCallback(elem)
 		if elem.value then
@@ -143,6 +148,7 @@ local function gradient(mode, p1, p2, p3, p4) -- x, y, a, w
 			widget.press.gradient = gradientPressCallback
 			widget.drag.gradient = gradientDragCallback
 			widget.release.gradient = gradientReleaseCallback
+			widget.scroll.gradient = gradientScrollCallback
 
 			if mode=="linear" then
 				widget.cursor.gradient = cursor.arrow
