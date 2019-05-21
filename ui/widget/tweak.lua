@@ -59,7 +59,7 @@ local function tweak(mode, p1, p2)
 			local shift = love.keyboard.isDown("lshift") or love.keyboard.isDown("rshift")
 			local alt = love.keyboard.isDown("lalt") or love.keyboard.isDown("ralt")
 			if p2 and alt then
-				p2.value = math.clamp(p2.value + (shift and 0.005 or 0.05) * y, 0, 1)
+				p2.value = math.clamp(p2.value - (shift and 0.005 or 0.05) * y, 0, 1)
 			else
 				p1.value = math.max(p1.value + (shift and 1 or 10) * y, 0)
 			end
