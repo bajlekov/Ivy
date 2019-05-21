@@ -57,6 +57,7 @@ end
 widget.draw = {}
 widget.draw.tweak = {}
 widget.draw.gradient = {}
+widget.draw.spotmask = {}
 
 function widget.drawCursor()
 	if widget.active and not love.keyboard.isDown("space") then

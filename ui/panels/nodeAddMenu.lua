@@ -225,7 +225,8 @@ overlayCustom:addElem("addNode", 10, "Hist EQ", {ops, "histEQ"})
 overlayCustom:addElem("addNode", 11, "Bokeh", {ops, "bokeh"})
 overlayCustom:addElem("addNode", 12, "RL-Deconv.", {ops, "RLdeconvolution"})
 overlayCustom:addElem("addNode", 13, "Shock Filter", {ops, "shockFilter"})
-overlayCustom:addElem("label", 14, "User-defined")
+overlayCustom:addElem("addNode", 14, "Spot Mask", {ops, "spotmask"})
+overlayCustom:addElem("label", 15, "User-defined")
 
 
 local overlay = Overlay:new("Add node:")

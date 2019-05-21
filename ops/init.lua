@@ -188,6 +188,49 @@ function ops.mirrored(x, y)
 	return n
 end
 
+local function spotmaskProcess(self)
+	self.procType = "dev"
+	local link = self.portOut[0].link
+
+	local i = t.inputSourceBlack(self, 0)
+	local o = t.autoOutputSink(self, 0, i:shape())
+
+	thread.ops.copy({i, o}, self)
+
+	local spots = self.widget.getSpots()
+	if #spots>0 then
+		local p = t.autoTempBuffer(self, -1, 1, #spots, 6)
+
+		for k, v in ipairs(spots) do
+			p:set(0, k-1, 0, v.sx)
+			p:set(0, k-1, 1, 1-v.sy)
+			p:set(0, k-1, 2, v.dx)
+			p:set(0, k-1, 3, 1-v.dy)
+			p:set(0, k-1, 4, v.size)
+			p:set(0, k-1, 5, v.falloff)
+		end
+		p:toDevice()
+
+		thread.ops.spotMask({i, o, p}, self)
+	end
+end
+
+function ops.spotmask(x, y)
+	local n = node:new("Spot Mask")
+	n:addPortIn(0)
+	n:addPortOut(0)
+	n:addElem("float", 1, "Size", 0, 250, 50)
+	n:addElem("float", 2, "Falloff", 0, 1, 0.5)
+
+	n.widget = require "ui.widget.spotmask"(n.elem[1], n.elem[2])
+	n.widget.toolButton(n, 3, "Manipulate")
+
+	n.refresh = true
+	n.process = spotmaskProcess
+	n:setPos(x, y)
+	return n
+end
+
 
 local function outputProcess(self)
 	self.procType = "dev"
