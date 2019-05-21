@@ -83,6 +83,10 @@ local function gradient(mode, p1, p2, p3, p4) -- x, y, a, w
 		if Agrabbed then
 			local x, y = getXYpos()
 			p3.value = math.atan2(-mouse.y+y, mouse.x-x)/math.pi
+			local ctrl = love.keyboard.isDown("lctrl") or love.keyboard.isDown("rctrl")
+			if ctrl then
+				p3.value = math.round(p3.value*12)/12
+			end
 			node.dirty = true
 		end
 
@@ -119,6 +123,10 @@ local function gradient(mode, p1, p2, p3, p4) -- x, y, a, w
 			cursor.sizeV()
 			Agrabbed = true
 			p3.value = math.atan2(-mouse.y+y, mouse.x-x)/math.pi
+			local ctrl = love.keyboard.isDown("lctrl") or love.keyboard.isDown("rctrl")
+			if ctrl then
+				p3.value = math.round(p3.value*12)/12
+			end
 			node.dirty = true
 		end
 
