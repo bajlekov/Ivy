@@ -662,8 +662,8 @@ function widget.imageCoord(x, y)
 	x = (x - previewImage.drawOffset.x) / previewImage.scale
 	y = (y - previewImage.drawOffset.y) / previewImage.scale
 	y = previewImage.y - y
-	x = math.floor(math.min(math.max(x, 0), previewImage.x - 1))
-	y = math.floor(math.min(math.max(y, 0), previewImage.y - 1))
+	x = math.round(math.clamp(x, 0, previewImage.x - 1))
+	y = math.round(math.clamp(y, 0, previewImage.y - 1))
 	return x, y
 end
 
