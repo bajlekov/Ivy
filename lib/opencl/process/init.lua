@@ -104,7 +104,7 @@ end
 
 function process:loadSourceString(s)
 	assert(type(s) == "string")
-	self.source = s
+	self.source = self.source .. s
 	self.kernels = {}
 end
 
@@ -115,7 +115,7 @@ function process:loadSourceFile(...)
 		s = s..f:read("*a")
 		f:close()
 	end
-	self.source = s
+	self.source = self.source .. s
 	self.kernels = {}
 end
 
