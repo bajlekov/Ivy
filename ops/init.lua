@@ -1169,16 +1169,9 @@ function ops.mixRGB(x, y)
 	return n
 end
 
--- TODO: allocate temporary buffers in scheduler only
-local function downsize(x, y, z)
-	if not y then
-		x, y, z = x:shape()
-	end
-	x = math.ceil(x / 2)
-	y = math.ceil(y / 2)
-	return x, y, z
-end
+local downsize = require "tools.downsize"
 
+-- TODO: allocate temporary buffers in scheduler only
 local function blur(self, i, o, n, d)
 	local x, y, z = downsize(i)
 	local l = {}

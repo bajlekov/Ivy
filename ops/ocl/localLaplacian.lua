@@ -22,14 +22,7 @@ local data = require "data"
 --local ox = ffi.new("cl_int[1]", 0)
 --local oy = ffi.new("cl_int[1]", 0)
 
-local function downsize(x, y, z)
-	if not y then
-		x, y, z = x:shape()
-	end
-	x = math.ceil(x / 2)
-	y = math.ceil(y / 2)
-	return x, y, z
-end
+local downsize = require "tools.downsize"
 
 local function execute()
 	proc:getAllBuffers("I", "D", "S", "H", "R", "O") -- input, detail, shadow, highlight, range, output
