@@ -47,6 +47,7 @@ local function spotmask(p1, p2) -- size, fall-off
 		end
 	end
 	local function addSpot(sx, sy, dx, dy, size, falloff)
+		size = math.clamp(size, 0, 1920)
 		table.insert(spots, {
 			sx = sx, sy = sy,
 			dx = dx, dy = dy,
@@ -123,7 +124,7 @@ local function spotmask(p1, p2) -- size, fall-off
 			if alt then
 				spots[n].falloff = math.clamp(spots[n].falloff - (shift and 0.005 or 0.05) * scrollY, 0, 1)
 			else
-				spots[n].size = math.max(spots[n].size + (shift and 1 or 10) * scrollY, 0)
+				spots[n].size = math.clamp(spots[n].size + (shift and 1 or 10) * scrollY, 0, 1920)
 			end
 			node.dirty = true
 			return true
@@ -132,7 +133,7 @@ local function spotmask(p1, p2) -- size, fall-off
 				if p2 and alt then
 					p2.value = math.clamp(p2.value - (shift and 0.005 or 0.05) * scrollY, 0, 1)
 				else
-					p1.value = math.max(p1.value + (shift and 1 or 10) * scrollY, 0)
+					p1.value = math.clamp(p1.value + (shift and 1 or 10) * scrollY, 0, 1920)
 				end
 			end
 		end
