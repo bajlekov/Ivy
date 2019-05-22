@@ -33,7 +33,6 @@ require "ops.script"(ops)
 -- list of ops + menu entries
 t.register(ops, "contrast")
 t.register(ops, "bilateral")
-t.register(ops, "custom2D")
 t.register(ops, "split_lr")
 t.register(ops, "split_ud")
 
