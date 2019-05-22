@@ -20,7 +20,7 @@ local proc = require "lib.opencl.process".new()
 local source = [[
 #include "range.cl"
 
-kernel void spotMask(global float *I, global float *O, global float *P, int idx) {
+kernel void spotClone(global float *I, global float *O, global float *P, int idx) {
 	const int x = get_global_id(0);
 	const int y = get_global_id(1);
 	const int z = get_global_id(2);
@@ -49,14 +49,13 @@ local ffi = require "ffi"
 local idx = ffi.new("cl_int[1]", 0)
 
 local function execute()
-	proc:getAllBuffers("O", "I", "P")
+	proc:getAllBuffers("I", "O", "P")
 	proc.buffers.P.__write = false
 	proc.buffers.I.__write = false
 	for i = 0, proc.buffers.P.y-1 do
 		idx[0] = i
-		print("starting spot "..idx[0], proc.buffers.P:get(0, i, 0), proc.buffers.P:get(0, i, 1))
 		local ps = math.ceil(proc.buffers.P:get(0, i, 4)) -- brush size
-		proc:executeKernel("spotMask", {ps*2+1, ps*2+1, proc.buffers.O.z}, {"O", "I", "P", idx})
+		proc:executeKernel("spotClone", {ps*2+1, ps*2+1, proc.buffers.O.z}, {"I", "O", "P", idx})
 		proc.queue:finish()
 	end
 end
