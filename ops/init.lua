@@ -1688,29 +1688,6 @@ function ops.nlmeans(x, y)
 end
 
 
-local function custom3DProcess(self)
-	self.procType = "dev"
-	local p1, p2, p3, p4, p5
-	p1 = t.inputSourceBlack(self, 1)
-	p2 = t.inputSourceBlack(self, 2)
-	p3 = t.inputSourceBlack(self, 3)
-	p4 = t.inputSourceBlack(self, 4)
-	p5 = t.autoOutput(self, 5, data.superSize(p1, p2, p3, p4))
-	thread.ops.custom3D({p1, p2, p3, p4, p5}, self)
-end
-
-function ops.custom3D(x, y)
-	local n = node:new("Custom 3D")
-	n:addPortIn(1):addElem("text", 1, "Input 1", "")
-	n:addPortIn(2):addElem("text", 2, "Input 2", "")
-	n:addPortIn(3):addElem("text", 3, "Input 3", "")
-	n:addPortIn(4):addElem("text", 4, "Input 4", "")
-	n:addPortOut(5):addElem("text", 5, "", "Output")
-	n.process = custom3DProcess
-	n:setPos(x, y)
-	return n
-end
-
 ops.math = {}
 local function genMath1(name, fn)
 	local function process(self)
