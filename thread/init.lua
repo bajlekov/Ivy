@@ -61,6 +61,15 @@ function threadModule.init(platform, devNum, workers)
   )
 end
 
+local keepData = {}
+local function pushImageData(data)
+	table.insert(keepData, data)
+	dataCh:push(data:toChTable())
+end
+function threadModule.freeData()
+	keepData = {}
+	collectgarbage("collect")
+end
 
 function threadModule.done(OCL)
   local err = thread:getError()
@@ -92,7 +101,7 @@ do
     dataCh:push(nodeID)
     dataCh:push(remoteFunctionName)
     for k, v in ipairs(buffers) do
-      dataCh:push(v:toChTable())
+      pushImageData(v)
     end
     dataCh:push("execute")
   end
@@ -106,20 +115,20 @@ do
 
   function threadModule.ops.syncHost(buffer)
     dataCh:push("SyncHost")
-    dataCh:push(buffer:toChTable())
+    pushImageData(buffer)
     dataCh:push("execute")
   end
 
   function threadModule.ops.syncDevice(buffer)
     dataCh:push("SyncDevice")
-    dataCh:push(buffer:toChTable())
+    pushImageData(buffer)
     dataCh:push("execute")
   end
 
   function threadModule.ops.syncHostMulti(buffers)
     dataCh:push("SyncHost")
     for k, v in ipairs(buffers) do
-      dataCh:push(v:toChTable())
+      pushImageData(v)
     end
     dataCh:push("execute")
   end
@@ -127,7 +136,7 @@ do
   function threadModule.ops.syncDeviceMulti(buffers)
     dataCh:push("SyncDevice")
     for k, v in ipairs(buffers) do
-      dataCh:push(v:toChTable())
+      pushImageData(v)
     end
     dataCh:push("execute")
   end

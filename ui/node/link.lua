@@ -170,21 +170,9 @@ function link:remove()
 		k.link = nil
 	end
 
-	link.keepGarbage(self) -- keep data associated with link until all processing is done
 	self.portOut = {}
 	self.curve = {}
-	collectgarbage("collect") -- TODO: remove if no problems occur with data being removed during processing
 end
-
-local trash = {}
-function link.keepGarbage(data)
-	table.insert(trash, data)
-end
-function link.collectGarbage()
-	trash = {}
-	collectgarbage("collect")
-end
-
 
 
 local thread = require "thread"
@@ -247,7 +235,6 @@ function link:getData(cs, dev)
 		else
 			toHost(newData)
 		end
-		link.keepGarbage(self.data)
 		self.data = newData
 		return newData
 	else

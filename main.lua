@@ -381,7 +381,7 @@ function love.update()
 		processReady = true
 		message = tempMessage
 
-		link.collectGarbage() -- clean all deleted data references once processing is finished
+		thread.freeData() -- clean all deleted data references once processing is finished
 		previewImage = pipeline.output.image:refresh() -- set to display the new output.image next
 
 		if pipeline.output.elem[1].value then
