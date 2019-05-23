@@ -430,9 +430,9 @@ function data.superSize(...) -- returns size of buffer needed to accomodate all 
 	local buffers = {...}
 	local x, y, z = 1, 1, 1
 	for _, t in ipairs(buffers) do
-		assert(t.x == x or t.x == 1 or x == 1, "Incompatible x dimension")
-		assert(t.y == y or t.y == 1 or y == 1, "Incompatible y dimension")
-		assert(t.z == z or t.z == 1 or z == 1, "Incompatible z dimension")
+		--assert(t.x == x or t.x == 1 or x == 1, "Incompatible x dimension")
+		--assert(t.y == y or t.y == 1 or y == 1, "Incompatible y dimension")
+		--assert(t.z == z or t.z == 1 or z == 1, "Incompatible z dimension")
 		if t.x > x then x = t.x end
 		if t.y > y then y = t.y end
 		if t.z > z then z = t.z end
