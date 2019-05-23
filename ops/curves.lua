@@ -429,14 +429,13 @@ return function(ops)
 		a = t.plainParam(self, 1)
 		c:toDevice()
 		o = t.autoOutput(self, 0, i:shape())
-		o.cs = i.cs
 		thread.ops.curveL__({i, c, a, o}, self)
 	end
 
 	function ops.curveL__(x, y)
 		local n = node:new("Curve L")
-		n:addPortIn(0, "L__")
-		n:addPortOut(0)
+		n:addPortIn(0, "LAB")
+		n:addPortOut(0, "LAB")
 		n:addElem("bool", 1, "Preserve Saturation", true)
 		n.process = curveL__Process
 		n.data.curve = data:new(256, 1, 1)
@@ -452,9 +451,8 @@ return function(ops)
 		c = self.data.curve
 		c:toDevice()
 		o = t.autoOutput(self, 0, i:shape())
-		o.cs = i.cs
 		thread.ops.curveY__({i, c, o}, self)
-		if self.elem[1].value and i.cs == "LRGB" then
+		if self.elem[1].value then
 			thread.ops.setHue({o, i, o}, self) -- TODO: integrate in main process avoiding memory overhead
 			o.cs = "LCH"
 		end
@@ -462,8 +460,8 @@ return function(ops)
 
 	function ops.curveY__(x, y)
 		local n = node:new("Curve Y")
-		n:addPortIn(0, "Y__")
-		n:addPortOut(0)
+		n:addPortIn(0, "LRGB")
+		n:addPortOut(0, "LRGB")
 		n:addElem("bool", 1, "Preserve Hue", true)
 		n.process = curveY__Process
 		n.data.curve = data:new(256, 1, 1)

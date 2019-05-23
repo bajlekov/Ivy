@@ -47,7 +47,7 @@ require "ui.node.link".dataResize = tools.resize
 require "ui.node.link".dataConvert = tools.convert
 
 
-
+--[[
 -- allow optional CS components e.g. "Y__" => "Y", "LRGB" or "L__" => "L", "LAB", "LCH"
 function tools.optCS(cs, link)
 	local linkCS
@@ -84,6 +84,12 @@ function tools.optCSsuperset(...)
 		if v.cs == "LAB" then error("NYI") return "LAB" end
 		if v.cs == "LCH" then error("NYI") return "LCH" end
 	end
+	return cs
+end
+--]]
+
+-- Placeholder
+function tools.optCS(cs, link)
 	return cs
 end
 
