@@ -247,6 +247,7 @@ function link:getData(cs, dev)
 		else
 			toHost(newData)
 		end
+		link.keepGarbage(self.data)
 		self.data = newData
 		return newData
 	else
