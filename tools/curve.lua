@@ -41,11 +41,21 @@ local abs = math.abs
 
 function curve:getPt(x, y)
 	for k, v in ipairs(self.points) do
-		if abs(v.x-x)<limit and abs(v.y-y)<limit then
-			return k
+		local d2 = (v.x-x)^2 + (v.y-y)^2
+		if d2<limit^2 then
+			local v_next = self.points[k+1]
+			if v_next then
+				local d2_next = (v_next.x-x)^2 + (v_next.y-y)^2
+				if d2_next<d2 then
+					return k + 1
+				else
+					return k
+				end
+			else
+				return k
+			end
 		end
 	end
-	-- TODO: select closest point instead of first
 end
 
 function curve:addPt(x, y)
