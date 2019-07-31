@@ -38,4 +38,9 @@ function math.erf(x)
 	return sign * y
 end
 
+function math.norm(m, s)
+	s = math.max(s, 0.000001)
+	return math.exp(-m^2/(2*s*s))/(math.sqrt(2*math.pi)*s)
+end
+
 return math
