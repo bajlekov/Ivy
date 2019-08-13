@@ -37,6 +37,11 @@ float lrgb(float V) {
 	}
 }
 
+#undef A
+#undef G
+#undef N
+#undef F
+
 float3 SRGB_LRGB(float3 i) {
 	return (float3)(lrgb(i.x), lrgb(i.y), lrgb(i.z));
 }
@@ -133,6 +138,12 @@ float3 LAB_XYZ(float3 i) {
 	o.z = wp_z*xyz(o.z);
 	return o;
 }
+
+#undef wp_x
+#undef wp_y
+#undef wp_z
+#undef E
+#undef K
 
 float L_Y(float i) {
 	return xyz((i + 0.16f)/1.16f);
