@@ -30,11 +30,12 @@ kernel void post_LL(global float *I, global float *O) {
   const int x = get_global_id(0);
   const int y = get_global_id(1);
 
-  float i = $I[x, y, 0];
-  float o = $O[x, y, 0];
+  float3 i_xyz = $I[x, y]XYZ;
+  float o_y = L_Y($O[x, y, 0]);
+  float3 o = XYZ_LAB(i_xyz*o_y/i_xyz.y);
 
-  $O[x, y, 1] = $I[x, y, 1]*o/i;
-  $O[x, y, 2] = $I[x, y, 2]*o/i;
+  $O[x, y, 1] = o.y;
+  $O[x, y, 2] = o.z;
 }
 #endif
 
