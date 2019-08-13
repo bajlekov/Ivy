@@ -614,21 +614,19 @@ local function localLaplacianProcess(self)
 	self.procType = "dev"
 	local i = t.inputSourceWhite(self, 0)
 	local d = t.inputParam(self, 1)
-	local s = t.inputParam(self, 2)
-	local h = t.inputParam(self, 3)
-	local r = t.inputParam(self, 4)
+	local r = t.inputParam(self, 2)
 	local o = t.autoOutput(self, 0, i:shape())
+	local hq = t.plainParam(self, 3)
 
-	thread.ops.localLaplacian({i, d, s, h, r, o}, self)
+	thread.ops.localLaplacian({i, d, r, o, hq}, self)
 end
 
 function ops.localLaplacian(x, y)
 	local n = node:new("Detail")
-	n:addPortIn(0, "LAB"):addPortOut(0, "LAB")
+	n:addPortIn(0, "LAB"):addPortOut(0, "LAB") -- XYZ color matching!
 	n:addPortIn(1, "Y"):addElem("float", 1, "Detail", -1, 1, 0)
-	n:addPortIn(2, "Y"):addElem("float", 2, "Shadows", -1, 1, 0)
-	n:addPortIn(3, "Y"):addElem("float", 3, "Highlights", -1, 1, 0)
-	n:addPortIn(4, "Y"):addElem("float", 4, "Range", 0, 1, 0.2)
+	n:addPortIn(2, "Y"):addElem("float", 2, "Range", 0, 1, 0.2)
+	n:addElem("bool", 3, "HQ", false)
 	n.process = localLaplacianProcess
 	n:setPos(x, y)
 	return n
