@@ -66,10 +66,12 @@ local function execute()
 			oy[0] = ry*r*2-r
 			--ox[0] = math.random(0, r)
 			--oy[0] = math.random(-r, r)
-			proc:executeKernel("dist", proc:size2D("out"), {"in", "t1", ox, oy})
-			proc:executeKernel("horizontal", proc:size2D("out"), {"t1", "t2", "k"})
-			proc:executeKernel("vertical", proc:size2D("out"), {"t2", "t1", "k"})
-			proc:executeKernel("accumulate", proc:size2D("out"), {"in", "t1", "t3", "t4", "p1", "p2", ox, oy})
+			if not (ox[0]==0 and oy[0]==0) then
+				proc:executeKernel("dist", proc:size2D("out"), {"in", "t1", ox, oy})
+				proc:executeKernel("horizontal", proc:size2D("out"), {"t1", "t2", "k"})
+				proc:executeKernel("vertical", proc:size2D("out"), {"t2", "t1", "k"})
+				proc:executeKernel("accumulate", proc:size2D("out"), {"in", "t1", "t3", "t4", "p1", "p2", ox, oy})
+			end
 		end
 	end
 	proc:executeKernel("norm", proc:size2D("out"), {"in", "t3", "t4", "p3", "out"})
