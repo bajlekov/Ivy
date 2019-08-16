@@ -30,12 +30,13 @@ constant float G12[25] = {0.004571, 0.00723, 0.010989, 0.016048, 0.022521, 0.030
 constant float G17[35] = {0.003036, 0.004249, 0.005827, 0.00783, 0.010309, 0.013299, 0.01681, 0.020819, 0.025265, 0.030042, 0.035002, 0.039958, 0.044696, 0.048988, 0.052608, 0.055357, 0.057075, 0.057659, 0.057075, 0.055357, 0.052608, 0.048988, 0.044696, 0.039958, 0.035002, 0.030042, 0.025265, 0.020819, 0.01681, 0.013299, 0.010309, 0.00783, 0.005827, 0.004249, 0.003036};
 constant float G22[45] = {0.002268, 0.002957, 0.003808, 0.004843, 0.006084, 0.007549, 0.009253, 0.011202, 0.013396, 0.015823, 0.01846, 0.021273, 0.024214, 0.027224, 0.030233, 0.033162, 0.03593, 0.038452, 0.040646, 0.042439, 0.043768, 0.044585, 0.044861, 0.044585, 0.043768, 0.042439, 0.040646, 0.038452, 0.03593, 0.033162, 0.030233, 0.027224, 0.024214, 0.021273, 0.01846, 0.015823, 0.013396, 0.011202, 0.009253, 0.007549, 0.006084, 0.004843, 0.003808, 0.002957, 0.002268};
 
-kernel void init(global float *out, global float *t3, global float *t4) {
+kernel void init(global float *out, global float *t3, global float *t4, global float *wmax) {
   const int x = get_global_id(0);
   const int y = get_global_id(1);
 
   $t3[x, y] = (float3)0.0f;
   $t4[x, y] = (float3)0.0f;
+  $wmax[x, y] = (float3)0.0000001f;
 }
 
 kernel void dist(global float *in, global float *t1, const int ox, const int oy) {
@@ -68,7 +69,7 @@ kernel void vertical(global float *t2, global float *t1, global float *k) {
   $t1[x, y, 0] = sum;
 }
 
-kernel void accumulate(global float *in, global float *t1, global float *t3, global float *t4, global float *p1, global float *p2, const int ox, const int oy) {
+kernel void accumulate(global float *in, global float *t1, global float *t3, global float *t4, global float *wmax, global float *p1, global float *p2, const int ox, const int oy) {
   const int x = get_global_id(0);
   const int y = get_global_id(1);
 
@@ -92,18 +93,22 @@ kernel void accumulate(global float *in, global float *t1, global float *t3, glo
   float3 o = $t3[x, y] + pi*pf + ni*nf;
   float3 f = $t4[x, y] + pf + nf;
 
+  float3 w = $wmax[x, y];
+  $wmax[x, y] = fmax(w, fmax(pf, nf));
+
   $t3[x, y] = o;
   $t4[x, y] = f;
 }
 
-kernel void norm(global float *in, global float *t3, global float *t4, global float *p3, global float *out) {
+kernel void norm(global float *in, global float *t3, global float *t4, global float *wmax, global float *p3, global float *out) {
   const int x = get_global_id(0);
   const int y = get_global_id(1);
 
   float3 i = $in[x, y];
   i.xz = i.xz/fmax(i.y, 0.000001f);
 
-  float3 o = (0.1f*i + $t3[x, y]) / (0.1f + $t4[x, y]);
+  float3 w = $wmax[x, y];
+  float3 o = (w*i + $t3[x, y]) / (w + $t4[x, y]);
   float f = $p3[x, y, 0];
   o.y = i.y*(1-f) + o.y*f;
   o.xz = o.xz*o.y;

@@ -30,8 +30,9 @@ local function execute()
 	proc.buffers.t2 = data:new(x, y, 1)
 	proc.buffers.t3 = data:new(x, y, z)
 	proc.buffers.t4 = data:new(x, y, z)
+	proc.buffers.wmax = data:new(x, y, z) -- keep largest weight for scaling
 
-	proc:executeKernel("init", proc:size2D("out"), {"out", "t3", "t4"})
+	proc:executeKernel("init", proc:size2D("out"), {"out", "t3", "t4", "wmax"})
 
 	local r = proc.buffers.p4:get(0, 0, 0) -- adjustable range
 
@@ -45,7 +46,7 @@ local function execute()
 				proc:executeKernel("dist", proc:size2D("out"), {"in", "t1", ox, oy})
 				proc:executeKernel("horizontal", proc:size2D("out"), {"t1", "t2", "k"})
 				proc:executeKernel("vertical", proc:size2D("out"), {"t2", "t1", "k"})
-				proc:executeKernel("accumulate", proc:size2D("out"), {"in", "t1", "t3", "t4", "p1", "p2", ox, oy})
+				proc:executeKernel("accumulate", proc:size2D("out"), {"in", "t1", "t3", "t4", "wmax", "p1", "p2", ox, oy})
 			end
 		end
 		local x = 0
@@ -55,7 +56,7 @@ local function execute()
 			proc:executeKernel("dist", proc:size2D("out"), {"in", "t1", ox, oy})
 			proc:executeKernel("horizontal", proc:size2D("out"), {"t1", "t2", "k"})
 			proc:executeKernel("vertical", proc:size2D("out"), {"t2", "t1", "k"})
-			proc:executeKernel("accumulate", proc:size2D("out"), {"in", "t1", "t3", "t4", "p1", "p2", ox, oy})
+			proc:executeKernel("accumulate", proc:size2D("out"), {"in", "t1", "t3", "t4", "wmax", "p1", "p2", ox, oy})
 		end
 	else
 		math.haltonSeed()
@@ -70,20 +71,22 @@ local function execute()
 				proc:executeKernel("dist", proc:size2D("out"), {"in", "t1", ox, oy})
 				proc:executeKernel("horizontal", proc:size2D("out"), {"t1", "t2", "k"})
 				proc:executeKernel("vertical", proc:size2D("out"), {"t2", "t1", "k"})
-				proc:executeKernel("accumulate", proc:size2D("out"), {"in", "t1", "t3", "t4", "p1", "p2", ox, oy})
+				proc:executeKernel("accumulate", proc:size2D("out"), {"in", "t1", "t3", "t4", "wmax", "p1", "p2", ox, oy})
 			end
 		end
 	end
-	proc:executeKernel("norm", proc:size2D("out"), {"in", "t3", "t4", "p3", "out"})
+	proc:executeKernel("norm", proc:size2D("out"), {"in", "t3", "t4", "wmax", "p3", "out"})
 
 	proc.buffers.t1:free()
 	proc.buffers.t2:free()
 	proc.buffers.t3:free()
 	proc.buffers.t4:free()
+	proc.buffers.wmax:free()
 	proc.buffers.t1 = nil
 	proc.buffers.t2 = nil
 	proc.buffers.t3 = nil
 	proc.buffers.t4 = nil
+	proc.buffers.wmax = nil
 end
 
 local function init(d, c, q)
