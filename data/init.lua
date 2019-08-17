@@ -113,6 +113,16 @@ data.stats.data = {
 	cpu_n_max = 0,
 	gpu_n_max = 0,
 }
+data.stats.thread = {
+	cpu = 0,
+	gpu = 0,
+	cpu_n = 0,
+	gpu_n = 0,
+	cpu_max = 0,
+	gpu_max = 0,
+	cpu_n_max = 0,
+	gpu_n_max = 0,
+}
 
 data.stats.memCPU = {}
 data.stats.memGPU = {}

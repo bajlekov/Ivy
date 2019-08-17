@@ -71,12 +71,18 @@ function threadModule.freeData()
 	collectgarbage("collect")
 end
 
+local data = require "data"
 function threadModule.done(OCL)
   local err = thread:getError()
   if err then
     error("SCHEDULER ERROR: "..err)
   end
-  return syncCh:pop()=="done"
+	if syncCh:pop()=="done" then
+		data.stats.thread = syncCh:demand()
+		return true
+	else
+		return false
+	end
 end
 
 do

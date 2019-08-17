@@ -57,6 +57,9 @@ local schedule = {}
 local lastid = false
 function schedule.done()
 	hostSyncCh:push("done")
+	hostSyncCh:push(data.stats.data)
+	data.stats.clearCPU()
+	data.stats.clearGPU()
 	if lastid then
 		messageCh:push{"end", lastid}
 	end
@@ -196,6 +199,9 @@ function schedule.par()
 			end
 			done = true
 			hostSyncCh:push("done")
+			hostSyncCh:push(data.stats.data)
+			data.stats.clearCPU()
+			data.stats.clearGPU()
 		end
 
 		if not done then love.timer.sleep(0.001) end
