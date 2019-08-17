@@ -48,6 +48,7 @@ local function execute()
 
   if not(_y==scriptY) then
     scriptY = _y
+		proc:clearSource()
     proc:loadSourceString(getSource(scriptY))
   end
 

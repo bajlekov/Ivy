@@ -119,6 +119,11 @@ function process:loadSourceFile(...)
 	self.kernels = {}
 end
 
+function process:clearSource()
+	self.source = ""
+	self.kernels = {}
+end
+
 do
 	local n = 1
 	function process:getBuffer(name)
