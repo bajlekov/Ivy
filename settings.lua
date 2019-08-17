@@ -1,4 +1,5 @@
 do local _={
+  cubicSpline=false,
   halideEnable=false,
   halideGpuEnable=false,
   hostLowMemory=true,

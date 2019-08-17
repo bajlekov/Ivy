@@ -281,6 +281,10 @@ do
 	end
 end
 
+settingsMenu:addElem("text", 8, "")
+local cubicSpline = settingsMenu:addElem("bool", 9, "Cubic splines", false)
+cubicSpline.value = settings.cubicSpline or false
+cubicSpline.action = function(e, m) settings.cubicSpline = e.value end
 
 
 histPanel:addElem("color", 1, "Color picker")
