@@ -31,6 +31,8 @@ function curve:new(a, b)
 		}
 	}
 
+	o.recalculate = true
+
 	setmetatable(o, self.meta)
 	return o
 end
@@ -78,12 +80,14 @@ function curve:addPt(x, y)
 	end
 
 	table.insert(self.points, i, {x = x, y = y})
+	self.recalculate = true
 	return i
 end
 
 function curve:setPt(i, x, y)
 	self.points[i].x = x
 	self.points[i].y = y
+	self.recalculate = true
 end
 
 function curve:movePt(i, dx, dy)
@@ -99,11 +103,13 @@ function curve:movePt(i, dx, dy)
 	if y>1 then y = 1 end
 	self.points[i].x = x
 	self.points[i].y = y
+	self.recalculate = true
 end
 
 function curve:removePt(i)
 	if #self.points>2 and i>0 and i<=#self.points then
 		table.remove(self.points, i)
+		self.recalculate = true
 	end
 end
 
@@ -255,7 +261,7 @@ do -- implement cubic spline interpolation
 			return ay + (cy - ay)*t
 		end
 
-		self:calc()
+		if self.recalculate then self:calc() end
 		return self:get(x)
 	end
 
