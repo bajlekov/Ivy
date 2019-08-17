@@ -136,6 +136,14 @@ end
 
 
 do -- implement cubic spline interpolation
+--[[
+adapted from:
+https://kluge.in-chemnitz.de/opensource/spline/
+https://github.com/ttk592/spline/
+Copyright (C) 2011, 2014 Tino Kluge (ttk448 at gmail.com)
+Licensed under GPL 2+
+--]]
+
 	local function lu_decompose(A)
 		local n = #A.d
 		for i = 1, n do -- pre-condition A
