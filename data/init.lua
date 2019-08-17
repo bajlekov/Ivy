@@ -89,23 +89,94 @@ function data:new(x, y, z) -- new image data
 		__write = true,
 	}
 
-	if not settings.hostLowMemory then
-		o.data = alloc.float32(x * y * z)
-		o.data_u32 = ffi.cast("uint32_t*", o.data)
-		o.data_i32 = ffi.cast("int32_t*", o.data)
-	end
-
 	setmetatable(o, self.meta) -- inherit data methods
-	if not onDemandMemory then
+	if not settings.hostLowMemory then
+		o:allocHost()
+		self.__cpuDirty = false
+	end
+	if not settings.openclLowMemory then
 		o:allocDev(false)
 	end
 
 	return o
 end
 
+
+data.stats = {}
+data.stats.data = {
+	cpu = 0,
+	gpu = 0,
+	cpu_n = 0,
+	gpu_n = 0,
+	cpu_max = 0,
+	gpu_max = 0,
+	cpu_n_max = 0,
+	gpu_n_max = 0,
+}
+
+data.stats.memCPU = {}
+data.stats.memGPU = {}
+
+local sd = data.stats.data
+function data.stats.allocCPU(buf)
+	ffi.gc(buf.data, data.stats.gcCPU)
+	local m = buf.x*buf.y*buf.z*4
+	data.stats.memCPU[tonumber(ffi.cast("uintptr_t", buf.data))] = m
+	sd.cpu = sd.cpu + m
+	sd.cpu_n = sd.cpu_n + 1
+	sd.cpu_max = math.max(sd.cpu_max, sd.cpu)
+	sd.cpu_n_max = math.max(sd.cpu_n_max, sd.cpu_n)
+end
+function data.stats.allocGPU(buf)
+	ffi.gc(buf.dataOCL, data.stats.gcGPU)
+	local m = buf.x*buf.y*buf.z*4
+	data.stats.memGPU[tonumber(ffi.cast("uintptr_t", buf.dataOCL))] = m
+	sd.gpu = sd.gpu + m
+	sd.gpu_n = sd.gpu_n + 1
+	sd.gpu_max = math.max(sd.gpu_max, sd.gpu)
+	sd.gpu_n_max = math.max(sd.gpu_n_max, sd.gpu_n)
+end
+function data.stats.freeCPU(ptr)
+	local n = tonumber(ffi.cast("uintptr_t", ptr))
+	local m = data.stats.memCPU[n]
+	data.stats.memCPU[n] = nil
+	sd.cpu = sd.cpu - m
+	sd.cpu_n = sd.cpu_n - 1
+end
+function data.stats.freeGPU(ptr)
+	local n = tonumber(ffi.cast("uintptr_t", ptr))
+	local m = data.stats.memGPU[n]
+	data.stats.memGPU[n] = nil
+	sd.gpu = sd.gpu - m
+	sd.gpu_n = sd.gpu_n - 1
+end
+function data.stats.getCPU()
+	return sd.cpu, sd.cpu_n, sd.cpu_max, sd.cpu_n_max
+end
+function data.stats.getGPU()
+	return sd.gpu, sd.gpu_n, sd.gpu_max, sd.gpu_n_max
+end
+function data.stats.clearCPU()
+	sd.cpu_max = sd.cpu
+	sd.cpu_n_max = sd.cpu_n
+end
+function data.stats.clearGPU()
+	sd.gpu_max = sd.gpu
+	sd.gpu_n_max = sd.gpu_n
+end
+function data.stats.gcCPU(ptr)
+	data.stats.freeCPU(ptr)
+	alloc.free(ptr)
+end
+function data.stats.gcGPU(ptr)
+	data.stats.freeGPU(ptr)
+	context.release_mem_object(ptr)
+end
+
 function data:allocHost()
 	if not self.data or self.data==NULL then
 		self.data = alloc.float32(self.x * self.y * self.z)
+		data.stats.allocCPU(self)
 		self.data_u32 = ffi.cast("uint32_t*", self.data)
 		self.data_i32 = ffi.cast("int32_t*", self.data)
 		self.__cpuDirty = true
@@ -122,6 +193,7 @@ function data:allocDev(transfer)
 	--self.dataOCL = context:create_buffer("use_host_ptr", self.x * self.y * self.z * ffi.sizeof("cl_float"), self.data) -- allocate OCL data
 
 	self.dataOCL = context:create_buffer(self.x * self.y * self.z * ffi.sizeof("cl_float")) -- allocate OCL data
+	data.stats.allocGPU(self)
 
 	if transfer then self:toDevice(true) end
 	return self
@@ -132,14 +204,23 @@ function data:freeDev(transfer)
 	if transfer==nil then transfer = self.__write end
 	assert(context, "No OpenCL device detected")
 	if transfer then self:toHost(true) end
-	if self.dataOCL then context.release_mem_object(self.dataOCL) end
+	if self.dataOCL then
+		data.stats.freeGPU(self.dataOCL)
+		context.release_mem_object(self.dataOCL)
+	end
 	self.dataOCL = nil
 	return self
 end
 
 function data:free()
-	if self.data then alloc.free(self.data) end
-	if self.dataOCL then context.release_mem_object(self.dataOCL) end
+	if self.data then
+		data.stats.freeCPU(self.data)
+		alloc.free(self.data)
+	end
+	if self.dataOCL then
+		data.stats.freeGPU(self.dataOCL)
+		context.release_mem_object(self.dataOCL)
+	end
 	self.data = nil
 	self.dataOCL = nil
 end
