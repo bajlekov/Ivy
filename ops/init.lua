@@ -455,7 +455,7 @@ do
 
 			local ox, oy = self.data.tweak.getOrigin()
 			local cx, cy, update = self.data.tweak.getCurrent()
-			local p = t.autoTempBuffer(self, -1, 1, 1, 10) -- [x, y, value, flow, size, fall-off, range, fall-off, sample x, sample y]
+			local p = t.autoTempBuffer(self, -1, 1, 1, 11) -- [x, y, value, flow, size, fall-off, range, fall-off, patch, sample x, sample y]
 
 			local ctrl = love.keyboard.isDown("lctrl") or love.keyboard.isDown("rctrl")
 			local alt = love.keyboard.isDown("lalt") or love.keyboard.isDown("ralt")
@@ -467,10 +467,11 @@ do
 				p:set(0, 0, 3, self.elem[3].value)
 				p:set(0, 0, 4, self.elem[4].value)
 				p:set(0, 0, 5, self.elem[5].value)
-				p:set(0, 0, 6, self.portIn[6].link and self.elem[6].value or -1) -- range -1: disabled
+				p:set(0, 0, 6, self.portIn[6].link and self.elem[6].value^2 or -1) -- range -1: disabled
 				p:set(0, 0, 7, self.elem[7].value)
-				p:set(0, 0, 8, alt and ox or cx)
-				p:set(0, 0, 9, alt and oy or cy)
+				p:set(0, 0, 8, self.elem[8].value)
+				p:set(0, 0, 9, alt and ox or cx)
+				p:set(0, 0, 10, alt and oy or cy)
 				p:toDevice(true)
 
 				thread.ops.paintSmart({link.data, i, p}, self)
@@ -495,13 +496,14 @@ do
 		n:addElem("float", 3, "Flow", 0, 1, 1)
 		n:addElem("float", 4, "Brush Size", 0, 500, 50)
 		n:addElem("float", 5, "Fall-off", 0, 1, 0.5).last = true
-		n:addElem("float", 6, "Smart Range", 0, 1, 0.1).first = true
+		n:addElem("float", 6, "Smart Range", 0, 1, 0.2).first = true
 		n:addElem("float", 7, "Fall-off", 0, 1, 0.5)
+		n:addElem("bool", 8, "Smart Patch", false)
 
 		n.data.tweak = require "ui.widget.tweak"("paint", n.elem[4], n.elem[5])
 		n.data.tweak.toolButton(n, 1, "Paint")
 
-		n:addElem("button", 8, "Load", function()
+		n:addElem("button", 9, "Load", function()
 			local f = io.open("mask.bin", "rb")
 			local header = f:read(6*4)
 			local header_uint8 = ffi.new("uint8_t[6*4]", header)
@@ -523,8 +525,8 @@ do
 			n.dirty = true
 		end)
 
-
-		n:addElem("button", 9, "Save", function()
+		-- TODO: implement auto-save
+		n:addElem("button", 10, "Save", function()
 			n.mask:set()
 
 			local img = n.mask.full
