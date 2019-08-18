@@ -506,7 +506,6 @@ function love.draw()
 
 	-- update status panel
 	local processor = tostring("OpenCL "..panels.parameters.elem[3].right.." / "..jit.arch.." LuaJIT")
-	collectgarbage("collect")
 	panels.status.leftText = string.format(
 		"UI: %.1ffps | Processing: %.1fms (%s) | Memory: CPU %.1fMB, GPU %.1fMB (Temp: CPU %.1fMB, GPU %.1fMB)",
 		love.timer.getFPS(), procTime * 1000, processor,
