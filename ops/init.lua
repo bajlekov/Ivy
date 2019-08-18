@@ -500,7 +500,7 @@ do
 		n:addElem("float", 7, "Fall-off", 0, 1, 0.5)
 		n:addElem("bool", 8, "Smart Patch", false)
 
-		n.data.tweak = require "ui.widget.tweak"("paint", n.elem[4], n.elem[5])
+		n.data.tweak = require "ui.widget.tweak"("paint", n.elem[4], n.elem[5], n.elem[6])
 		n.data.tweak.toolButton(n, 1, "Paint")
 
 		n:addElem("button", 9, "Load", function()
