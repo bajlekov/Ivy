@@ -19,7 +19,7 @@ local widget = require "ui.widget"
 local cursor = require "ui.cursor"
 local style = require "ui.style"
 
-local function tweak(mode, p1, p2)
+local function tweak(mode, p1, p2, p3)
 	local o = {}
 
 	local node
@@ -55,12 +55,15 @@ local function tweak(mode, p1, p2)
 		end
   end
 	local function tweakScrollCallback(x, y)
-		if p1 then
+		if p1 or p2 or p3 then
 			local shift = love.keyboard.isDown("lshift") or love.keyboard.isDown("rshift")
 			local alt = love.keyboard.isDown("lalt") or love.keyboard.isDown("ralt")
-			if p2 and alt then
+			local ctrl = love.keyboard.isDown("lctrl") or love.keyboard.isDown("rctrl")
+			if p3 and ctrl then
+				p3.value = math.clamp(p3.value + (shift and 0.005 or 0.05) * y, 0, 1)
+			elseif p2 and alt then
 				p2.value = math.clamp(p2.value - (shift and 0.005 or 0.05) * y, 0, 1)
-			else
+			elseif p1 then
 				p1.value = math.max(p1.value + (shift and 1 or 10) * y, 0)
 			end
 		end
