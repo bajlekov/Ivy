@@ -69,13 +69,13 @@ function curve:addPt(x, y)
 		end
 	end
 
-	if self.points[i-1] and self.points[i].x - self.points[i-1].x < 0.002 then
+	if self.points[i-1] and self.points[i] and self.points[i].x - self.points[i-1].x < 0.002 then
 		return i
 	end
 
 	if self.points[i-1] and x - self.points[i-1].x < 0.01 then
 		x = self.points[i-1].x + 0.001
-	elseif self.points[i].x - x < 0.001 then
+	elseif self.points[i] and self.points[i].x - x < 0.001 then
 		x = self.points[i].x - 0.001
 	end
 
