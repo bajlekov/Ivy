@@ -29,7 +29,7 @@ do
 	f:close()
 end
 
-function raw.read(name)
+function raw.read(name, denoise)
 	local rawData = libraw.libraw_init(0);
 	if type(name) ~= "string" then
 		name = name:getFilename()
@@ -57,9 +57,43 @@ function raw.read(name)
 	rawData.rawdata.ioparams.raw_color = 1 -- always force raw output!
 	rawData.params.no_auto_scale = 1 -- do not rescale values!
 
-	libraw.libraw_dcraw_process(rawData)
+	if denoise then
+		print("raw size: ", rawData.sizes.raw_height, rawData.sizes.raw_width)
+		print("raw filters: ", rawData.rawdata.iparams.filters)
+		print("raw filters: ", ffi.string(rawData.rawdata.iparams.cdesc, 5))
 
+		local range = rawData.color.maximum - rawData.color.black
+		local black = rawData.color.black -- black point offset for introduction of non-poissonian behavior
+		local range_1 = 1/range
+		local w = rawData.sizes.raw_width
+		local h = rawData.sizes.raw_height
+		local d = data:new(w, h, 1)
+		local r = rawData.rawdata.raw_image
+
+		debug.tic()
+		for y = 0, h-1 do
+			for x = 0, w-1 do
+				d:set(x, y, 0, math.max(r[y*w+x] - black, 0)*range_1)
+			end
+		end
+		debug.toc("RAW denoise get")
+
+		local o = d:new()
+		denoise(d, o)
+
+		debug.tic()
+		for y = 0, h-1 do
+			for x = 0, w-1 do
+				r[y*w+x] = o:get(x, y, 0)*range + black
+			end
+		end
+		debug.toc("RAW denoise put")
+	end
+
+	debug.tic()
+	libraw.libraw_dcraw_process(rawData)
 	local img = libraw.libraw_dcraw_make_mem_image(rawData, NULL)
+	debug.toc("RAW demosaic")
 	local w = img.width
 	local h = img.height
 
@@ -71,8 +105,9 @@ function raw.read(name)
 
 	local buffer = data:new(w, h, 3)
 
-	for x = 0, w-1 do
-		for y = 0, h-1 do
+	debug.tic()
+	for y = 0, h-1 do
+		for x = 0, w-1 do
 			local r = (img.data[((x+y*w)*3 + 0)*2] + img.data[((x+y*w)*3 + 0)*2 + 1]*256)/range
 			local g = (img.data[((x+y*w)*3 + 1)*2] + img.data[((x+y*w)*3 + 1)*2 + 1]*256)/range
 			local b = (img.data[((x+y*w)*3 + 2)*2] + img.data[((x+y*w)*3 + 2)*2 + 1]*256)/range
@@ -82,6 +117,7 @@ function raw.read(name)
 			buffer:set(x, h-y-1, 2, b*mb)
 		end
 	end
+	debug.toc("RAW copy")
 
 	local M = ffi.new("float[3][4]") -- RAW to sRGB matrix
 	for i = 0, 2 do

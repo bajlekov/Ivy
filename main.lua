@@ -158,7 +158,26 @@ function love.filedropped(file)
 	collectgarbage("collect")
 	assert(file, "ERROR: File loading failed")
 
-	originalImage, RAW_SRGBmatrix, RAW_WBmultipliers = require("io."..settings.imageLoader).read(file)
+	local rawDenoiseCallback
+	if panels.info.elem[21].value > 0.001 then
+		local denoiseStrength = data:new(1, 1, 1)
+		denoiseStrength:set(0, 0, 0, panels.info.elem[21].value)
+		denoiseStrength:toDevice()
+
+		rawDenoiseCallback = function(i, o)
+			i:toDevice()
+			debug.tic()
+			thread.ops.nlmeans_RAW({i, denoiseStrength, o}, "dev")
+			-- FIXME: figure out why a simple blocking sync is not sufficient to force completion of previous nodes
+			thread.ops.done()
+			while not thread.done() do love.timer.sleep(0.001) end
+			debug.toc("RAW Denoising")
+			o:toHost(true)
+		end
+	end
+
+	print(panels.info.elem[21].value)
+	originalImage, RAW_SRGBmatrix, RAW_WBmultipliers = require("io."..settings.imageLoader).read(file, rawDenoiseCallback)
 	originalImage:toDevice(true)
 	if RAW_SRGBmatrix then RAW_SRGBmatrix:toDevice(true) end
 	if RAW_WBmultipliers then RAW_WBmultipliers:toDevice(true) end
