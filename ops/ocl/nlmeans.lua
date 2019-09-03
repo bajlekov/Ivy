@@ -23,7 +23,7 @@ local ox = ffi.new("cl_int[1]", 0)
 local oy = ffi.new("cl_int[1]", 0)
 
 local function execute()
-	proc:getAllBuffers("in", "p1", "p2", "p3", "p4", "k", "out")
+	proc:getAllBuffers("in", "p1", "p2", "p3", "p4", "p5", "k", "out")
 
 	local x, y, z = proc.buffers.out:shape()
 	proc.buffers.t1 = data:new(x, y, 1)
@@ -43,7 +43,7 @@ local function execute()
 			--local r = math.round(math.cos(math.abs(x) / r * math.pi / 2) * r)
 			for y = -r, r do
 				oy[0] = y
-				proc:executeKernel("dist", proc:size2D("out"), {"in", "t1", ox, oy})
+				proc:executeKernel("dist", proc:size2D("out"), {"in", "t1", "p1", "p2", "p5", ox, oy})
 				proc:executeKernel("horizontal", proc:size2D("out"), {"t1", "t2", "k"})
 				proc:executeKernel("vertical", proc:size2D("out"), {"t2", "t1", "k"})
 				proc:executeKernel("accumulate", proc:size2D("out"), {"in", "t1", "t3", "t4", "wmax", "p1", "p2", ox, oy})
@@ -53,7 +53,7 @@ local function execute()
 		ox[0] = x
 		for y = -r, -1 do
 			oy[0] = y
-			proc:executeKernel("dist", proc:size2D("out"), {"in", "t1", ox, oy})
+			proc:executeKernel("dist", proc:size2D("out"), {"in", "t1", "p1", "p2", "p5", ox, oy})
 			proc:executeKernel("horizontal", proc:size2D("out"), {"t1", "t2", "k"})
 			proc:executeKernel("vertical", proc:size2D("out"), {"t2", "t1", "k"})
 			proc:executeKernel("accumulate", proc:size2D("out"), {"in", "t1", "t3", "t4", "wmax", "p1", "p2", ox, oy})
@@ -68,7 +68,7 @@ local function execute()
 			--ox[0] = math.random(0, r)
 			--oy[0] = math.random(-r, r)
 			if not (ox[0]==0 and oy[0]==0) then
-				proc:executeKernel("dist", proc:size2D("out"), {"in", "t1", ox, oy})
+				proc:executeKernel("dist", proc:size2D("out"), {"in", "t1", "p1", "p2", "p5", ox, oy})
 				proc:executeKernel("horizontal", proc:size2D("out"), {"t1", "t2", "k"})
 				proc:executeKernel("vertical", proc:size2D("out"), {"t2", "t1", "k"})
 				proc:executeKernel("accumulate", proc:size2D("out"), {"in", "t1", "t3", "t4", "wmax", "p1", "p2", ox, oy})

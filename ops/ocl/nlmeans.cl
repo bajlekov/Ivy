@@ -39,11 +39,21 @@ kernel void init(global float *out, global float *t3, global float *t4, global f
   $wmax[x, y] = (float3)0.0000001f;
 }
 
-kernel void dist(global float *in, global float *t1, const int ox, const int oy) {
+kernel void dist(global float *in, global float *t1, global float* p1, global float*p2, global float*p5, const int ox, const int oy) {
   const int x = get_global_id(0);
   const int y = get_global_id(1);
 
-  float3 o = pown($in[x, y] - $in[x+ox, y+oy], 2);
+  float3 i1 = $in[x, y];
+  float3 i2 = $in[x+ox, y+oy];
+
+  // photon well depth for proper scaling of the poisson noise
+  float depth = 25000.0f;
+
+  // anscombe transform from poisson noise to unit standard deviation noise
+  i1 = 2.0f*sqrt(i1*depth + 3.0f/8.0f + pown(p5[0]*25.0f, 2));
+  i2 = 2.0f*sqrt(i2*depth + 3.0f/8.0f + pown(p5[0]*25.0f, 2));
+
+  float3 o = pown(i1 - i2, 2);
   $t1[x, y, 0] = (o.x + o.y + o.z);
 }
 
@@ -69,21 +79,14 @@ kernel void vertical(global float *t2, global float *t1, global float *k) {
   $t1[x, y, 0] = sum;
 }
 
-kernel void accumulate(global float *in, global float *t1, global float *t3, global float *t4, global float *wmax, global float *p1, global float *p2, const int ox, const int oy) {
+kernel void accumulate(global float *in, global float *t1, global float *t3, global float *t4, global float *wmax, global float* p1, global float*p2, const int ox, const int oy) {
   const int x = get_global_id(0);
   const int y = get_global_id(1);
 
-  // pre-compute smooth input intensity?
-  float Y = 0.0f;
-  for (int i = -2; i<=2; i++)
-    for (int j = -2; j<=2; j++)
-      Y += $in[x+i, y+j, 1]*G2[i+2]*G2[j+2];
+  float3 sigma = pown(1.0f - (float3)($p2[x, y, 0], $p1[x, y, 0], $p2[x, y, 0]), 5);
 
-  float3 fw = 100000.0f*pown(fmax((float3)($p2[x, y, 0], $p1[x, y, 0], $p2[x, y, 0]), 0.001f), -8);
-  float3 sigma = sqrt(Y*fw)/fw;
-
-  float3 pf = exp(-$t1[x, y, 0]/sigma);
-  float3 nf = exp(-$t1[x-ox, y-oy, 0]/sigma);
+  float3 pf = exp(-$t1[x, y, 0]*sigma);
+  float3 nf = exp(-$t1[x-ox, y-oy, 0]*sigma);
 
   float3 pi = $in[x+ox, y+oy];
   pi.xz = pi.xz/fmax(pi.y, 0.000001f);
@@ -105,13 +108,14 @@ kernel void norm(global float *in, global float *t3, global float *t4, global fl
   const int y = get_global_id(1);
 
   float3 i = $in[x, y];
+  float3 _i = i;
   i.xz = i.xz/fmax(i.y, 0.000001f);
 
   float3 w = $wmax[x, y];
   float3 o = (w*i + $t3[x, y]) / (w + $t4[x, y]);
   float f = $p3[x, y, 0];
-  o.y = i.y*(1-f) + o.y*f;
   o.xz = o.xz*o.y;
+  o = _i*(1-f) + o*f;
 
   $out[x, y] = o;
 }

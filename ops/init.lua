@@ -1652,13 +1652,15 @@ local function nlmeansProcess(self)
 	local p2 = t.inputParam(self, 2)
 	local p3 = t.inputParam(self, 3)
 
-	local p4 = t.autoTempBuffer(self, 4, 1, 1, 2)
-	p4:set(0, 0, 0, self.elem[6].value)
-	p4:set(0, 0, 1, self.elem[7].value)
+	local p5 = t.plainParam(self, 5)
+
+	local p4 = t.autoTempBuffer(self, 4, 1, 1, 3)
+	p4:set(0, 0, 0, self.elem[7].value)
+	p4:set(0, 0, 1, self.elem[8].value)
 	local kernel = t.autoTempBuffer(self, 5, 1, 1, 15)
 	local sum = 0
 	for i = -7, 7 do
-		local v = math.norm(i, self.elem[5].value)
+		local v = math.norm(i, self.elem[6].value)
 		sum = sum + v
 		kernel:set(0, 0, i+7, v)
 	end
@@ -1672,7 +1674,7 @@ local function nlmeansProcess(self)
 	local x, y, z = data.superSize(i, p1, p2, p3)
 
 	local o = t.autoOutput(self, 0, x, y, z)
-	thread.ops.nlmeans({i, p1, p2, p3, p4, kernel, o}, self)
+	thread.ops.nlmeans({i, p1, p2, p3, p4, p5, kernel, o}, self)
 end
 
 function ops.nlmeans(x, y)
@@ -1683,9 +1685,10 @@ function ops.nlmeans(x, y)
 	n:addPortIn(2, "Y"):addElem("float", 2, "Chrominance", 0, 1, 0.5)
 	n:addPortIn(3, "Y"):addElem("float", 3, "Mask", 0, 1, 1)
 	n:addElem("label", 4, "Advanced")
-	n:addElem("float", 5, "Kernel Size", 1, 5, 3)
-	n:addElem("int", 6, "Range", 5, 25, 10)
-	n:addElem("bool", 7, "Random Sample", false)
+	n:addElem("float", 5, "Gaussian Mix", 0, 1, 0)
+	n:addElem("float", 6, "Kernel Size", 1, 5, 3)
+	n:addElem("int", 7, "Range", 5, 25, 10)
+	n:addElem("bool", 8, "Random Sample", false)
 	n.process = nlmeansProcess
 	n:setPos(x, y)
 	return n
