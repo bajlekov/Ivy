@@ -66,7 +66,7 @@ function format.rgba8(image)
 	return data
 end
 
-function stb.read(fileName)
+function stb.read(fileName, ...)
 	if type(fileName) == "string" and love.filesystem.isFused() then
 		if love.filesystem.mount(love.filesystem.getSourceBaseDirectory(), "base") then
 			fileName = "base/"..fileName
@@ -81,7 +81,7 @@ function stb.read(fileName)
 		return format[image:getFormat()](image)
 	else -- try raw file reading
 		local raw = require "io.raw"
-		return raw.read(fileName)
+		return raw.read(fileName, ...)
 	end
 
 end
