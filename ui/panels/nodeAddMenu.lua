@@ -108,6 +108,7 @@ overlayEnhance:addElem("addNode", 6, "Clarity", {ops, "clarity"})
 overlayEnhance:addElem("addNode", 7, "Compress", {ops, "compress"})
 overlayEnhance:addElem("addNode", 8, "Tonal Contrast", {ops, "tonalContrast"})
 overlayEnhance:addElem("addNode", 9, "Bilateral", {ops, "bilateral"})
+overlayEnhance:addElem("addNode", 10, "DT Filter", {ops, "domainTransform"})
 
 
 local overlayMask = Overlay:new("Mask:")
