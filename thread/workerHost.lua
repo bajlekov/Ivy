@@ -43,26 +43,17 @@ local function getArray()
 	return julia.array(data.fromChTable(buf))
 end
 
-
-local wrapfun = julia.evalString [[
-	function(f, arg...)
-		try
-
-			return f(arg...)
-
-		catch ex
-			println("Exception: ", ex)
-			println()
-			bt = catch_backtrace();
-			for ip in bt
-				for fr in StackTraces.lookup(ip)
-					println(fr)
-				end
-			end
-		end
+local function using(str)
+	julia.evalString([[
+	try
+		using ]]..str..[[
+	catch
+		using Pkg
+		Pkg.add("]]..str..[[")
+		using ]]..str..[[
 	end
-]]
-
+	]])
+end
 
 -- mean
 do
@@ -89,9 +80,8 @@ end
 
 -- poisson noise
 do
+	using("PoissonRandom")
 	local fun = julia.evalString [[
-		using PoissonRandom
-
 		function __poisson(i, l)
 			if l<0.001
 				return i
