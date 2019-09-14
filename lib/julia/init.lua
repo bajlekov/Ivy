@@ -249,7 +249,10 @@ function julia.print(...)
 	julia.evalBaseFunction("println", ...)
 end
 
-local s = julia.evalString [["[OK] Julia subsystem initialized"]]
+julia.evalFunction(wrapfun, fun, i, l, o)
+
+local s = julia.evalString [[VERSION]]
+io.write("Loaded Julia version: ")
 julia.print(s)
 
 return julia
