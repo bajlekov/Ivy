@@ -82,7 +82,7 @@ do
 		local a = getArray()
 		local b = getArray()
 		assert(dataCh:demand()=="execute")
-		julia.evalFunction(wrapfun, fun, a, b)
+		julia.evalFunction(fun, a, b)
 		debug.toc("jl_stat_mean")
 	end
 end
@@ -114,7 +114,7 @@ do
 		local l = getArray()
 		local o = getArray()
 		assert(dataCh:demand()=="execute")
-		julia.evalFunction(wrapfun, fun, i, l, o)
+		julia.evalFunction(fun, i, l, o)
 		julia.gcEnable()
 		debug.toc("jl_poisson")
 	end
@@ -139,7 +139,7 @@ do
 		local s = getArray()
 		local o = getArray()
 		assert(dataCh:demand()=="execute")
-		julia.evalFunction(wrapfun, fun, i, s, o)
+		julia.evalFunction(fun, i, s, o)
 		julia.gcEnable()
 		debug.toc("jl_normal")
 	end

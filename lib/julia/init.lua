@@ -183,7 +183,26 @@ function julia.gcEnable() jl.jl_gc_enable(1) end
 function julia.gcDisable() jl.jl_gc_enable(0) end
 function julia.gcCollect() jl.jl_gc_collect(0) end
 
-julia.evalString = jl.jl_eval_string
+function julia.evalString(str)
+	str =
+	"try\n"..str.."\n"..[[
+	catch ex
+		println("****************")
+		println("Julia Exception:")
+		println(ex)
+		println("****************")
+		bt = catch_backtrace();
+		for ip in bt
+			for fr in StackTraces.lookup(ip)
+				println(fr)
+			end
+		end
+	end
+	]]
+
+	return jl.jl_eval_string(str)
+end
+
 function julia.evalFile(input)
 	local source = io.open(input, "rb")
 	local string = source:read("*a")
@@ -191,16 +210,37 @@ function julia.evalFile(input)
 	return julia.evalString(string)
 end
 
+local wrapfun = julia.evalString [[
+	function(f, arg...)
+		try
+
+			return f(arg...)
+
+		catch ex
+		println("****************")
+		println("Julia Exception:")
+		println(ex)
+		println("****************")
+			bt = catch_backtrace();
+			for ip in bt
+				for fr in StackTraces.lookup(ip)
+					println(fr)
+				end
+			end
+		end
+	end
+]]
+
 function julia.evalFunction(fun, ...)
 	if type(fun)=="string" then
 		fun = jl_get_function(jl.jl_main_module, fun)
 	end
-	return jl_call(fun, ...)
+	return jl_call(wrapfun, fun, ...)
 end
 
 function julia.evalBaseFunction(fun, ...)
 	local fun = jl_get_function(jl.jl_base_module, fun)
-	return jl_call(fun, ...)
+	return jl_call(wrapfun, fun, ...)
 end
 
 julia.type = jl_typeof
