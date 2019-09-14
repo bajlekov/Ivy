@@ -62,7 +62,7 @@ end
 
 local function signature(data, chain)
 	chain = chain or ""
-	return string.format("%s{%d_%d_%d/%d_%d_%d/%s}", chain, data.x, data.y, data.z, data.sx, data.sy, data.sz, data.cs)
+	return string.format("%s{%d_%d_%d %d_%d_%d %s}", chain, data.x, data.y, data.z, data.sx, data.sy, data.sz, data.cs)
 end
 
 local function getID(buffers, order)
@@ -83,6 +83,13 @@ local function getKernel(process, k)
 	if not process.kernels[k][ID] then
 		local source = tools.parseIndex(process.source, process.buffers)
 		process.source_parsed = source
+		if settings.openclCache then
+			--save source
+			local f, err = io.open("ops/ocl/cache/"..k..ID..".cl", "w")
+			assert(f, err)
+			f:write(source)
+			f:close()
+		end
 		local program = process.context:create_program_with_source(source)
 
 		if not pcall(program.build, program, tools.buildParams) then
@@ -97,7 +104,7 @@ end
 
 function process:loadSourceString(s)
 	assert(type(s) == "string")
-	self.source = s
+	self.source = self.source .. s
 	self.kernels = {}
 end
 
@@ -108,7 +115,12 @@ function process:loadSourceFile(...)
 		s = s..f:read("*a")
 		f:close()
 	end
-	self.source = s
+	self.source = self.source .. s
+	self.kernels = {}
+end
+
+function process:clearSource()
+	self.source = ""
 	self.kernels = {}
 end
 

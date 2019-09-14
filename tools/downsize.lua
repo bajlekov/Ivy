@@ -15,23 +15,13 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ]]
 
-local input = {}
-
-local frame = require "ui.frame"
-
-function input.press(mouse)
-	local fr, lx, ly = frame.baseFrame:getFrame(mouse.x, mouse.y)
-	mouse.lx, mouse.ly = lx, ly -- set local x, y within frame
-
-	if mouse.button==1 then
-		return true, fr:onAction(mouse)
-	elseif mouse.button==2 then
-		return true, fr:onContext(mouse)
+local function downsize(x, y, z)
+	if not y then
+		x, y, z = x:shape()
 	end
+	x = math.ceil(x / 2)
+	y = math.ceil(y / 2)
+	return x, y, z
 end
 
-function input.hover(mouse)
-	return frame.baseFrame:getFrame(mouse.x, mouse.y)
-end
-
-return input
+return downsize

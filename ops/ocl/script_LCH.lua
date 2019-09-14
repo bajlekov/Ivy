@@ -58,7 +58,7 @@ local function execute()
     scriptL = _l
     scriptC = _c
     scriptH = _h
-
+		proc:clearSource()
     proc:loadSourceString(getSource(scriptL, scriptC, scriptH))
   end
 

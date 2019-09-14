@@ -15,23 +15,27 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ]]
 
-local input = {}
+local proc = require "lib.opencl.process".new()
 
-local frame = require "ui.frame"
+local source = [[
+kernel void copy(global float *I, global float *O) {
+	const int x = get_global_id(0);
+	const int y = get_global_id(1);
+	const int z = get_global_id(2);
 
-function input.press(mouse)
-	local fr, lx, ly = frame.baseFrame:getFrame(mouse.x, mouse.y)
-	mouse.lx, mouse.ly = lx, ly -- set local x, y within frame
+	$O[x, y, z] = $I[x, y, z];
+}
+]]
 
-	if mouse.button==1 then
-		return true, fr:onAction(mouse)
-	elseif mouse.button==2 then
-		return true, fr:onContext(mouse)
-	end
+local function execute()
+	proc:getAllBuffers("I", "O")
+	proc:executeKernel("copy", proc:size3D("O"))
 end
 
-function input.hover(mouse)
-	return frame.baseFrame:getFrame(mouse.x, mouse.y)
+local function init(d, c, q)
+	proc:init(d, c, q)
+	proc:loadSourceString(source)
+	return execute
 end
 
-return input
+return init

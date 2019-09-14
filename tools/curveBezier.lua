@@ -41,11 +41,21 @@ local abs = math.abs
 
 function curve:getPt(x, y)
 	for k, v in ipairs(self.points) do
-		if abs(v.x-x)<limit and abs(v.y-y)<limit then
-			return k
+		local d2 = (v.x-x)^2 + (v.y-y)^2
+		if d2<limit^2 then
+			local v_next = self.points[k+1]
+			if v_next then
+				local d2_next = (v_next.x-x)^2 + (v_next.y-y)^2
+				if d2_next<d2 then
+					return k + 1
+				else
+					return k
+				end
+			else
+				return k
+			end
 		end
 	end
-	-- TODO: select closest point instead of first
 end
 
 function curve:addPt(x, y)
@@ -126,6 +136,7 @@ end
 function curve:sample(x)
 	local ax, bx, cx
 	local ay, by, cy
+	local n = #self.points
 
 	if #self.points==2 then -- linear interpolation
 		ax = self.points[1].x
@@ -134,6 +145,26 @@ function curve:sample(x)
 		ay = self.points[1].y
 		cy = self.points[2].y
 		return ay + (cy - ay)*t
+	end
+
+	if x < self.points[1].x then
+		if self.points[2].x - self.points[1].x<1e-5 then
+			return self.points[1].y > self.points[2].y and 1 or 0
+		end
+		local ox = self.points[1].x - x
+		local dx = self.points[2].x - self.points[1].x
+		local dy = self.points[2].y - self.points[1].y
+		return self.points[1].y - ox * dy / dx
+	end
+
+	if x > self.points[n].x then
+		if self.points[n].x - self.points[n-1].x<1e-5 then
+			return self.points[n].y > self.points[n-1].y and 1 or 0
+		end
+		local ox = x - self.points[n].x
+		local dx = self.points[n-1].x - self.points[n].x
+		local dy = self.points[n-1].y - self.points[n].y
+		return self.points[n].y + ox * dy / dx
 	end
 
 	if #self.points==3 then -- bezier interpolation of 3 points
@@ -158,7 +189,6 @@ function curve:sample(x)
 		return y(ay, by, cy, t)
 	end
 
-	local n = #self.points
 	if x > (self.points[n-2].x + self.points[n-1].x)/2 then
 		ax = (self.points[n-2].x + self.points[n-1].x)/2
 		bx = self.points[n-1].x

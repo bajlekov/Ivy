@@ -38,4 +38,46 @@ function math.erf(x)
 	return sign * y
 end
 
+function math.norm(m, s)
+	s = math.max(s, 0.000001)
+	return math.exp(-m^2/(2*s*s))/(math.sqrt(2*math.pi)*s)
+end
+
+do
+	local i = 1
+
+	function math.halton2()
+		local f = 1
+		local r = 0
+		local j = i
+		local n = 0
+		while j > 0 do
+			f = f/2
+			r = r + f * (j%2)
+			j = math.floor(j/2)
+			n = n + 1
+		end
+		print(n)
+		local h1 = r
+
+		local f = 1
+		local r = 0
+		local j = i
+		while j > 0 do
+			f = f/3
+			r = r + f * (j%3)
+			j = math.floor(j/3)
+		end
+		local h2 = r
+
+		i = i + 1
+
+		return h1, h2
+	end
+
+	function math.haltonSeed(n)
+		i = n or math.random(65535)
+	end
+end
+
 return math

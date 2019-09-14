@@ -41,16 +41,16 @@ kernel void display(global float *p1, global uchar *p2, global float *p3, global
 	if ( p3[0]>0.5f && (v.x<-0.0001f || v.y<-0.0001f || v.z<-0.0001f) ) {
 		v = (float3)(1.0f);
 	}
-
-	if (p3[0]<0.5f) {
-		float m = fmax(v.x, fmax(v.y, v.z));
+	
+	float m = fmax(fmax(v.x, v.y), v.z);
+	if (p3[0]<0.5f && m>1.0f) {
 		float Y = LRGBtoY(v);
-		if (m>1.0f) {
-			v = v/m;
-			float Ys = LRGBtoY(v); // Ysaturated
-			float f = (Y-Ys)/clamp(1.0f-Ys, 0.0001f, 1.0f);
-			f = tanh(f);
-			v = f*1.0f + (1.0f-f)*v;
+		if (Y<1.0f) {
+			float3 d = v-Y;
+			float f = (1.0f-Y)/(m-Y);
+			v = Y + d*f;
+		} else {
+			v = (float3)(1.0f);
 		}
 	}
 

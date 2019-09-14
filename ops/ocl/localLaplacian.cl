@@ -30,19 +30,18 @@ kernel void post_LL(global float *I, global float *O) {
   const int x = get_global_id(0);
   const int y = get_global_id(1);
 
-  float i = $I[x, y, 0];
-  float o = $O[x, y, 0];
+  float3 i_xyz = $I[x, y]XYZ;
+  float o_y = L_Y($O[x, y, 0]);
+  float3 o = XYZ_LAB(i_xyz*o_y/i_xyz.y);
 
-  $O[x, y, 1] = $I[x, y, 1]*o/i;
-  $O[x, y, 2] = $I[x, y, 2]*o/i;
+  $O[x, y, 1] = o.y;
+  $O[x, y, 2] = o.z;
 }
 #endif
 
-#if $$ I and D and S and H and R and O and 1 or 0 $$
+#if $$ I and D and R and O and 1 or 0 $$
 kernel void transform(global float *I,
                      global float *D,
-                     global float *S,
-                     global float *H,
                      global float *R,
                      global float *O,
                      const float m) // midpoint
@@ -51,23 +50,26 @@ kernel void transform(global float *I,
   const int y = get_global_id(1);
   const int z = get_global_id(2);
 
-  float i = $I[x, y, z];
+  float i = clamp($I[x, y, z], 0.0f, 1.0f); // works only in range [0, 1]
   float d = $D[x, y, z]+1.0f;
-  float s = $S[x, y, z]+1.0f;
-  float h = $H[x, y, z]+1.0f;
   float r = $R[x, y, z];
 
-  float o = i - m;
-  float f = -2*pown(fabs(o), 3) + 3*pown(fabs(o), 2);
+  float o = clamp(fabs(i - m)/r*0.5f, 0.0f, 1.0f);
+  float f = 2.0f*pown(o, 3) - 3.0f*pown(o, 2) + 1.0f;
+  $O[x, y, z] = f*(i-m)*d + (1.0f-f)*(i-m);
 
-  if      (o<-r)    o = o*h;
-  else if (o>r)     o = o*s;
-  //else if (o<0.0f)  o = (1.0f-f)*o*d + f*(o*h - d*r*0.5f); // optionally offset shadows and highlights by detail
-  //else if (o>=0.0f) o = (1.0f-f)*o*d + f*(o*s + d*r*0.5f);
-  else if (o<0.0f)  o = (1.0f-f)*o*d + f*(o*h);
-  else if (o>=0.0f) o = (1.0f-f)*o*d + f*(o*s);
+  /*
+  float o = i-m;
+  float f = (1-d)/r*0.5*pown(o, 2);
+  float c = (1-d)*0.5*r + d*r - r;
+
+  if (o < -r) o = o - c;
+  else if (o > r) o = o + c;
+  else if (o < 0.0f) o = -f + d*o;
+  else o = f + d*o;
 
   $O[x, y, z] = o;
+  */
 }
 #endif
 

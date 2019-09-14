@@ -22,17 +22,10 @@ local data = require "data"
 --local ox = ffi.new("cl_int[1]", 0)
 --local oy = ffi.new("cl_int[1]", 0)
 
-local function downsize(x, y, z)
-	if not y then
-		x, y, z = x:shape()
-	end
-	x = math.ceil(x / 2)
-	y = math.ceil(y / 2)
-	return x, y, z
-end
+local downsize = require "tools.downsize"
 
 local function execute()
-	proc:getAllBuffers("I", "D", "S", "H", "R", "O") -- input, detail, shadow, highlight, range, output
+	proc:getAllBuffers("I", "D", "R", "O", "hq") -- input, detail, shadow, highlight, range, output
 
 	-- allocate buffers
 	local T = {}
@@ -69,7 +62,7 @@ local function execute()
 		proc:executeKernel("pyrDown", proc:size3D("G"), {"I", "G"})
 	end
 
-	local lvl = 15
+	local lvl = proc.buffers.hq:get(0, 0, 0)<0.5 and 15 or 127
 	local cl_m = ffi.new("cl_float[1]", 0) -- midpoint
 	local cl_i = ffi.new("cl_int[1]", 0)
 	local cl_lvl = ffi.new("cl_int[1]", lvl)
@@ -80,7 +73,7 @@ local function execute()
 
 		proc.buffers.I = I
 		proc.buffers.O = O -- transformed
-		proc:executeKernel("transform", proc:size2D("I"), {"I", "D", "S", "H", "R", "O", cl_m}) -- 1st channel
+		proc:executeKernel("transform", proc:size2D("I"), {"I", "D", "R", "O", cl_m}) -- 1st channel
 
 		-- generate transformed laplacian pyramid
 		proc.buffers.I = O

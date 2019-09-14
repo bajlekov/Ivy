@@ -69,4 +69,8 @@ function input.press(mouse) --FIXME: use event system!!!
 	return false
 end
 
+function input.hover(mouse)
+	return overlay.frame and overlay.frame.visible and mouseOverFrame(overlay.frame, mouse.x, mouse.y)
+end
+
 return input

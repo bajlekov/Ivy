@@ -317,6 +317,44 @@ function draw.plot(graph, x, y, w, h)
 	end
 end
 
+function draw.curveView(graph, x, y, w, h)
+	love.graphics.setColor(style.gray3)
+	love.graphics.rectangle("fill", x, y, w, h, 3, 3)
+
+	local x = x + 2.5
+	local y = y + 2.5
+	local w = w - 5
+	local h = h - 5
+
+	love.graphics.setLineWidth(0.7)
+	love.graphics.setLineJoin("none")
+	love.graphics.setColor(style.gray5)
+	love.graphics.rectangle("line", x, y, w, h)
+
+	love.graphics.line(x + math.round((w) * 0.25), y + h - 2.5, x + math.round((w) * 0.25), y + 2.5)
+	love.graphics.line(x + math.round((w) * 0.50), y + h - 2.5, x + math.round((w) * 0.50), y + 2.5)
+	love.graphics.line(x + math.round((w) * 0.75), y + h - 2.5, x + math.round((w) * 0.75), y + 2.5)
+
+	local hist = graph.parent.data.curve
+
+	local a = {}
+
+	for i = 0, 255 do
+		local v = hist:get(0, 0, i)
+
+		a[(i - 1) * 2 + 1] = x + w / 255 * i
+		a[(i - 1) * 2 + 2] = y + h * (1 - v)
+	end
+
+	love.graphics.setLineWidth(4)
+	love.graphics.setColor(0, 0, 0, 0.3)
+	love.graphics.line(a)
+
+	love.graphics.setLineWidth(2)
+	love.graphics.setColor(style.gray9)
+	love.graphics.line(a)
+end
+
 function draw.preview(graph, x, y, w, h)
 	love.graphics.setColor(1, 1, 1, 1)
 	graph.parent.data.preview:refresh()

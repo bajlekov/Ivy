@@ -56,7 +56,7 @@ end
 function graph.curve(node, a, b)
 	local graph = graph.new(node, 150, 150)
 	graph.type = "curve"
-	graph.curve = require "tools.curve":new(a, b)
+	graph.curve = require (settings.cubicSpline and "tools.curveCubic" or "tools.curveBezier"):new(a, b)
 	updateCurve(graph)
 	graph.updateCurve = updateCurve
 end
@@ -64,9 +64,9 @@ end
 function graph.curveRGB(node)
 	local graph = graph.new(node, 150, 150)
 	graph.type = "curve"
-	graph.curveR = require "tools.curve":new()
-	graph.curveG = require "tools.curve":new()
-	graph.curveB = require "tools.curve":new()
+	graph.curveR = require (settings.cubicSpline and "tools.curveCubic" or "tools.curveBezier"):new()
+	graph.curveG = require (settings.cubicSpline and "tools.curveCubic" or "tools.curveBezier"):new()
+	graph.curveB = require (settings.cubicSpline and "tools.curveCubic" or "tools.curveBezier"):new()
 
 	updateCurve(graph, 1, graph.curveR)
 	updateCurve(graph, 2, graph.curveG)
@@ -106,6 +106,11 @@ end
 function graph.histogram(node)
 	local graph = graph.new(node, 150, 100)
 	graph.type = "histogram"
+end
+
+function graph.curveView(node) -- same as histogram, single curve
+	local graph = graph.new(node, 150, 100)
+	graph.type = "curveView"
 end
 
 function graph.colorwheel(node)

@@ -18,38 +18,38 @@
 local proc = require "lib.opencl.process".new()
 
 local source = [[
-kernel void linear(global float *X, global float *Y, global float *T, global float *O)
+kernel void linear(global float *X, global float *Y, global float *T, global float *W, global float *O)
 {
   const int x = get_global_id(0);
   const int y = get_global_id(1);
+	const int z = get_global_id(3);
 
-	float f = max($O.x$, $O.y$);
+	float w = 1024 * $W[x, y, z];
 
-	float2 p = (float2)((float)x/f, (float)y/f);
-	float2 a = (float2)($X[x, y, 0], $Y[x, y, 0]/$O.x$*$O.y$);
+	float2 p = (float2)((float)x, (float)y);				// sampled point
+	float2 xy = (float2)($X[x, y, z]*$O.x$, $Y[x, y, z]*$O.y$);	// center point
 
-	float2 n = (float2)(1.0f, 0.0f);
+	float t = $T[x, y, z] + 0.5f; // angle of center line + pi/2
 
-	float t = $T[x, y, 0];
 	float cos_t = cospi(t);
 	float sin_t = sinpi(t);
-	float2 r;
+
+	float2 n = (float2)(1.0f, 0.0f);	// x unit vector
+	float2 r;													// t rotation matrix
 	r.x = cos_t*n.x - sin_t*n.y;
 	r.y = sin_t*n.x + cos_t*n.y;
-	n = r;
+	n = r;														// unit vector T + pi/2
 
-	float2 d = (a-p) - dot((a-p), n)*n;
-	float o = length(d);
+	float d = (p-xy).x*n.x + (p-xy).y*n.y;			// project (p-xy) onto n to get distance from center line
+	float o = clamp(d/w * 0.5f + 0.5f, 0.0f, 1.0f);
 
-	o = -o*sign((p.x-a.x)*n.y - (p.y-a.y)*n.x) + 0.5f;
-
-	$O[x, y, 0] = o;
+	$O[x, y, z] = o;
 }
 ]]
 
 local function execute()
-	proc:getAllBuffers("X", "Y", "T", "O")
-	proc:executeKernel("linear", proc:size2Dmax("O"))
+	proc:getAllBuffers("X", "Y", "T", "W", "O")
+	proc:executeKernel("linear", proc:size3Dmax("O"))
 end
 
 local function init(d, c, q)

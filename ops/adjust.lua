@@ -31,15 +31,15 @@ local function curve_flat(c)
 end
 
 local f = {
-	LL = {"lightnessAdjust", "L", "L", "Lightness", "lightness", curve_slope},
-	LC = {"lightnessAdjust", "L", "C", "Lightness", "chroma", curve_flat},
-	LH = {"lightnessAdjust", "L", "H", "Lightness", "hue", curve_flat},
-	CL = {"chromaAdjust", "C", "L", "Chroma", "lightness", curve_flat},
-	CC = {"chromaAdjust", "C", "C", "Chroma", "chroma", curve_slope},
-	CH = {"chromaAdjust", "C", "H", "Chroma", "hue", curve_flat},
-	HL = {"hueAdjust", "H", "L", "Hue", "lightness", curve_flat},
-	HC = {"hueAdjust", "H", "C", "Hue", "chroma", curve_flat},
-	HH = {"hueAdjust", "H", "H", "Hue", "hue", curve_flat},
+	LL = {"lightnessAdjust", "L", "L", "Lightness", "lightness"},
+	LC = {"lightnessAdjust", "L", "C", "Lightness", "chroma"},
+	LH = {"lightnessAdjust", "L", "H", "Lightness", "hue"},
+	CL = {"chromaAdjust", "C", "L", "Chroma", "lightness"},
+	CC = {"chromaAdjust", "C", "C", "Chroma", "chroma"},
+	CH = {"chromaAdjust", "C", "H", "Chroma", "hue"},
+	HL = {"hueAdjust", "H", "L", "Hue", "lightness"},
+	HC = {"hueAdjust", "H", "C", "Hue", "chroma"},
+	HH = {"hueAdjust", "H", "H", "Hue", "hue"},
 }
 
 return function(ops)
@@ -56,7 +56,7 @@ return function(ops)
 			local ox, oy = self.data.tweak.getOrigin()
 			local update = self.data.tweak.getUpdate()
 			local dx, dy = self.data.tweak.getTweak()
-			local p = t.autoTempBuffer(self, -1, 1, 1, 4) -- [x, y, dx, dy]
+			local p = t.autoTempBuffer(self, -1, 1, 1, 5) -- [x, y, dx, dy, mod]
 			local s = t.autoTempBuffer(self, -2, 1, 1, 3) -- [r, g, b]
 			p:set(0, 0, 2, dx)
 			p:set(0, 0, 3, dy)
@@ -69,10 +69,14 @@ return function(ops)
 			end
 
 			if dy ~= 0 then
+				local ctrl = love.keyboard.isDown("lctrl") or love.keyboard.isDown("rctrl")
+				local alt = love.keyboard.isDown("lalt") or love.keyboard.isDown("ralt")
+
 				p:set(0, 0, 2, dx)
 				p:set(0, 0, 3, dy)
+				p:set(0, 0, 4, (ctrl and 1) or (alt and 2) or 0)
 				p:toDevice()
-				thread.ops[v[1]]({p, s, r, c}, self)
+				thread.ops[v[1]]({p, s, r, c}, self) -- allow for tweak (+), smooth (alt) and reset (ctrl)
 			end
 
 			thread.ops["curve"..k]({i, c, o}, self)
@@ -84,12 +88,14 @@ return function(ops)
 			n:addPortOut(0, "LCH")
 			n:addPortIn(1, "Y"):addElem("float", 1, v[4].." range", 0, 1, 0.2)
 
-			n.data.tweak = require "tools.tweak"()
+			n.data.tweak = require "ui.widget.tweak"("adjust")
 			n.data.tweak.toolButton(n, 2, "Adjust "..v[5])
 
 			n.data.curve = data:new(1, 1, 256)
-			v[6](n.data.curve)
+			for i = 0, 255 do n.data.curve:set(0, 0, i, 0.5) end
 			n.data.curve:toDevice()
+
+			require "ui.graph".curveView(n)
 
 			n.process = process
 			n:setPos(x, y)

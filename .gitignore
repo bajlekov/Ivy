@@ -10,3 +10,5 @@ lib/exiftool/Windows/exiftool\.exe
 lib/magick/magick\.exe
 
 lib/zenity/zenity\.exe
+
+ops/ocl/cache

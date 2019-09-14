@@ -18,13 +18,9 @@
 local proc = require "lib.opencl.process".new()
 
 local source = [[
-float range(float v, float t, float s) { // value, threshold, sharpness
-	float ts = t*s;
-	float a = t - ts;
-	float b = t + ts;
-	float x = clamp((v - a)/(2*ts), 0.0f, 1.0f);
-  return 2.0f*pown(x, 3) - 3.0f*pown(x, 2) + 1.0f;
-}
+#include "range.cl"
+
+constant float G7[15] = {0.009033, 0.018476, 0.033851, 0.055555, 0.08167, 0.107545, 0.126854, 0.134032, 0.126854, 0.107545, 0.08167, 0.055555, 0.033851, 0.018476, 0.009033};
 
 kernel void paintSmart(global float *O, global float *I, global float *P) {
   const int x = get_global_id(0);
@@ -42,13 +38,25 @@ kernel void paintSmart(global float *O, global float *I, global float *P) {
 	float mask;
 	if (P[6]<0.0f) { // negative values disable smart paint
 		mask = 1.0f;
-	} else {
-		float sx = P[8];
-		float sy = P[9];
+	} else if (P[8]<0.5f) {
+		float sx = P[9];
+		float sy = P[10];
 		float3 i = $I[ix, iy];
-	  float3 s = $I[sx, sy];
+		float3 s = $I[sx, sy];
 		float d = sqrt(pown(i.x-s.x, 2) + pown(i.y-s.y, 2) + pown(i.z-s.z, 2));
 		mask = range(d, P[6], P[7]);
+	} else {
+		float sx = P[9];
+		float sy = P[10];
+		float d = 0;
+		// collect 15x15 area around sample
+		for (int j=-7; j<8; j++)
+			for (int k=-7; k<8; k++) {
+				float3 i = $I[ix+j, iy+k];
+				float3 s = $I[sx+j, sy+k];
+				d += (pown(i.x-s.x, 2) + pown(i.y-s.y, 2) + pown(i.z-s.z, 2))*G7[j+7]*G7[k+7];
+			}
+		mask = range(sqrt(d), P[6], P[7]);
 	}
 
 	float d = sqrt( pown(x-ps, 2) + pown(y-ps, 2) ); // distance from center
@@ -71,8 +79,9 @@ kernel void paintSmart(global float *O, global float *I, global float *P) {
 	p[5] - brush fall-off
 	p[6] - smart range
 	p[7] - smart range fall-off
-	p[8] - sample x
-	p[9] - sample y
+	p[7] - smart patch
+	p[9] - sample x
+	p[10] - sample y
 --]]
 
 local function execute()

@@ -132,7 +132,7 @@ function draw.float(elem, x, y, w, h)
 		drawRounded(x, y, w, h, elem.first, elem.last, elem.parent.style=="toolbar")
 		local p = (elem.value - elem.min) / (elem.max - elem.min)
 		love.graphics.setColor(tint(style.elemHighlightColor, elem.tint))
-		love.graphics.setScissor( x, y, w * p, h)
+		love.graphics.setScissor( x, y, math.max(w * p, 0), h)
 		drawRounded(x, y, w, h, elem.first, elem.last, elem.parent.style=="toolbar")
 		love.graphics.setScissor( )
 

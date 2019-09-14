@@ -18,13 +18,7 @@
 local proc = require "lib.opencl.process".new()
 
 local source = [[
-float range(float a, float b, float s) {
-  float x = (a-b)*s;
-  x = clamp(x, -1.0f, 1.0f);
-  float x2 = x*x;
-  float x4 = x2*x2;
-  return (1.0f-2.0f*x2+x4);
-}
+#include "range.cl"
 
 kernel void chromaAdjust(global float *P, global float *S, global float *R, global float *C) {
 	const int z = get_global_id(2);
@@ -33,12 +27,17 @@ kernel void chromaAdjust(global float *P, global float *S, global float *R, glob
 	float a = S[1];
 	float b = z/255.0f;
 
-	float r = 1.0f/R[0];
-	float f = range(a, b, r);
+	float f = range(a-b, R[0], 1.0f);
 
 	float i = C[z];
 
-	float o = i + f*p;
+	float o;
+	if (P[4]==1) {
+		p = clamp(fabs(p)*5.0f, -1.0f, 1.0f);
+		o = (1.0f-f*p)*i + f*p*0.5f; // clear
+	} else {
+		o = i + f*p;
+	}
 
 	C[z] = clamp(o, 0.0f, 1.0f);
 }
@@ -47,6 +46,7 @@ kernel void chromaAdjust(global float *P, global float *S, global float *R, glob
 local function execute()
 	proc:getAllBuffers("P", "S", "R", "C")
 	proc:executeKernel("chromaAdjust", {1, 1, 256})
+	proc.buffers.C:toHost(true)
 end
 
 local function init(d, c, q)

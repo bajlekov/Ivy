@@ -45,25 +45,19 @@ kernel void display(global float *p1, global uchar *p2, global float *p3) {
 }
 ]]
 
-local previewBuffer
-local previewX
-local previewY
-
 local function execute()
   proc:getAllBuffers("p1", "p2", "p3")
 
   local x = proc.buffers.p2.x
   local y = proc.buffers.p2.y
 
-  if not (previewX==x and previewY==y) then
-		previewBuffer = proc.context:create_buffer("write_only", x * y * 4 * ffi.sizeof("cl_uchar"))
-		previewX = x
-		previewY = y
-	end
+	local previewBuffer = proc.context:create_buffer("write_only", x * y * 4 * ffi.sizeof("cl_uchar"))
 
   proc.buffers.p2.dataOCL = previewBuffer
   proc:executeKernel("display", proc:size2D("p2"))
   local event2 = proc.queue:enqueue_read_buffer(proc.buffers.p2.dataOCL, true, proc.buffers.p2.data)
+
+	proc.context.release_mem_object(previewBuffer)
 
   if proc.profile() then
     tools.profile("copy", event2, proc.queue)

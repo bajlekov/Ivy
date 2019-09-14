@@ -34,6 +34,8 @@ local alloc = require "data.alloc"
 local data = {type = "data"}
 data.meta = {__index = data}
 
+require "data.ops"(data)
+
 data.CS = {
 	"SRGB",
 	"LRGB",
@@ -87,23 +89,104 @@ function data:new(x, y, z) -- new image data
 		__write = true,
 	}
 
-	if not settings.hostLowMemory then
-		o.data = alloc.trace.float32(x * y * z)
-		o.data_u32 = ffi.cast("uint32_t*", o.data)
-		o.data_i32 = ffi.cast("int32_t*", o.data)
-	end
-
 	setmetatable(o, self.meta) -- inherit data methods
-	if not onDemandMemory then
+	if not settings.hostLowMemory then
+		o:allocHost()
+		self.__cpuDirty = false
+	end
+	if not settings.openclLowMemory then
 		o:allocDev(false)
 	end
 
 	return o
 end
 
+
+data.stats = {}
+data.stats.data = {
+	cpu = 0,
+	gpu = 0,
+	cpu_n = 0,
+	gpu_n = 0,
+	cpu_max = 0,
+	gpu_max = 0,
+	cpu_n_max = 0,
+	gpu_n_max = 0,
+}
+data.stats.thread = {
+	cpu = 0,
+	gpu = 0,
+	cpu_n = 0,
+	gpu_n = 0,
+	cpu_max = 0,
+	gpu_max = 0,
+	cpu_n_max = 0,
+	gpu_n_max = 0,
+}
+
+data.stats.memCPU = {}
+data.stats.memGPU = {}
+
+local sd = data.stats.data
+function data.stats.allocCPU(buf)
+	ffi.gc(buf.data, data.stats.gcCPU)
+	local m = buf.x*buf.y*buf.z*4
+	data.stats.memCPU[tonumber(ffi.cast("uintptr_t", buf.data))] = m
+	sd.cpu = sd.cpu + m
+	sd.cpu_n = sd.cpu_n + 1
+	sd.cpu_max = math.max(sd.cpu_max, sd.cpu)
+	sd.cpu_n_max = math.max(sd.cpu_n_max, sd.cpu_n)
+end
+function data.stats.allocGPU(buf)
+	ffi.gc(buf.dataOCL, data.stats.gcGPU)
+	local m = buf.x*buf.y*buf.z*4
+	data.stats.memGPU[tonumber(ffi.cast("uintptr_t", buf.dataOCL))] = m
+	sd.gpu = sd.gpu + m
+	sd.gpu_n = sd.gpu_n + 1
+	sd.gpu_max = math.max(sd.gpu_max, sd.gpu)
+	sd.gpu_n_max = math.max(sd.gpu_n_max, sd.gpu_n)
+end
+function data.stats.freeCPU(ptr)
+	local n = tonumber(ffi.cast("uintptr_t", ptr))
+	local m = data.stats.memCPU[n]
+	data.stats.memCPU[n] = nil
+	sd.cpu = sd.cpu - m
+	sd.cpu_n = sd.cpu_n - 1
+end
+function data.stats.freeGPU(ptr)
+	local n = tonumber(ffi.cast("uintptr_t", ptr))
+	local m = data.stats.memGPU[n]
+	data.stats.memGPU[n] = nil
+	sd.gpu = sd.gpu - m
+	sd.gpu_n = sd.gpu_n - 1
+end
+function data.stats.getCPU()
+	return sd.cpu, sd.cpu_n, sd.cpu_max, sd.cpu_n_max
+end
+function data.stats.getGPU()
+	return sd.gpu, sd.gpu_n, sd.gpu_max, sd.gpu_n_max
+end
+function data.stats.clearCPU()
+	sd.cpu_max = sd.cpu
+	sd.cpu_n_max = sd.cpu_n
+end
+function data.stats.clearGPU()
+	sd.gpu_max = sd.gpu
+	sd.gpu_n_max = sd.gpu_n
+end
+function data.stats.gcCPU(ptr)
+	data.stats.freeCPU(ptr)
+	alloc.free(ptr)
+end
+function data.stats.gcGPU(ptr)
+	data.stats.freeGPU(ptr)
+	context.release_mem_object(ptr)
+end
+
 function data:allocHost()
 	if not self.data or self.data==NULL then
-		self.data = alloc.trace.float32(self.x * self.y * self.z)
+		self.data = alloc.float32(self.x * self.y * self.z)
+		data.stats.allocCPU(self)
 		self.data_u32 = ffi.cast("uint32_t*", self.data)
 		self.data_i32 = ffi.cast("int32_t*", self.data)
 		self.__cpuDirty = true
@@ -120,6 +203,7 @@ function data:allocDev(transfer)
 	--self.dataOCL = context:create_buffer("use_host_ptr", self.x * self.y * self.z * ffi.sizeof("cl_float"), self.data) -- allocate OCL data
 
 	self.dataOCL = context:create_buffer(self.x * self.y * self.z * ffi.sizeof("cl_float")) -- allocate OCL data
+	data.stats.allocGPU(self)
 
 	if transfer then self:toDevice(true) end
 	return self
@@ -130,14 +214,23 @@ function data:freeDev(transfer)
 	if transfer==nil then transfer = self.__write end
 	assert(context, "No OpenCL device detected")
 	if transfer then self:toHost(true) end
-	if self.dataOCL then context.release_mem_object(self.dataOCL) end
+	if self.dataOCL then
+		data.stats.freeGPU(self.dataOCL)
+		context.release_mem_object(self.dataOCL)
+	end
 	self.dataOCL = nil
 	return self
 end
 
 function data:free()
-	if self.data then alloc.free(self.data) end
-	if self.dataOCL then context.release_mem_object(self.dataOCL) end
+	if self.data then
+		data.stats.freeCPU(self.data)
+		alloc.free(self.data)
+	end
+	if self.dataOCL then
+		data.stats.freeGPU(self.dataOCL)
+		context.release_mem_object(self.dataOCL)
+	end
 	self.data = nil
 	self.dataOCL = nil
 end
@@ -343,167 +436,6 @@ end
 
 function data:copy()
 	return self:transferTo(self:new())
-end
-
--- data operators
-
-function data.operator(fun)
-	return function(a, b)
-		local c = a:new()
-
-		local innerFunction
-		if type(a) == "table" and type(b) == "table" then
-			function innerFunction(z, x, y)
-				c:set(x, y, z, fun(a:get(x, y, z), b:get(x, y, z)))
-			end
-		elseif type(a) == "table" and type(b) == "number" then
-			function innerFunction(z, x, y)
-				c:set(x, y, z, fun(a:get(x, y, z), b))
-			end
-		elseif type(a) == "number" and type(b) == "table" then
-			function innerFunction(z, x, y)
-				c:set(x, y, z, fun(a, b:get(x, y, z)))
-			end
-		elseif type(a) == "table" and b == nil then
-			function innerFunction(z, x, y)
-				c:set(x, y, z, fun(a:get(x, y, z)))
-			end
-		else
-			error("wrong argument type to operator: "..type(a)..", "..type(b))
-		end
-
-		--jit.flush(1)
-		local unrolled = unroll.fixed(c.z, 2)
-		for x = 0, c.x - 1 do
-			for y = 0, c.y - 1 do
-				unrolled(innerFunction, x, y)
-			end
-		end
-
-		return c
-	end
-end
-
-data.meta.__add = data.operator(function(a, b) return a + b end)
-data.meta.__sub = data.operator(function(a, b) return a - b end)
-data.meta.__mul = data.operator(function(a, b) return a * b end)
-data.meta.__div = data.operator(function(a, b) return a / b end)
-data.meta.__pow = data.operator(function(a, b) return a^b end)
-data.meta.__unm = data.operator(function(a) return - a end)
-data.meta.__mod = data.operator(function(a, b) return a%b end)
--- "..", "#" "()" definition?
--- comparisons do not work properly due to requirement to return single boolean value
-
-local math = math
-data.abs = data.operator(function(a) return math.abs(a) end)
-data.mod = data.operator(function(a, b) return a%b end)
-data.floor = data.operator(function(a) return math.floor(a) end)
-data.ceil = data.operator(function(a) return math.ceil(a) end)
-data.sqrt = data.operator(function(a) return math.sqrt(a) end)
-data.pow = data.operator(function(a, b) return a^b end)
-data.exp = data.operator(function(a) return math.exp(a) end)
-data.log = data.operator(function(a) return math.log(a) end)
-data.log10 = data.operator(function(a) return math.log10(a) end)
-data.deg = data.operator(function(a) return math.deg(a) end)
-data.rad = data.operator(function(a) return math.rad(a) end)
-data.sin = data.operator(function(a) return math.sin(a) end)
-data.cos = data.operator(function(a) return math.cos(a) end)
-data.tan = data.operator(function(a) return math.tan(a) end)
-data.asin = data.operator(function(a) return math.asin(a) end)
-data.acos = data.operator(function(a) return math.acos(a) end)
-data.atan = data.operator(function(a) return math.atan(a) end)
-data.atan2 = data.operator(function(a, b) return math.atan2(a, b) end)
-data.random = data.operator(function() return math.random() end)
-
-function data:map(fun, ...) -- z, x, y, params...
-	local out = self:new()
-
-	local unrolled = unroll.fixed(self.z, 2)
-	for x = 0, self.x - 1 do
-		for y = 0, self.y - 1 do
-			unrolled(fun, x, y, ...)
-		end
-	end
-end
-
-function data.superSize(...) -- returns size of buffer needed to accomodate all argument buffers by broadcasting
-	local buffers = {...}
-	local x, y, z = 1, 1, 1
-	for _, t in ipairs(buffers) do
-		assert(t.x == x or t.x == 1 or x == 1, "Incompatible x dimension")
-		assert(t.y == y or t.y == 1 or y == 1, "Incompatible y dimension")
-		assert(t.z == z or t.z == 1 or z == 1, "Incompatible z dimension")
-		if t.x > x then x = t.x end
-		if t.y > y then y = t.y end
-		if t.z > z then z = t.z end
-	end
-	return x, y, z
-end
-
-local function separable4(self, x, y, z, f)
-	local xm = math.floor(x)
-	local xf = x - xm
-	local ym = math.floor(y)
-	local yf = y - ym
-
-	local v00, v01, v02, v03
-	local v10, v11, v12, v13
-	local v20, v21, v22, v23
-	local v30, v31, v32, v33
-	local v
-
-	v00 = self:get(xm - 1, ym - 1, z)
-	v01 = self:get(xm - 1, ym, z)
-	v02 = self:get(xm - 1, ym + 1, z)
-	v03 = self:get(xm - 1, ym + 2, z)
-	v10 = self:get(xm, ym - 1, z)
-	v11 = self:get(xm, ym, z)
-	v12 = self:get(xm, ym + 1, z)
-	v13 = self:get(xm, ym + 2, z)
-	v20 = self:get(xm + 1, ym - 1, z)
-	v21 = self:get(xm + 1, ym, z)
-	v22 = self:get(xm + 1, ym + 1, z)
-	v23 = self:get(xm + 1, ym + 2, z)
-	v30 = self:get(xm + 2, ym - 1, z)
-	v31 = self:get(xm + 2, ym, z)
-	v32 = self:get(xm + 2, ym + 1, z)
-	v33 = self:get(xm + 2, ym + 2, z)
-
-	return f(
-		f(v00, v01, v02, v03, yf),
-		f(v10, v11, v12, v13, yf),
-		f(v20, v21, v22, v23, yf),
-		f(v30, v31, v32, v33, yf),
-	xf)
-end
-
-function data:bicubic(x, y, z)
-	return separable4(self, x, y, z, filter.cubic)
-end
-
-function data:lanczos(x, y, z)
-	return separable4(self, x, y, z, filter.lanczos)
-end
-
-function data:bilinear(x, y, z)
-	local xm = math.floor(x)
-	local xf = x - xm
-	local ym = math.floor(y)
-	local yf = y - ym
-	local v00, v01, v10, v11, v
-
-	v00 = self:get(xm, ym, z)
-	v01 = self:get(xm, ym + 1, z)
-	v10 = self:get(xm + 1, ym, z)
-	v11 = self:get(xm + 1, ym + 1, z)
-
-	return filter.linear(filter.linear(v00, v01, yf), filter.linear(v10, v11, yf), xf)
-end
-
-function data:nearest(x, y, z)
-	x = math.floor(x + 0.5)
-	y = math.floor(y + 0.5)
-	return self:get(x, y, z)
 end
 
 return data

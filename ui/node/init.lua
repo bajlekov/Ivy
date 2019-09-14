@@ -124,12 +124,13 @@ function node:getPos()
 end
 
 function node:addPortIn(n, cs)
+	assert(cs and type(cs)=="string")
   assert(type(n)=="number")
   assert(n>=0)
   self.portIn[n] = {
     link = nil,
     type = nil,
-    cs = cs or "LRGB",
+    cs = cs,
     visible = true,
     parent = self,
     n = n,
@@ -139,12 +140,13 @@ function node:addPortIn(n, cs)
 end
 
 function node:addPortOut(n, cs)
+	assert(cs and type(cs)=="string")
   assert(type(n)=="number")
   assert(n>=0)
   self.portOut[n] = {
     link = nil,
     type = nil,
-    cs = cs or "LRGB",
+    cs = cs,
     visible = true,
     parent = self,
     n = n,

@@ -36,8 +36,6 @@ function process.new()
 		pipeline.input.portOut[0].link:remove()
 	end
 
-	require "ui.node.link".collectGarbage()
-
 	node.stack:add(pipeline.input)
 	node.stack:add(pipeline.output)
 
