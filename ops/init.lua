@@ -484,7 +484,8 @@ do
 		local n = node:new("Paint Mask")
 
 		do
-			local mask = data:new(1, 1, 1):toDevice()
+			local sx, sy = t.imageShape()
+			local mask = data:new(sx, sy, 1):toDevice()
 			pool.resize(sx, sy)
 			n.mask = pool.add(mask)
 		end
@@ -871,7 +872,7 @@ local function exposureProcess(self)
 	local i, e, o
 	i = t.inputSourceBlack(self, 0)
 	e = t.inputParam(self, 1)
-	o = t.autoOutput(self, 0, data.superSize(i, v))
+	o = t.autoOutput(self, 0, data.superSize(i, e))
 	thread.ops.exposure({i, e, o}, self)
 end
 

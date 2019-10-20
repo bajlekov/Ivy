@@ -300,7 +300,7 @@ function process:size3Dmax(...)
 end
 
 function process.profile()
-	return profile
+	return oclProfile
 end
 
 

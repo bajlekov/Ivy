@@ -125,7 +125,7 @@ function frame:setSize(size)
 		unit = "px"
 	elseif size == "fit" then
 		if self.direction == "H" then
-			size = nodeWidth
+			size = style.nodeWidth
 			unit = "px"
 		else
 			unit = "fit"
@@ -158,7 +158,7 @@ end
 -- add new frame
 function frame:frame(name, size)
 	local n = #self + 1
-	name = name or "Frame_"..(n)
+	name = (name or "Frame_")..n
 
 	self[n] = self:new()
 	self[n].name = name

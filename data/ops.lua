@@ -15,6 +15,9 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ]]
 
+local unroll = require "tools.unroll"
+local filter = require "tools.filter"
+
 -- data operators
 return function (data)
 	function data.operator(fun)

@@ -504,7 +504,7 @@ function path.filename(s, pl, repl, break_on_err)
 		return path.filename(s, pl, repl, err) --tail call
 	end
 
-	function subcheck(patt, err, msg)
+	local function subcheck(patt, err, msg)
 		local user_repl = repl
 		function repl(s, err)
 			local s, repl_count = s:gsub(patt, function(c)

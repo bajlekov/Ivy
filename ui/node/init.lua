@@ -39,7 +39,7 @@ function node:new(title)
     elem = {           -- ui elemenets
       n = 0,
     },
-    process = process,  -- function to run for processing
+    process = function() end,  -- function to run for processing
     ui = {              -- store UI related stuff (redraw images etc.)
       x = math.huge,
       y = math.huge,

@@ -30,4 +30,4 @@ local function getID(...)
 	return s
 end
 
-return getID, getID2
+return getID

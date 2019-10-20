@@ -15,6 +15,8 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ]]
 
+local style = require("ui.style")
+
 local graph = {}
 graph.meta = {__index = graph}
 

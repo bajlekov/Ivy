@@ -12,11 +12,11 @@ do local _={
   nativeProfile=false,
   nodeAutoConnect=true,
   openclBuildParams="-cl-std=CL1.2 -Iops/ocl ",
-  openclDebug=false,
   openclCache=false,
+  openclDebug=false,
   openclDevice=1,
   openclLowMemory=false,
-  openclPlatform=3,
+  openclPlatform=1,
   openclProfile=false,
   openclWorkgroupSize={
     16,
