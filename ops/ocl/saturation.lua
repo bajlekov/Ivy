@@ -18,6 +18,8 @@
 local proc = require "lib.opencl.process".new()
 
 local source = [[
+#include "cs.cl"
+
 kernel void saturation(global float *p1, global float *p2, global float *p3)
 {
   const int x = get_global_id(0);
@@ -26,9 +28,10 @@ kernel void saturation(global float *p1, global float *p2, global float *p3)
   float3 i = $p1[x, y];
   float v = $p2[x, y, 0];
 
-  i.y = i.y*v;
+  float3 Y = YtoXYZ(i.y);
+  float3 o = Y + (i-Y)*v;
 
-  $p3[x, y] = i;
+  $p3[x, y] = o;
 }
 ]]
 

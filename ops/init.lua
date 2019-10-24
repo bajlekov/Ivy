@@ -946,9 +946,9 @@ end
 
 function ops.saturation(x, y)
 	local n = node:new("Saturation")
-	n:addPortIn(0, "LCH")
+	n:addPortIn(0, "XYZ")
 	n:addPortIn(1, "Y"):addElem("float", 1, "Saturation", 0, 2, 1)
-	n:addPortOut(0, "LCH")
+	n:addPortOut(0, "XYZ")
 	n.process = saturationProcess
 	n:setPos(x, y)
 	return n
