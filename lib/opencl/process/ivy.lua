@@ -114,33 +114,6 @@ do
 	end
 end
 
-local function getKernel(process, k)
-	local ID = getID(process.buffers, process.order) -- FIXME: use tools.getID once it is updated
-	if not process.kernels[k] then
-		process.kernels[k] = {}
-	end
-	if not process.kernels[k][ID] then
-		local source = tools.parseIndex(process.source, process.buffers)
-		process.source_parsed = source
-		if settings.openclCache then
-			--save source
-			local f, err = io.open("ops/ocl/cache/"..k..ID..".cl", "w")
-			assert(f, err)
-			f:write(source)
-			f:close()
-		end
-		local program = process.context:create_program_with_source(source)
-
-		if not pcall(program.build, program, tools.buildParams) then
-			messageCh:push{"error", "ERROR ["..k.."]: \n"..program:get_build_info(process.device, "log")}
-			return nil
-		else
-			process.kernels[k][ID] = program:create_kernel(k)
-		end
-	end
-	return process.kernels[k][ID]
-end
-
 function process:getKernel(name, buffers)
 	if not self.ivy then
 		self.ivy = ivy.new(self.source)
