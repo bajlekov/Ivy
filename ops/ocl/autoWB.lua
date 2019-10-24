@@ -15,27 +15,23 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ]]
 
-local proc = require "lib.opencl.process".new()
-
+local proc = require "lib.opencl.process.ivy".new()
 
 local source = [[
-kernel void autoWB(global float *I, global float *S, global float *O)
-{
-  const int x = get_global_id(0);
-  const int y = get_global_id(1);
+kernel autoWB(I, S, O)
+  const x = get_global_id(0)
+  const y = get_global_id(1)
 
-  float3 i = $I[x, y];
-	float3 s = $S[0, 0];
+  var i = I[x, y]
+	var s = S[0, 0]
 
-	float3 o = (float3)(s.y/s.x, 1, s.y/s.z) * i;
-
-  $O[x, y] = o;
-}
+	O[x, y] = vec(s.y/s.x, 1, s.y/s.z) * i
+end
 ]]
 
 local function execute()
-	proc:getAllBuffers("I", "S", "O")
-	proc:executeKernel("autoWB", proc:size2D("O"))
+	local I, S, O = proc:getAllBuffers(3)
+	proc:executeKernel("autoWB", proc:size2D(O), {I, S, O})
 end
 
 local function init(d, c, q)

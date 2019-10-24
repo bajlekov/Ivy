@@ -15,41 +15,42 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ]]
 
-local proc = require "lib.opencl.process".new()
+local proc = require "lib.opencl.process.ivy".new()
 
 local source = [[
-kernel void bilateral(global float *I, global float *D, global float *S, global float *O)
-{
-  const int x = get_global_id(0);
-  const int y = get_global_id(1);
+const eps = 0.000001
 
-	float w = 0.0f;
-	float3 o = (float3)0.0f;
+kernel bilateral(I, D, S, O)
+  const x = get_global_id(0)
+  const y = get_global_id(1)
 
-	float3 i = $I[x, y];
-	float df = pown(max($D[x, y, 0], 0.000001f), 2)*5.0f;
-	float sf = pown(max($S[x, y, 0], 0.000001f), 2)*0.01f;
+	var w = 0.0
+	var o = vec(0.0)
 
-	for (int ox = -7; ox<=7; ox++)
-		for (int oy = -7; oy<=7; oy++) {
-			float3 j = $I[x+ox, y+oy];
+	var i = I[x, y]
+	var df = max(D[x, y, 0], eps)^2*5.0
+	var sf = max(S[x, y, 0], eps)^2*0.01
 
-			float d = pown((float)ox, 2) + pown((float)oy, 2);
-			float s = pown(i.x-j.x, 2) + pown(i.z-j.z, 2) + pown(i.z-j.z, 2);
-			float f = exp(-d/df -s/sf);
+	for ox = -9, 9 do
+		for oy = -9, 9 do
+			var j = I[x+ox, y+oy]
 
-			o += f*j;
-			w += f;
-		}
-	o = o/w;
+			var d = ox^2 + oy^2
+			var s = (i.x-j.x)^2 + (i.y-j.y)^2 + (i.z-j.z)^2
+			var f = exp(-d/df - s/sf)
 
-	$O[x, y] =  o;
-}
+			o = o + f*j
+			w = w + f
+		end
+  end
+
+	O[x, y] = o / w
+end
 ]]
 
 local function execute()
-	proc:getAllBuffers("I", "D", "S", "O")
-	proc:executeKernel("bilateral", proc:size2D("O"))
+	local I, D, S, O = proc:getAllBuffers(4)
+	proc:executeKernel("bilateral", proc:size2D(O), {I, D, S, O})
 end
 
 local function init(d, c, q)
