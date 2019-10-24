@@ -14,6 +14,7 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
+#include "cs.cl"
 
 #if $$ L and 1 or 0 $$
 kernel void zero_LL(global float *L) {
@@ -31,8 +32,8 @@ kernel void post_LL(global float *I, global float *O) {
   const int y = get_global_id(1);
 
   float3 i_xyz = $I[x, y]XYZ;
-  float o_y = L_Y($O[x, y, 0]);
-  float3 o = XYZ_LAB(i_xyz*o_y/i_xyz.y);
+  float o_y = LtoY($O[x, y, 0]);
+  float3 o = XYZtoLAB(i_xyz*o_y/i_xyz.y);
 
   $O[x, y, 1] = o.y;
   $O[x, y, 2] = o.z;

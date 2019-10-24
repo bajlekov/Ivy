@@ -39,7 +39,7 @@ kernel void clut(global float *p1, global float *p2, global float *p3, global fl
   const int y = get_global_id(1);
 
   float3 vl = $p1[x, y];
-  float3 v = LRGB_SRGB(vl);
+  float3 v = LRGBtoSRGB(vl);
   float3 s = clamp(floor(v*(Q-1)), 0.0f, (Q-1));
   float3 d = ((v*(Q-1)) - s);
   int3 i = (int3)(s.x, s.y, s.z);
