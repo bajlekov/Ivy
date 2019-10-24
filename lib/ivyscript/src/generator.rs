@@ -920,7 +920,7 @@ impl VarType {
     fn buf_idx_1d(&self, id: &str, ix: &str) -> String {
         if let VarType::Buffer { x, y, z, .. } = self {
             format!(
-                "{id}[clamp({ix}, 0, {cx})]",
+                "{id}[clamp((int)({ix}), 0, {cx})]",
                 id = id,
                 ix = ix,
                 cx = x * y * z - 1,
@@ -951,7 +951,7 @@ impl VarType {
         } = self
         {
             format!(
-            "{id}[clamp({ix}, 0, {cx})*{sx} + clamp({iy}, 0, {cy})*{sy} + clamp({iz}, 0, {cz})*{sz}]",
+            "{id}[clamp((int)({ix}), 0, {cx})*{sx} + clamp((int)({iy}), 0, {cy})*{sy} + clamp((int)({iz}), 0, {cz})*{sz}]",
             id = id,
             ix = ix,
             iy = iy,
