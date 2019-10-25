@@ -43,6 +43,8 @@ ffi.cdef([[
         uint64_t, uint64_t, uint64_t, uint64_t, uint64_t, uint64_t);
     uint64_t translator_add_buffer_l(translator_t *,
         uint64_t, uint64_t, uint64_t, uint64_t, uint64_t, uint64_t);
+    uint64_t translator_add_int(translator_t *);
+    uint64_t translator_add_float(translator_t *);
 
     char *translator_get_id(translator_t *, const char *);
 ]])
@@ -77,6 +79,14 @@ local cs = {
 
 function ivy:addBuffer(buf)
   return cs[buf.cs](self.t, buf.x, buf.y, buf.z, buf.sx, buf.sy, buf.sz)
+end
+
+function ivy:addInt()
+  return lib.translator_add_int(self.t)
+end
+
+function ivy:addFloat()
+  return lib.translator_add_float(self.t)
 end
 
 function ivy:generate(kernel)

@@ -114,13 +114,24 @@ do
 	end
 end
 
+local i32 = ffi.typeof("int32_t[1]")
+local f32 = ffi.typeof("float[1]")
+
 function process:getKernel(name, buffers)
 	if not self.ivy then
 		self.ivy = ivy.new(self.source)
 	end
 	self.ivy:clear()
 	for k, v in ipairs(buffers) do
-		self.ivy:addBuffer(v)
+		if type(v)=="cdata" then
+			if ffi.istype(v, i32) then
+				self.ivy:addInt()
+			elseif ffi.istype(v, f32) then
+				self.ivy:addFloat()
+			end
+		else
+			self.ivy:addBuffer(v)
+		end
 	end
 
 	local id = self.ivy:id(name)
@@ -148,8 +159,9 @@ local function setArgs(kernel, buffers)
 			if oclDebug then print("["..(k-1).."]", b.dataOCL, tostring(b)) end
 			kernel:set_arg(k - 1, v.dataOCL)
 		else
-			assert(type(b)=="cdata")
-			kernel:set_arg(k - 1, b)
+			assert(type(v)=="cdata")
+			assert(ffi.istype(v, i32) or ffi.istype(v, f32))
+			kernel:set_arg(k - 1, v)
 		end
 	end
 end

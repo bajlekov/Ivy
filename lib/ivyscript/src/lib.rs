@@ -125,6 +125,26 @@ pub extern "C" fn translator_clear_inputs(t: *mut Translator) {
 }
 
 #[no_mangle]
+pub extern "C" fn translator_add_int(t: *mut Translator) -> u64 {
+    let t = unsafe {
+        assert!(!t.is_null());
+        &mut *t
+    };
+    t.inputs.push(VarType::Int);
+    t.inputs.len() as u64
+}
+
+#[no_mangle]
+pub extern "C" fn translator_add_float(t: *mut Translator) -> u64 {
+    let t = unsafe {
+        assert!(!t.is_null());
+        &mut *t
+    };
+    t.inputs.push(VarType::Float);
+    t.inputs.len() as u64
+}
+
+#[no_mangle]
 pub extern "C" fn translator_add_buffer_srgb(
     t: *mut Translator,
     x: u64,
