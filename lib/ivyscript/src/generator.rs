@@ -797,9 +797,31 @@ impl<'a> Generator<'a> {
 
     fn gen_index(&'a self, expr: &Expr, idx: &Index) -> String {
         match idx {
-            Index::Vec(0) => format!("{}.x", self.gen_expr(expr)),
-            Index::Vec(1) => format!("{}.y", self.gen_expr(expr)),
-            Index::Vec(2) => format!("{}.z", self.gen_expr(expr)),
+            Index::Vec(0) => {
+                let var = self.inference.borrow().var_type(expr);
+                dbg!(&var);
+                match var {
+                    VarType::Vec => format!("{}.x", self.gen_expr(expr)),
+                    VarType::Buffer { x, .. } => format!("{}", x),
+                    _ => String::from("// ERROR!!!\n"),
+                }
+            }
+            Index::Vec(1) => {
+                let var = self.inference.borrow().var_type(expr);
+                match var {
+                    VarType::Vec => format!("{}.y", self.gen_expr(expr)),
+                    VarType::Buffer { y, .. } => format!("{}", y),
+                    _ => String::from("// ERROR!!!\n"),
+                }
+            }
+            Index::Vec(2) => {
+                let var = self.inference.borrow().var_type(expr);
+                match var {
+                    VarType::Vec => format!("{}.z", self.gen_expr(expr)),
+                    VarType::Buffer { z, .. } => format!("{}", z),
+                    _ => String::from("// ERROR!!!\n"),
+                }
+            }
             Index::Array1D(a) => {
                 if let Expr::Identifier(id) = expr {
                     let var = self.inference.borrow().var_type(expr);

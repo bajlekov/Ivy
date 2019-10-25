@@ -95,6 +95,7 @@ impl<'a> Inference<'a> {
             },
             Expr::Index(expr, idx) => match (self.var_type(expr), &**idx) {
                 (V, Index::Vec(_)) => F,
+                (VarType::Buffer { .. }, Index::Vec(_)) => I,
                 (V, Index::ColorSpace(c)) => match c {
                     // 3ch buffer
                     ColorSpace::SRGB => V,
