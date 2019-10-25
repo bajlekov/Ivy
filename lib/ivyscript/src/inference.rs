@@ -309,9 +309,8 @@ impl<'a> Inference<'a> {
                 let r = self.var_type(&vars[1]);
                 Some(self.promote_num(l, r))
             }
-            "sign" if vars.len() == 1 => {
-                Some(self.var_type(&vars[0]))
-            }
+            "sign" if vars.len() == 1 => Some(self.var_type(&vars[0])),
+            "abs" if vars.len() == 1 => Some(self.var_type(&vars[0])),
             // min, max generate same instructions as fmin, fmax on GCN4
 
             // OpenCL math built-in functions (selection)
