@@ -32,7 +32,7 @@ use generator::Generator;
 use parser::Parser;
 use scanner::Scanner;
 
-use ast::{ColorSpace};
+use ast::ColorSpace;
 use inference::VarType;
 
 pub struct Translator<'a> {
@@ -110,7 +110,9 @@ pub extern "C" fn translator_get_id(t: *mut Translator, name: *const c_char) -> 
         CStr::from_ptr(name)
     };
 
-    CString::new(Generator::id(name.to_str().unwrap(), &t.inputs)).unwrap().into_raw()
+    CString::new(Generator::id(name.to_str().unwrap(), &t.inputs))
+        .unwrap()
+        .into_raw()
 }
 
 #[no_mangle]

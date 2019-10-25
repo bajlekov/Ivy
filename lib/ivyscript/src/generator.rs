@@ -257,7 +257,11 @@ impl<'a> Generator<'a> {
             self.inference.borrow().scope.close();
             s.push_str("}");
 
-            return Some(format!("#include \"cs.cl\"\n{}\n{}", self.temp.borrow().clone(), s));
+            return Some(format!(
+                "#include \"cs.cl\"\n{}\n{}",
+                self.temp.borrow().clone(),
+                s
+            ));
         }
 
         None
@@ -693,7 +697,7 @@ impl<'a> Generator<'a> {
                         | VarType::VecArray(1, ..) => {
                             format!("{}[{}] = {};\n", name, self.gen_expr(a), self.gen_expr(val))
                         }
-                        VarType::Buffer{..} => {
+                        VarType::Buffer { .. } => {
                             let id = var.buf_idx_1d(name, &self.gen_expr(a));
                             format!("{} = {};\n", id, self.gen_expr(val))
                         }
@@ -756,8 +760,13 @@ impl<'a> Generator<'a> {
                             self.gen_expr(c),
                             self.gen_expr(val)
                         ),
-                        VarType::Buffer{..} => {
-                            let id = var.buf_idx_3d(name, &self.gen_expr(a), &self.gen_expr(b), &self.gen_expr(c));
+                        VarType::Buffer { .. } => {
+                            let id = var.buf_idx_3d(
+                                name,
+                                &self.gen_expr(a),
+                                &self.gen_expr(b),
+                                &self.gen_expr(c),
+                            );
                             format!("{} = {};\n", id, self.gen_expr(val))
                         }
                         _ => String::from("// ERROR!!!\n"),
