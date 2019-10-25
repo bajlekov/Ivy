@@ -478,7 +478,7 @@ impl<'a> Generator<'a> {
             Expr::Binary(expr) => self.gen_binary(expr),
             Expr::Identifier(id) => id.clone(),
             Expr::Index(expr, idx) => self.gen_index(expr, idx),
-            Expr::Grouping(expr) => self.gen_expr(expr),
+            Expr::Grouping(expr) => format!("({})", self.gen_expr(expr)),
             Expr::Call(id, args) => {
                 if self.inference.borrow().builtin(id, args).is_some() {
                     let args_str = args
