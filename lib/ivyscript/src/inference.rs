@@ -164,18 +164,42 @@ impl<'a> Inference<'a> {
                         I => VarType::IntArray(1, v.len() as u64, 0, 0, 0),
                         F => VarType::FloatArray(1, v.len() as u64, 0, 0, 0),
                         V => VarType::VecArray(1, v.len() as u64, 0, 0, 0),
-                        VarType::BoolArray(1, a, ..) => VarType::BoolArray(2, v.len() as u64, a, 0, 0),
-                        VarType::BoolArray(2, a, b, ..) => VarType::BoolArray(3, v.len() as u64, a, b, 0),
-                        VarType::BoolArray(3, a, b, c, ..) => VarType::BoolArray(4, v.len() as u64, a, b, c),
-                        VarType::IntArray(1, a, ..) => VarType::IntArray(2, v.len() as u64, a, 0, 0),
-                        VarType::IntArray(2, a, b, ..) => VarType::IntArray(3, v.len() as u64, a, b, 0),
-                        VarType::IntArray(3, a, b, c, ..) => VarType::IntArray(4, v.len() as u64, a, b, c),
-                        VarType::FloatArray(1, a, ..) => VarType::FloatArray(2, v.len() as u64, a, 0, 0),
-                        VarType::FloatArray(2, a, b, ..) => VarType::FloatArray(3, v.len() as u64, a, b, 0),
-                        VarType::FloatArray(3, a, b, c, ..) => VarType::FloatArray(4, v.len() as u64, a, b, c),
-                        VarType::VecArray(1, a, ..) => VarType::VecArray(2, v.len() as u64, a, 0, 0),
-                        VarType::VecArray(2, a, b, ..) => VarType::VecArray(3, v.len() as u64, a, b, 0),
-                        VarType::VecArray(3, a, b, c, ..) => VarType::VecArray(4, v.len() as u64, a, b, c),
+                        VarType::BoolArray(1, a, ..) => {
+                            VarType::BoolArray(2, v.len() as u64, a, 0, 0)
+                        }
+                        VarType::BoolArray(2, a, b, ..) => {
+                            VarType::BoolArray(3, v.len() as u64, a, b, 0)
+                        }
+                        VarType::BoolArray(3, a, b, c, ..) => {
+                            VarType::BoolArray(4, v.len() as u64, a, b, c)
+                        }
+                        VarType::IntArray(1, a, ..) => {
+                            VarType::IntArray(2, v.len() as u64, a, 0, 0)
+                        }
+                        VarType::IntArray(2, a, b, ..) => {
+                            VarType::IntArray(3, v.len() as u64, a, b, 0)
+                        }
+                        VarType::IntArray(3, a, b, c, ..) => {
+                            VarType::IntArray(4, v.len() as u64, a, b, c)
+                        }
+                        VarType::FloatArray(1, a, ..) => {
+                            VarType::FloatArray(2, v.len() as u64, a, 0, 0)
+                        }
+                        VarType::FloatArray(2, a, b, ..) => {
+                            VarType::FloatArray(3, v.len() as u64, a, b, 0)
+                        }
+                        VarType::FloatArray(3, a, b, c, ..) => {
+                            VarType::FloatArray(4, v.len() as u64, a, b, c)
+                        }
+                        VarType::VecArray(1, a, ..) => {
+                            VarType::VecArray(2, v.len() as u64, a, 0, 0)
+                        }
+                        VarType::VecArray(2, a, b, ..) => {
+                            VarType::VecArray(3, v.len() as u64, a, b, 0)
+                        }
+                        VarType::VecArray(3, a, b, c, ..) => {
+                            VarType::VecArray(4, v.len() as u64, a, b, c)
+                        }
                         _ => VarType::Unknown,
                     }
                 }
@@ -435,8 +459,8 @@ impl<'a> Inference<'a> {
             "LtoLCH" => self.cs_f(vars, V),
             "LtoY" => self.cs_f(vars, F),
             "LtoL" => self.cs_f(vars, F),
-            
-            "RGBA" if vars.len() == 2 => Some(F), 
+
+            "RGBA" if vars.len() == 2 => Some(F),
 
             // create vectors or enforce numeric types
             "vec" if vars.len() == 1 && self.is_num(&vars[0]) => Some(V),

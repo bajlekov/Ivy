@@ -452,29 +452,43 @@ impl<'a> Generator<'a> {
             VarType::Vec => format!("float3 {} = {};\n", id, expr_str),
 
             VarType::BoolArray(1, a, _, _, _) => format!("bool {} [{}]{};\n", id, a, expr_str),
-            VarType::BoolArray(2, a, b, _, _) => format!("bool {} [{}][{}]{};\n", id, a, b, expr_str),
-            VarType::BoolArray(3, a, b, c, _) => format!("bool {} [{}][{}][{}]{};\n", id, a, b, c, expr_str),
+            VarType::BoolArray(2, a, b, _, _) => {
+                format!("bool {} [{}][{}]{};\n", id, a, b, expr_str)
+            }
+            VarType::BoolArray(3, a, b, c, _) => {
+                format!("bool {} [{}][{}][{}]{};\n", id, a, b, c, expr_str)
+            }
             VarType::BoolArray(4, a, b, c, d) => {
                 format!("bool {} [{}][{}][{}][{}]{};\n", id, a, b, c, d, expr_str)
             }
 
             VarType::IntArray(1, a, _, _, _) => format!("int {} [{}]{};\n", id, a, expr_str),
             VarType::IntArray(2, a, b, _, _) => format!("int {} [{}][{}]{};\n", id, a, b, expr_str),
-            VarType::IntArray(3, a, b, c, _) => format!("int {} [{}][{}][{}]{};\n", id, a, b, c, expr_str),
+            VarType::IntArray(3, a, b, c, _) => {
+                format!("int {} [{}][{}][{}]{};\n", id, a, b, c, expr_str)
+            }
             VarType::IntArray(4, a, b, c, d) => {
                 format!("int {} [{}][{}][{}][{}]{};\n", id, a, b, c, d, expr_str)
             }
 
             VarType::FloatArray(1, a, _, _, _) => format!("float {} [{}]{};\n", id, a, expr_str),
-            VarType::FloatArray(2, a, b, _, _) => format!("float {} [{}][{}]{};\n", id, a, b, expr_str),
-            VarType::FloatArray(3, a, b, c, _) => format!("float {} [{}][{}][{}]{};\n", id, a, b, c, expr_str),
+            VarType::FloatArray(2, a, b, _, _) => {
+                format!("float {} [{}][{}]{};\n", id, a, b, expr_str)
+            }
+            VarType::FloatArray(3, a, b, c, _) => {
+                format!("float {} [{}][{}][{}]{};\n", id, a, b, c, expr_str)
+            }
             VarType::FloatArray(4, a, b, c, d) => {
                 format!("float {} [{}][{}][{}][{}]{};\n", id, a, b, c, d, expr_str)
             }
 
             VarType::VecArray(1, a, _, _, _) => format!("float3 {} [{}]{};\n", id, a, expr_str),
-            VarType::VecArray(2, a, b, _, _) => format!("float3 {} [{}][{}]{};\n", id, a, b, expr_str),
-            VarType::VecArray(3, a, b, c, _) => format!("float3 {} [{}][{}][{}]{};\n", id, a, b, c, expr_str),
+            VarType::VecArray(2, a, b, _, _) => {
+                format!("float3 {} [{}][{}]{};\n", id, a, b, expr_str)
+            }
+            VarType::VecArray(3, a, b, c, _) => {
+                format!("float3 {} [{}][{}][{}]{};\n", id, a, b, c, expr_str)
+            }
             VarType::VecArray(4, a, b, c, d) => {
                 format!("float3 {} [{}][{}][{}][{}]{};\n", id, a, b, c, d, expr_str)
             }
@@ -517,7 +531,7 @@ impl<'a> Generator<'a> {
             Expr::Array(elems) => {
                 let mut s = String::new();
                 for (k, v) in elems.iter().enumerate() {
-                    s.push_str( &self.gen_expr(v) );
+                    s.push_str(&self.gen_expr(v));
                     if k < elems.len() - 1 {
                         s.push_str(", ");
                     }
