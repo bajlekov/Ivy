@@ -146,7 +146,7 @@ function process:getKernel(name, buffers)
 			return nil
 		else
 			local kernel = program:create_kernel(name)
-			self.kernels[id] = k
+			self.kernels[id] = kernel
 			return kernel
 		end
 	end
@@ -209,10 +209,10 @@ function process:enqueueKernel(name, size, buffers)
 		local time = 0
 		for i = 1, 4 do
 			if event[i] then
-				time = time + tools.profile(kernelName.."["..i.."]", event[i], self.queue, true)
+				time = time + tools.profile(name.."["..i.."]", event[i], self.queue, true)
 			end
 		end
-		print("[OCL]"..kernelName..": "..string.format("%.3fms", (time))) -- TODO: unify with profile print from lib.opencl.tools
+		print("[OCL]"..name..": "..string.format("%.3fms", (time))) -- TODO: unify with profile print from lib.opencl.tools
 		return time
 	end
 end
