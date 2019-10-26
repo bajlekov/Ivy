@@ -429,7 +429,18 @@ impl<'a> Generator<'a> {
     }
 
     fn gen_var(&'a self, id: &str, expr: &Expr) -> String {
-        let expr_str = self.gen_expr(&expr); // generate before assessing type!
+        let expr_str = match expr {
+            Expr::Call(f, _) => match f.as_ref() {
+                "array" => String::new(),
+                "bool_array" => String::new(),
+                "int_array" => String::new(),
+                "float_array" => String::new(),
+                "vec_array" => String::new(),
+                _ => self.gen_expr(&expr),
+            },
+            Expr::Array(_) => format!(" = {}", self.gen_expr(&expr)),
+            _ => self.gen_expr(&expr),
+        };
 
         let var_type = self.inference.borrow().var_type(expr);
         self.inference.borrow().scope.add(id, var_type);
@@ -440,32 +451,32 @@ impl<'a> Generator<'a> {
             VarType::Float => format!("float {} = {};\n", id, expr_str),
             VarType::Vec => format!("float3 {} = {};\n", id, expr_str),
 
-            VarType::BoolArray(1, a, _, _, _) => format!("bool {} [{}];\n", id, a),
-            VarType::BoolArray(2, a, b, _, _) => format!("bool {} [{}][{}];\n", id, a, b),
-            VarType::BoolArray(3, a, b, c, _) => format!("bool {} [{}][{}][{}];\n", id, a, b, c),
+            VarType::BoolArray(1, a, _, _, _) => format!("bool {} [{}]{};\n", id, a, expr_str),
+            VarType::BoolArray(2, a, b, _, _) => format!("bool {} [{}][{}]{};\n", id, a, b, expr_str),
+            VarType::BoolArray(3, a, b, c, _) => format!("bool {} [{}][{}][{}]{};\n", id, a, b, c, expr_str),
             VarType::BoolArray(4, a, b, c, d) => {
-                format!("bool {} [{}][{}][{}][{}];\n", id, a, b, c, d)
+                format!("bool {} [{}][{}][{}][{}]{};\n", id, a, b, c, d, expr_str)
             }
 
-            VarType::IntArray(1, a, _, _, _) => format!("int {} [{}];\n", id, a),
-            VarType::IntArray(2, a, b, _, _) => format!("int {} [{}][{}];\n", id, a, b),
-            VarType::IntArray(3, a, b, c, _) => format!("int {} [{}][{}][{}];\n", id, a, b, c),
+            VarType::IntArray(1, a, _, _, _) => format!("int {} [{}]{};\n", id, a, expr_str),
+            VarType::IntArray(2, a, b, _, _) => format!("int {} [{}][{}]{};\n", id, a, b, expr_str),
+            VarType::IntArray(3, a, b, c, _) => format!("int {} [{}][{}][{}]{};\n", id, a, b, c, expr_str),
             VarType::IntArray(4, a, b, c, d) => {
-                format!("int {} [{}][{}][{}][{}];\n", id, a, b, c, d)
+                format!("int {} [{}][{}][{}][{}]{};\n", id, a, b, c, d, expr_str)
             }
 
-            VarType::FloatArray(1, a, _, _, _) => format!("float {} [{}];\n", id, a),
-            VarType::FloatArray(2, a, b, _, _) => format!("float {} [{}][{}];\n", id, a, b),
-            VarType::FloatArray(3, a, b, c, _) => format!("float {} [{}][{}][{}];\n", id, a, b, c),
+            VarType::FloatArray(1, a, _, _, _) => format!("float {} [{}]{};\n", id, a, expr_str),
+            VarType::FloatArray(2, a, b, _, _) => format!("float {} [{}][{}]{};\n", id, a, b, expr_str),
+            VarType::FloatArray(3, a, b, c, _) => format!("float {} [{}][{}][{}]{};\n", id, a, b, c, expr_str),
             VarType::FloatArray(4, a, b, c, d) => {
-                format!("float {} [{}][{}][{}][{}];\n", id, a, b, c, d)
+                format!("float {} [{}][{}][{}][{}]{};\n", id, a, b, c, d, expr_str)
             }
 
-            VarType::VecArray(1, a, _, _, _) => format!("float3 {} [{}];\n", id, a),
-            VarType::VecArray(2, a, b, _, _) => format!("float3 {} [{}][{}];\n", id, a, b),
-            VarType::VecArray(3, a, b, c, _) => format!("float3 {} [{}][{}][{}];\n", id, a, b, c),
+            VarType::VecArray(1, a, _, _, _) => format!("float3 {} [{}]{};\n", id, a, expr_str),
+            VarType::VecArray(2, a, b, _, _) => format!("float3 {} [{}][{}]{};\n", id, a, b, expr_str),
+            VarType::VecArray(3, a, b, c, _) => format!("float3 {} [{}][{}][{}]{};\n", id, a, b, c, expr_str),
             VarType::VecArray(4, a, b, c, d) => {
-                format!("float3 {} [{}][{}][{}][{}];\n", id, a, b, c, d)
+                format!("float3 {} [{}][{}][{}][{}]{};\n", id, a, b, c, d, expr_str)
             }
 
             _ => String::from("// ERROR!!!\n"),
@@ -502,6 +513,16 @@ impl<'a> Generator<'a> {
                     let id = self.function(id, &vars);
                     self.gen_call(&id, &args_str)
                 }
+            }
+            Expr::Array(elems) => {
+                let mut s = String::new();
+                for (k, v) in elems.iter().enumerate() {
+                    s.push_str( &self.gen_expr(v) );
+                    if k < elems.len() - 1 {
+                        s.push_str(", ");
+                    }
+                }
+                return format!("{{{}}}", s);
             }
             _ => String::from("// ERROR!!!\n"),
         }

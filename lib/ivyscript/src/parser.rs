@@ -573,6 +573,19 @@ impl Parser {
                     None
                 }
             }
+            TokenType::LeftBrace => {
+                self.advance();
+                let mut elems = Vec::new();
+                loop {
+                    elems.push(self.expression());
+                    match self.peek() {
+                        TokenType::Comma => self.advance(), // skip comma
+                        TokenType::RightBrace => break,     // advanced in identifier
+                        _ => return Expr::Error,
+                    }
+                }
+                Some(Expr::Array(elems))
+            }
             _ => None,
         } {
             self.advance();

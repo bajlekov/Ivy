@@ -154,6 +154,32 @@ impl<'a> Inference<'a> {
                     VarType::Unknown
                 }
             }
+            Expr::Array(v) => {
+                if v.is_empty() {
+                    VarType::Unknown
+                } else {
+                    // TODO: assert that all other elements have the same type
+                    match self.var_type(&v[0]) {
+                        B => VarType::BoolArray(1, v.len() as u64, 0, 0, 0),
+                        I => VarType::IntArray(1, v.len() as u64, 0, 0, 0),
+                        F => VarType::FloatArray(1, v.len() as u64, 0, 0, 0),
+                        V => VarType::VecArray(1, v.len() as u64, 0, 0, 0),
+                        VarType::BoolArray(1, a, ..) => VarType::BoolArray(2, v.len() as u64, a, 0, 0),
+                        VarType::BoolArray(2, a, b, ..) => VarType::BoolArray(3, v.len() as u64, a, b, 0),
+                        VarType::BoolArray(3, a, b, c, ..) => VarType::BoolArray(4, v.len() as u64, a, b, c),
+                        VarType::IntArray(1, a, ..) => VarType::IntArray(2, v.len() as u64, a, 0, 0),
+                        VarType::IntArray(2, a, b, ..) => VarType::IntArray(3, v.len() as u64, a, b, 0),
+                        VarType::IntArray(3, a, b, c, ..) => VarType::IntArray(4, v.len() as u64, a, b, c),
+                        VarType::FloatArray(1, a, ..) => VarType::FloatArray(2, v.len() as u64, a, 0, 0),
+                        VarType::FloatArray(2, a, b, ..) => VarType::FloatArray(3, v.len() as u64, a, b, 0),
+                        VarType::FloatArray(3, a, b, c, ..) => VarType::FloatArray(4, v.len() as u64, a, b, c),
+                        VarType::VecArray(1, a, ..) => VarType::VecArray(2, v.len() as u64, a, 0, 0),
+                        VarType::VecArray(2, a, b, ..) => VarType::VecArray(3, v.len() as u64, a, b, 0),
+                        VarType::VecArray(3, a, b, c, ..) => VarType::VecArray(4, v.len() as u64, a, b, c),
+                        _ => VarType::Unknown,
+                    }
+                }
+            }
             _ => VarType::Unknown,
         }
     }

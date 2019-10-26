@@ -24,6 +24,7 @@ pub enum Expr {
     Index(Box<Expr>, Box<Index>),
     Grouping(Box<Expr>),
     Call(String, Vec<Expr>),
+    Array(Vec<Expr>),
     Error,
 }
 
