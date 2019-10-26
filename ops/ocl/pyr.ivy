@@ -30,7 +30,6 @@ kernel pyrDown(I, G)
   const z = get_global_id(2)
 
 	var h = array(5, 5)
-
 	for i = 0, 4 do
 		for j = 0, 4 do
 			h[i, j] = I[x*2+i-2, y*2+j-2, z]
@@ -61,35 +60,26 @@ kernel pyrUp(G, O)
   const y = get_global_id(1)
   const z = get_global_id(2)
 
-  var g11 = G[x-1, y-1, z]
-  var g12 = G[x-1, y  , z]
-  var g13 = G[x-1, y+1, z]
-  var g21 = G[x  , y-1, z]
-  var g22 = G[x  , y  , z]
-  var g23 = G[x  , y+1, z]
-  var g31 = G[x+1, y-1, z]
-  var g32 = G[x+1, y  , z]
-  var g33 = G[x+1, y+1, z]
-
-  O[x*2, y*2, z] = ( g11*kk[0, 0] + g12*kk[0, 2] + g13*kk[0, 4] +
-                     g21*kk[2, 0] + g22*kk[2, 2] + g23*kk[2, 4] +
-                     g31*kk[4, 0] + g32*kk[4, 2] + g33*kk[4, 4] ) * 4.0
-
-  if (y*2 + 1)<O.y and (x*2 + 1)<O.x then
-    O[x*2 + 1, y*2 + 1, z] = ( g22*kk[1, 1] + g23*kk[1, 3] +
-                               g32*kk[3, 1] + g33*kk[3, 3] ) * 4.0
+  var g = array(3, 3)
+  for i = 0, 2 do
+    for j = 0, 2 do
+      g[i, j] = G[x+i-1, y+j-1, z]
+    end
   end
 
-  if (x*2 + 1)<O.x then
-    O[x*2 + 1, y*2, z] = ( g21*kk[1, 0] + g22*kk[1, 2] + g23*kk[1, 4] +
-                           g31*kk[3, 0] + g32*kk[3, 2] + g33*kk[3, 4] ) * 4.0
-  end
+  O[x*2, y*2, z] = ( g[0, 0]*kk[0, 0] + g[0, 1]*kk[0, 2] + g[0, 2]*kk[0, 4] +
+                     g[1, 0]*kk[2, 0] + g[1, 1]*kk[2, 2] + g[1, 2]*kk[2, 4] +
+                     g[2, 0]*kk[4, 0] + g[2, 1]*kk[4, 2] + g[2, 2]*kk[4, 4] ) * 4.0
 
-  if (y*2 + 1)<O.y then
-    O[x*2, y*2 + 1, z] = ( g12*kk[0, 1] + g13*kk[0, 3] +
-                           g22*kk[2, 1] + g23*kk[2, 3] +
-                           g32*kk[4, 1] + g33*kk[4, 3] ) * 4.0
-  end
+  O[x*2 + 1, y*2 + 1, z] = ( g[1, 1]*kk[1, 1] + g[1, 2]*kk[1, 3] +
+                             g[2, 1]*kk[3, 1] + g[2, 2]*kk[3, 3] ) * 4.0
+
+  O[x*2 + 1, y*2, z] = ( g[1, 0]*kk[1, 0] + g[1, 1]*kk[1, 2] + g[1, 2]*kk[1, 4] +
+                         g[2, 0]*kk[3, 0] + g[2, 1]*kk[3, 2] + g[2, 2]*kk[3, 4] ) * 4.0
+
+  O[x*2, y*2 + 1, z] = ( g[0, 1]*kk[0, 1] + g[0, 2]*kk[0, 3] +
+                         g[1, 1]*kk[2, 1] + g[1, 2]*kk[2, 3] +
+                         g[2, 1]*kk[4, 1] + g[2, 2]*kk[4, 3] ) * 4.0
 end
 
 -- (L, G, f) -> O
@@ -98,39 +88,30 @@ kernel pyrUpG(L, G, O, f)
   const y = get_global_id(1)
   const z = get_global_id(2)
 
-  var g11 = G[x-1, y-1, z]
-  var g12 = G[x-1, y  , z]
-  var g13 = G[x-1, y+1, z]
-  var g21 = G[x  , y-1, z]
-  var g22 = G[x  , y  , z]
-  var g23 = G[x  , y+1, z]
-  var g31 = G[x+1, y-1, z]
-  var g32 = G[x+1, y  , z]
-  var g33 = G[x+1, y+1, z]
+  var g = array(3, 3)
+  for i = 0, 2 do
+    for j = 0, 2 do
+      g[i, j] = G[x+i-1, y+j-1, z]
+    end
+  end
 
-  O[x*2, y*2, z] = ( g11*kk[0, 0] + g12*kk[0, 2] + g13*kk[0, 4] +
-                     g21*kk[2, 0] + g22*kk[2, 2] + g23*kk[2, 4] +
-                     g31*kk[4, 0] + g32*kk[4, 2] + g33*kk[4, 4] ) *
+  O[x*2, y*2, z] = ( g[0, 0]*kk[0, 0] + g[0, 1]*kk[0, 2] + g[0, 2]*kk[0, 4] +
+                     g[1, 0]*kk[2, 0] + g[1, 1]*kk[2, 2] + g[1, 2]*kk[2, 4] +
+                     g[2, 0]*kk[4, 0] + g[2, 1]*kk[4, 2] + g[2, 2]*kk[4, 4] ) *
                      4.0 - L[x*2, y*2, z] * f[x*2, y*2, z]
 
-  if (y*2 + 1)<O.y and (x*2 + 1)<O.x then
-    O[x*2 + 1, y*2 + 1, z] = ( g22*kk[1, 1] + g23*kk[1, 3] +
-                               g32*kk[3, 1] + g33*kk[3, 3] ) *
-                               4.0 - L[x*2 + 1, y*2 + 1, z] * f[x*2 + 1, y*2 + 1, z]
-  end
+  O[x*2 + 1, y*2 + 1, z] = ( g[1, 1]*kk[1, 1] + g[1, 2]*kk[1, 3] +
+                             g[2, 1]*kk[3, 1] + g[2, 2]*kk[3, 3] ) *
+                             4.0 - L[x*2 + 1, y*2 + 1, z] * f[x*2 + 1, y*2 + 1, z]
 
-  if (x*2 + 1)<O.x then
-    O[x*2 + 1, y*2, z] = ( g21*kk[1, 0] + g22*kk[1, 2] + g23*kk[1, 4] +
-                           g31*kk[3, 0] + g32*kk[3, 2] + g33*kk[3, 4] ) *
-                           4.0 - L[x*2 + 1, y*2, z] * f[x*2 + 1, y*2, z]
-  end
+  O[x*2 + 1, y*2, z] = ( g[1, 0]*kk[1, 0] + g[1, 1]*kk[1, 2] + g[1, 2]*kk[1, 4] +
+                         g[2, 0]*kk[3, 0] + g[2, 1]*kk[3, 2] + g[2, 2]*kk[3, 4] ) *
+                         4.0 - L[x*2 + 1, y*2, z] * f[x*2 + 1, y*2, z]
 
-  if (y*2 + 1)<O.y then
-    O[x*2, y*2 + 1, z] = ( g12*kk[0, 1] + g13*kk[0, 3] +
-                           g22*kk[2, 1] + g23*kk[2, 3] +
-                           g32*kk[4, 1] + g33*kk[4, 3] ) *
-                           4.0 - L[x*2, y*2 + 1, z] * f[x*2, y*2 + 1, z]
-  end
+  O[x*2, y*2 + 1, z] = ( g[0, 1]*kk[0, 1] + g[0, 2]*kk[0, 3] +
+                         g[1, 1]*kk[2, 1] + g[1, 2]*kk[2, 3] +
+                         g[2, 1]*kk[4, 1] + g[2, 2]*kk[4, 3] ) *
+                         4.0 - L[x*2, y*2 + 1, z] * f[x*2, y*2 + 1, z]
 end
 
 -- (I, G) -> L
@@ -139,37 +120,28 @@ kernel pyrUpL(I, G, L)
   const y = get_global_id(1)
   const z = get_global_id(2)
 
-  var g11 = G[x-1, y-1, z]
-  var g12 = G[x-1, y  , z]
-  var g13 = G[x-1, y+1, z]
-  var g21 = G[x  , y-1, z]
-  var g22 = G[x  , y  , z]
-  var g23 = G[x  , y+1, z]
-  var g31 = G[x+1, y-1, z]
-  var g32 = G[x+1, y  , z]
-  var g33 = G[x+1, y+1, z]
+  var g = array(3, 3)
+  for i = 0, 2 do
+    for j = 0, 2 do
+      g[i, j] = G[x+i-1, y+j-1, z]
+    end
+  end
 
-  L[x*2, y*2, z] = ( g11*kk[0, 0] + g12*kk[0, 2] + g13*kk[0, 4] +
-                     g21*kk[2, 0] + g22*kk[2, 2] + g23*kk[2, 4] +
-                     g31*kk[4, 0] + g32*kk[4, 2] + g33*kk[4, 4] ) *
+  L[x*2, y*2, z] = ( g[0, 0]*kk[0, 0] + g[0, 1]*kk[0, 2] + g[0, 2]*kk[0, 4] +
+                     g[1, 0]*kk[2, 0] + g[1, 1]*kk[2, 2] + g[1, 2]*kk[2, 4] +
+                     g[2, 0]*kk[4, 0] + g[2, 1]*kk[4, 2] + g[2, 2]*kk[4, 4] ) *
                      4.0 - I[x*2, y*2, z]
 
-  if (y*2 + 1)<L.y and (x*2 + 1)<L.x then
-    L[x*2 + 1, y*2 + 1, z] = ( g22*kk[1, 1] + g23*kk[1, 3] +
-                               g32*kk[3, 1] + g33*kk[3, 3] ) *
-                               4.0 - I[x*2 + 1, y*2 + 1, z]
-  end
+  L[x*2 + 1, y*2 + 1, z] = ( g[1, 1]*kk[1, 1] + g[1, 2]*kk[1, 3] +
+                             g[2, 1]*kk[3, 1] + g[2, 2]*kk[3, 3] ) *
+                             4.0 - I[x*2 + 1, y*2 + 1, z]
 
-  if (x*2 + 1)<L.x then
-    L[x*2 + 1, y*2, z] = ( g21*kk[1, 0] + g22*kk[1, 2] + g23*kk[1, 4] +
-                           g31*kk[3, 0] + g32*kk[3, 2] + g33*kk[3, 4] ) *
-                           4.0 - I[x*2 + 1, y*2, z]
-  end
+  L[x*2 + 1, y*2, z] = ( g[1, 0]*kk[1, 0] + g[1, 1]*kk[1, 2] + g[1, 2]*kk[1, 4] +
+                         g[2, 0]*kk[3, 0] + g[2, 1]*kk[3, 2] + g[2, 2]*kk[3, 4] ) *
+                         4.0 - I[x*2 + 1, y*2, z]
 
-  if (y*2 + 1)<L.y then
-    L[x*2, y*2 + 1, z] = ( g12*kk[0, 1] + g13*kk[0, 3] +
-                           g22*kk[2, 1] + g23*kk[2, 3] +
-                           g32*kk[4, 1] + g33*kk[4, 3] ) *
-                           4.0 - I[x*2, y*2 + 1, z]
-  end
+  L[x*2, y*2 + 1, z] = ( g[0, 1]*kk[0, 1] + g[0, 2]*kk[0, 3] +
+                         g[1, 1]*kk[2, 1] + g[1, 2]*kk[2, 3] +
+                         g[2, 1]*kk[4, 1] + g[2, 2]*kk[4, 3] ) *
+                         4.0 - I[x*2, y*2 + 1, z]
 end
