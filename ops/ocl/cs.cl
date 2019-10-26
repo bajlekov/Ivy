@@ -335,4 +335,21 @@ float3 L3toY3(float3 i) {
 	return o;
 }
 
+//construct rgba
+float RGBA(float3 i, float a) {
+	union {
+		float f;
+		uchar u8[4];
+	} t;
+
+	t.u8[0] = (uchar)round(clamp(i.x*255.0, 0.0, 255.0));
+	t.u8[1] = (uchar)round(clamp(i.y*255.0, 0.0, 255.0));
+	t.u8[2] = (uchar)round(clamp(i.z*255.0, 0.0, 255.0));
+	t.u8[3] = (uchar)round(clamp(  a*255.0, 0.0, 255.0));
+
+	return t.f;
+}
+
+
+
 #endif
