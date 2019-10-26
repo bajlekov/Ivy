@@ -15,7 +15,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ]]
 
-local proc = require "lib.opencl.process".new()
+local proc = require "lib.opencl.process.ivy".new()
 local data = require "data"
 
 local function downsize(x, y, z)
@@ -28,24 +28,21 @@ local function downsize(x, y, z)
 end
 
 local function execute()
-	proc:getAllBuffers("I", "O", "n")
+	local I, O, n = proc:getAllBuffers(3)
 
-	local n = proc.buffers.n:get(0, 0, 0)
+	local n = n:get(0, 0, 0)
+	debug.see(n)
 	local G = {}
-	G[0] = proc.buffers.I
+	G[0] = I
 
 	for i = 1, n do
 		G[i] = data:new(downsize(G[i-1]:shape()))
-		proc.buffers.I = G[i-1]
-		proc.buffers.G = G[i]
-		proc:executeKernel("pyrDown", proc:size3D("G"), {"I", "G"})
+		proc:executeKernel("pyrDown", proc:size3D(G[i]), {G[i-1], G[i]})
 	end
 
-	G[0] = proc.buffers.O
+	G[0] = O
 	for i = n, 1, -1 do
-		proc.buffers.G = G[i]
-		proc.buffers.O = G[i-1]
-		proc:executeKernel("pyrUp", proc:size3D("G"), {"G", "O"})
+		proc:executeKernel("pyrUp", proc:size3D(G[i]), {G[i], G[i-1]})
 		G[i]:free()
 		G[i] = nil
 	end
@@ -53,7 +50,7 @@ end
 
 local function init(d, c, q)
 	proc:init(d, c, q)
-	proc:loadSourceFile("pyr.cl")
+	proc:loadSourceFile("pyr.ivy")
 	return execute
 end
 
