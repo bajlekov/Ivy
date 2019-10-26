@@ -659,40 +659,25 @@ impl<'a> Generator<'a> {
                     if let Expr::Identifier(name) = &**id {
                         if let Index::Array2D(a, b) = &**idx {
                             let var = self.inference.borrow().var_type(id);
-                            if let VarType::Buffer { z, cs, .. } = var {
+                            if let VarType::Buffer { x, y, z, cs, .. } = var {
                                 let cs = format!("{}to{}", cs_from, cs);
-
+                                let a = self.gen_expr(a);
+                                let b = self.gen_expr(b);
+                                let guard = format!(
+                                    "if ({}>=0 && {}<{} && {}>=0 && {}<{}) ",
+                                    a, a, x, b, b, y
+                                );
+                                let val = self.gen_expr(val);
                                 if z == 3 {
-                                    let id_x = var.buf_idx_3d(
-                                        name,
-                                        &self.gen_expr(a),
-                                        &self.gen_expr(b),
-                                        "0",
-                                    );
-                                    let id_y = var.buf_idx_3d(
-                                        name,
-                                        &self.gen_expr(a),
-                                        &self.gen_expr(b),
-                                        "1",
-                                    );
-                                    let id_z = var.buf_idx_3d(
-                                        name,
-                                        &self.gen_expr(a),
-                                        &self.gen_expr(b),
-                                        "2",
-                                    );
-
-                                    format!("{{ float3 __v = {}({}); {} = __v.x; {} = __v.y; {} = __v.z; }}\n", cs, self.gen_expr(val), id_x, id_y, id_z)
+                                    let id_x = var.buf_idx_3d(name, &a, &b, "0");
+                                    let id_y = var.buf_idx_3d(name, &a, &b, "1");
+                                    let id_z = var.buf_idx_3d(name, &a, &b, "2");
+                                    format!("{} {{ float3 __v = {}({}); {} = __v.x; {} = __v.y; {} = __v.z; }}\n",
+                                        guard, cs, val, id_x, id_y, id_z)
                                 } else if z == 1 {
                                     // match buffer storage size to color space
-                                    let id = var.buf_idx_3d(
-                                        name,
-                                        &self.gen_expr(a),
-                                        &self.gen_expr(b),
-                                        "0",
-                                    );
-
-                                    format!("{} = {}({});\n", id, cs, self.gen_expr(val))
+                                    let id = var.buf_idx_3d(name, &a, &b, "0");
+                                    format!("{} {} = {}({});\n", guard, id, cs, val)
                                 } else {
                                     String::from("// ERROR!!!\n")
                                 }
@@ -718,9 +703,13 @@ impl<'a> Generator<'a> {
                         | VarType::VecArray(1, ..) => {
                             format!("{}[{}] = {};\n", name, self.gen_expr(a), self.gen_expr(val))
                         }
-                        VarType::Buffer { .. } => {
-                            let id = var.buf_idx_1d(name, &self.gen_expr(a));
-                            format!("{} = {};\n", id, self.gen_expr(val))
+                        VarType::Buffer { x, y, z, .. } => {
+                            let a = self.gen_expr(a);
+                            let val = self.gen_expr(val);
+                            let guard = format!("if ({}>=0 && {}<{}) ", a, a, x * y * z,);
+
+                            let id = var.buf_idx_1d(name, &a);
+                            format!("{} {} = {};\n", guard, id, val)
                         }
                         _ => String::from("// ERROR!!!\n"),
                     }
@@ -731,24 +720,29 @@ impl<'a> Generator<'a> {
                 let var = self.inference.borrow().var_type(expr);
                 if let Expr::Identifier(name) = &**expr {
                     match var {
-                        VarType::Buffer { z: 1, .. } => {
-                            let id =
-                                var.buf_idx_3d(name, &self.gen_expr(a), &self.gen_expr(b), "0");
-                            format!("{} = {};\n", id, self.gen_expr(val))
+                        VarType::Buffer { x, y, z: 1, .. } => {
+                            let a = self.gen_expr(a);
+                            let b = self.gen_expr(b);
+                            let guard =
+                                format!("if ({}>=0 && {}<{} && {}>=0 && {}<{}) ", a, a, x, b, b, y);
+                            let val = self.gen_expr(val);
+
+                            let id = var.buf_idx_3d(name, &a, &b, "0");
+                            format!("{} {} = {};\n", guard, id, val)
                         }
-                        VarType::Buffer { z: 3, .. } => {
-                            let id_x =
-                                var.buf_idx_3d(name, &self.gen_expr(a), &self.gen_expr(b), "0");
-                            let id_y =
-                                var.buf_idx_3d(name, &self.gen_expr(a), &self.gen_expr(b), "1");
-                            let id_z =
-                                var.buf_idx_3d(name, &self.gen_expr(a), &self.gen_expr(b), "2");
+                        VarType::Buffer { x, y, z: 3, .. } => {
+                            let a = self.gen_expr(a);
+                            let b = self.gen_expr(b);
+                            let guard =
+                                format!("if ({}>=0 && {}<{} && {}>=0 && {}<{}) ", a, a, x, b, b, y);
+                            let val = self.gen_expr(val);
+
+                            let id_x = var.buf_idx_3d(name, &a, &b, "0");
+                            let id_y = var.buf_idx_3d(name, &a, &b, "1");
+                            let id_z = var.buf_idx_3d(name, &a, &b, "2");
                             format!(
-                                "{{ float3 __v = {}; {} = __v.x; {} = __v.y; {} = __v.z; }}\n",
-                                self.gen_expr(val),
-                                id_x,
-                                id_y,
-                                id_z
+                                "{} {{ float3 __v = {}; {} = __v.x; {} = __v.y; {} = __v.z; }}\n",
+                                guard, val, id_x, id_y, id_z
                             )
                         }
                         VarType::BoolArray(2, ..)
@@ -781,14 +775,18 @@ impl<'a> Generator<'a> {
                             self.gen_expr(c),
                             self.gen_expr(val)
                         ),
-                        VarType::Buffer { .. } => {
-                            let id = var.buf_idx_3d(
-                                name,
-                                &self.gen_expr(a),
-                                &self.gen_expr(b),
-                                &self.gen_expr(c),
+                        VarType::Buffer { x, y, z, .. } => {
+                            let a = self.gen_expr(a);
+                            let b = self.gen_expr(b);
+                            let c = self.gen_expr(c);
+                            let guard = format!(
+                                "if ({}>=0 && {}<{} && {}>=0 && {}<{} && {}>=0 && {}<{}) ",
+                                a, a, x, b, b, y, c, c, z
                             );
-                            format!("{} = {};\n", id, self.gen_expr(val))
+                            let val = self.gen_expr(val);
+
+                            let id = var.buf_idx_3d(name, &a, &b, &c);
+                            format!("{} {} = {};\n", guard, id, val)
                         }
                         _ => String::from("// ERROR!!!\n"),
                     }
