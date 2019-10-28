@@ -668,6 +668,8 @@ impl<'a> Generator<'a> {
 
         if !vars.is_empty() {
             id = match (id, vars[0]) {
+                ("abs", VarType::Float) => "fabs",
+                ("abs", VarType::Vec) => "fabs",
                 ("atomic_add", VarType::FloatArray(1, ..)) => "_atomic_float_add",
                 ("atomic_sub", VarType::FloatArray(1, ..)) => "_atomic_float_sub",
                 ("atomic_inc", VarType::FloatArray(1, ..)) => "_atomic_float_inc",
