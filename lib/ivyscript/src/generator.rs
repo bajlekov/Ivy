@@ -277,6 +277,22 @@ impl<'a> Generator<'a> {
             Stmt::Const(id, expr) => format!("const {}", self.gen_var(id, expr)),
             Stmt::Local(id, expr) => format!("local {}", self.gen_var(id, expr)),
             Stmt::Assign(id, expr) => self.gen_assign(id, expr),
+            Stmt::Call(id, args) => {
+                let args_str = args
+                    .iter()
+                    .map(|e| self.gen_expr(e))
+                    .collect::<Vec<String>>();
+                let vars = args
+                    .iter()
+                    .map(|e| self.inference.borrow().var_type(e))
+                    .collect::<Vec<VarType>>();
+                if self.inference.borrow().builtin(id, args).is_some() {
+                    format!("{};", self.gen_call(id, &args_str, &vars))
+                } else {
+                    let id = self.function(id, &vars);
+                    format!("{};", self.gen_call(&id, &args_str, &vars))
+                }
+            }
             Stmt::For {
                 var,
                 from,
@@ -509,23 +525,19 @@ impl<'a> Generator<'a> {
             Expr::Index(expr, idx) => self.gen_index(expr, idx),
             Expr::Grouping(expr) => format!("({})", self.gen_expr(expr)),
             Expr::Call(id, args) => {
+                let args_str = args
+                    .iter()
+                    .map(|e| self.gen_expr(e))
+                    .collect::<Vec<String>>();
+                let vars = args
+                    .iter()
+                    .map(|e| self.inference.borrow().var_type(e))
+                    .collect::<Vec<VarType>>();
                 if self.inference.borrow().builtin(id, args).is_some() {
-                    let args_str = args
-                        .iter()
-                        .map(|e| self.gen_expr(e))
-                        .collect::<Vec<String>>();
-                    self.gen_call(id, &args_str)
+                    self.gen_call(id, &args_str, &vars)
                 } else {
-                    let args_str = args
-                        .iter()
-                        .map(|e| self.gen_expr(e))
-                        .collect::<Vec<String>>();
-                    let vars = args
-                        .iter()
-                        .map(|e| self.inference.borrow().var_type(e))
-                        .collect::<Vec<VarType>>();
                     let id = self.function(id, &vars);
-                    self.gen_call(&id, &args_str)
+                    self.gen_call(&id, &args_str, &vars)
                 }
             }
             Expr::Array(elems) => {
@@ -645,13 +657,13 @@ impl<'a> Generator<'a> {
         }
     }
 
-    fn gen_call(&'a self, id: &str, args: &[String]) -> String {
-        let id = match id {
+    fn gen_call(&'a self, id: &str, args: &[String], vars: &[VarType]) -> String {
+        let mut id = match id {
             "bool" => "(bool)",
             "int" => "(int)",
             "float" => "(float)",
             "vec" => "(float3)",
-            s => s,
+            _ => id,
         };
 
         let mut s = String::new();
