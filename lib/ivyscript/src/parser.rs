@@ -18,7 +18,8 @@
 use std::cell::Cell;
 
 use crate::ast::{
-    AssignOp, BinaryExpr, BinaryOp, ColorSpace, Expr, Index, Literal, Stmt, UnaryExpr, UnaryOp,
+    AssignOp, BinaryExpr, BinaryOp, ColorSpace, Expr, Index, Literal, Prop, Stmt, UnaryExpr,
+    UnaryOp,
 };
 
 use crate::tokens::{Token, TokenType};
@@ -688,13 +689,19 @@ impl Parser {
                     "r" => Expr::Index(Box::new(id), Box::new(Index::Vec(0))),
                     "g" => Expr::Index(Box::new(id), Box::new(Index::Vec(1))),
                     "b" => Expr::Index(Box::new(id), Box::new(Index::Vec(2))),
-                    "x" => Expr::Index(Box::new(id), Box::new(Index::Vec(0))),
-                    "y" => Expr::Index(Box::new(id), Box::new(Index::Vec(1))),
-                    "z" => Expr::Index(Box::new(id), Box::new(Index::Vec(2))),
+                    "x" => Expr::Index(Box::new(id), Box::new(Index::Vec(0))), // also buffer size x
+                    "y" => Expr::Index(Box::new(id), Box::new(Index::Vec(1))), // also buffer size y
+                    "z" => Expr::Index(Box::new(id), Box::new(Index::Vec(2))), // also buffer size z
                     "l" => Expr::Index(Box::new(id), Box::new(Index::Vec(0))),
                     "a" => Expr::Index(Box::new(id), Box::new(Index::Vec(1))),
                     "c" => Expr::Index(Box::new(id), Box::new(Index::Vec(1))),
                     "h" => Expr::Index(Box::new(id), Box::new(Index::Vec(2))),
+
+                    // property access
+                    "int" => Expr::Index(Box::new(id), Box::new(Index::Prop(Prop::Int))), // cast to int* before access
+                    "idx" => Expr::Index(Box::new(id), Box::new(Index::Prop(Prop::Idx))), // returns buffer's linear index
+                    "ptr" => Expr::Index(Box::new(id), Box::new(Index::Prop(Prop::Ptr))), // returns ptr at origin or index
+                    "intptr" => Expr::Index(Box::new(id), Box::new(Index::Prop(Prop::IntPtr))), // returns ptr at origin or index
                     _ => Expr::Error,
                 }
             } else {

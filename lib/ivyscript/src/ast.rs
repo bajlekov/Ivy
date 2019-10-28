@@ -30,12 +30,21 @@ pub enum Expr {
 
 #[derive(Debug)]
 pub enum Index {
+    Prop(Prop),
     Vec(u8),
     ColorSpace(ColorSpace),
     Array1D(Expr),
     Array2D(Expr, Expr),
     Array3D(Expr, Expr, Expr),
     Array4D(Expr, Expr, Expr, Expr),
+}
+
+#[derive(Debug)]
+pub enum Prop {
+    Int,
+    Idx,
+    Ptr,
+    IntPtr,
 }
 
 #[derive(Debug, Eq, PartialEq, Copy, Clone)]

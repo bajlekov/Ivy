@@ -18,7 +18,7 @@
 use std::cell::RefCell;
 use std::collections::HashMap;
 
-use crate::ast::{BinaryOp, ColorSpace, Expr, Index, Literal, UnaryOp};
+use crate::ast::{BinaryOp, ColorSpace, Expr, Index, Literal, Prop, UnaryOp};
 use crate::generator::function_id;
 use crate::scope::ScopeTree;
 
@@ -116,6 +116,11 @@ impl<'a> Inference<'a> {
                     ColorSpace::Y => F,
                     ColorSpace::L => F,
                 },
+
+                (F, Index::Prop(Prop::Int)) => I,
+                (F, Index::Prop(Prop::Idx)) => I,
+                (F, Index::Prop(Prop::Ptr)) => VarType::FloatArray(1, 0, 0, 0, 0),
+                (F, Index::Prop(Prop::IntPtr)) => VarType::IntArray(1, 0, 0, 0, 0),
 
                 (VarType::Buffer { .. }, Index::Array1D(..)) => F,
                 (VarType::Buffer { z: 3, .. }, Index::Array2D(..)) => V,

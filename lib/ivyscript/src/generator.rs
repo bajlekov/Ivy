@@ -19,7 +19,7 @@ use std::cell::RefCell;
 use std::collections::HashMap;
 
 use crate::ast::{
-    BinaryExpr, BinaryOp, ColorSpace, Expr, Index, Literal, Stmt, UnaryExpr, UnaryOp,
+    BinaryExpr, BinaryOp, ColorSpace, Expr, Index, Literal, Prop, Stmt, UnaryExpr, UnaryOp,
 };
 
 use crate::inference::{Inference, VarType};
@@ -987,6 +987,37 @@ impl<'a> Generator<'a> {
                     String::from("// ERROR!!!\n")
                 }
             }
+
+            Index::Prop(prop) => {
+                if let Expr::Index(expr, idx) = expr {
+                    if let Expr::Identifier(id) = &**expr {
+                        let var = self.inference.borrow().var_type(expr);
+                        let idx = &**idx;
+                        let idx = match (var, idx) {
+                            (VarType::Buffer { .. }, Index::Array1D(a)) => {
+                                var.idx_1d(&self.gen_expr(a))
+                            }
+                            (VarType::Buffer { z: 1, .. }, Index::Array2D(a, b)) => {
+                                var.idx_3d(&self.gen_expr(a), &self.gen_expr(b), "0")
+                            }
+                            (VarType::Buffer { .. }, Index::Array3D(a, b, c)) => {
+                                var.idx_3d(&self.gen_expr(a), &self.gen_expr(b), &self.gen_expr(c))
+                            }
+                            _ => String::from("// ERROR!!!\n"),
+                        };
+                        match prop {
+                            Prop::Int => format!("(((global int*){})[{}])", id, idx),
+                            Prop::Idx => idx,
+                            Prop::Ptr => format!("({} + {})", id, idx),
+                            Prop::IntPtr => format!("(((global int*){}) + {})", id, idx),
+                        }
+                    } else {
+                        String::from("// ERROR!!!\n")
+                    }
+                } else {
+                    String::from("// ERROR!!!\n")
+                }
+            }
             _ => String::from("// ERROR!!!\n"),
         }
     }
@@ -1001,6 +1032,14 @@ impl VarType {
                 ix = ix,
                 cx = x * y * z - 1,
             )
+        } else {
+            String::from("// ERROR!!!\n")
+        }
+    }
+
+    fn idx_1d(&self, ix: &str) -> String {
+        if let VarType::Buffer { x, y, z, .. } = self {
+            format!("clamp((int)({ix}), 0, {cx})", ix = ix, cx = x * y * z - 1,)
         } else {
             String::from("// ERROR!!!\n")
         }
@@ -1029,6 +1068,34 @@ impl VarType {
             format!(
             "{id}[clamp((int)({ix}), 0, {cx})*{sx} + clamp((int)({iy}), 0, {cy})*{sy} + clamp((int)({iz}), 0, {cz})*{sz}]",
             id = id,
+            ix = ix,
+            iy = iy,
+            iz = iz,
+            cx = x - 1,
+            cy = y - 1,
+            cz = z - 1,
+            sx = sx,
+            sy = sy,
+            sz = sz,
+            )
+        } else {
+            String::from("// ERROR!!!\n")
+        }
+    }
+
+    fn idx_3d(&self, ix: &str, iy: &str, iz: &str) -> String {
+        if let VarType::Buffer {
+            x,
+            y,
+            z,
+            sx,
+            sy,
+            sz,
+            ..
+        } = self
+        {
+            format!(
+            "(clamp((int)({ix}), 0, {cx})*{sx} + clamp((int)({iy}), 0, {cy})*{sy} + clamp((int)({iz}), 0, {cz})*{sz})",
             ix = ix,
             iy = iy,
             iz = iz,
