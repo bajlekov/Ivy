@@ -331,6 +331,30 @@ impl<'a> Inference<'a> {
         }
     }
 
+    fn atomic_1(&self, vars: &[Expr]) -> Option<VarType> {
+        if vars.len() == 1 {
+            match self.var_type(&vars[0]) {
+                VarType::FloatArray(1, ..) => Some(F),
+                VarType::IntArray(1, ..) => Some(I),
+                _ => None,
+            }
+        } else {
+            None
+        }
+    }
+
+    fn atomic_2(&self, vars: &[Expr]) -> Option<VarType> {
+        if vars.len() == 2 {
+            match self.var_type(&vars[0]) {
+                VarType::FloatArray(1, ..) => Some(F),
+                VarType::IntArray(1, ..) => Some(I),
+                _ => None,
+            }
+        } else {
+            None
+        }
+    }
+
     pub fn builtin(&self, id: &str, vars: &[Expr]) -> Option<VarType> {
         match id {
             "get_work_dim" if vars.is_empty() => Some(I),
@@ -406,6 +430,12 @@ impl<'a> Inference<'a> {
             // memory barrier functions
 
             // atomics "atomic_add(buf, idx1, idx2, idx3, value)" etc.
+            "atomic_add" => self.atomic_2(vars),
+            "atomic_sub" => self.atomic_2(vars),
+            "atomic_inc" => self.atomic_1(vars),
+            "atomic_dec" => self.atomic_1(vars),
+            "atomic_min" => self.atomic_2(vars),
+            "atomic_max" => self.atomic_2(vars),
 
             // CS conversion functions
             // TODO: implement source code loading too

@@ -666,6 +666,18 @@ impl<'a> Generator<'a> {
             _ => id,
         };
 
+        if !vars.is_empty() {
+            id = match (id, vars[0]) {
+                ("atomic_add", VarType::FloatArray(1, ..)) => "_atomic_float_add",
+                ("atomic_sub", VarType::FloatArray(1, ..)) => "_atomic_float_sub",
+                ("atomic_inc", VarType::FloatArray(1, ..)) => "_atomic_float_inc",
+                ("atomic_dec", VarType::FloatArray(1, ..)) => "_atomic_float_dec",
+                ("atomic_min", VarType::FloatArray(1, ..)) => "_atomic_float_min",
+                ("atomic_max", VarType::FloatArray(1, ..)) => "_atomic_float_max",
+                _ => id,
+            }
+        }
+
         let mut s = String::new();
         for (k, v) in args.iter().enumerate() {
             s.push_str(&v);
