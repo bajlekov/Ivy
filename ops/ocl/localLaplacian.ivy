@@ -13,48 +13,55 @@
 --  You should have received a copy of the GNU General Public License
 --  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+-- L (L)
 kernel zero_LL(L)
   const x = get_global_id(0)
   const y = get_global_id(1)
-  const z = get_global_id(2)
 
-  L[x, y, z] = 0.0
+  L[x, y] = 0.0
 end
 
+-- I (XYZ) -> O (XYZ)
 kernel post_LL(I, O)
   const x = get_global_id(0)
   const y = get_global_id(1)
 
-  var i_xyz = I[x, y].XYZ
-  var o_y = LtoY(O[x, y, 0])
-  var o = XYZtoLAB(i_xyz*o_y/i_xyz.y)
-
-  O[x, y, 1] = o.y
-  O[x, y, 2] = o.z
+  var i = I[x, y]
+  var o_y = O[x, y, 1]
+  O[x, y] = (i*o_y/i.y)
 end
 
+-- I (XYZ | Y), D (Y), R (Y) -> O (XYZ | Y)
 kernel transform(I, D, R, O, m) -- midpoint
   const x = get_global_id(0)
   const y = get_global_id(1)
-  const z = get_global_id(2)
 
-  var i = clamp(I[x, y, z], 0.0, 1.0) -- works only in range [0, 1]
-  var d = D[x, y, z] + 1.0
-  var r = R[x, y, z]
+  var iz = 0
+  if I.z==3 then iz = 1 end
+
+  var oz = 0
+  if O.z==3 then oz = 1 end
+
+  var i = clamp(YtoL(I[x, y, iz]), 0.0, 1.0) -- works only in range [0, 1]
+  var d = D[x, y] + 1.0
+  var r = R[x, y]
 
   var o = clamp(abs(i - m)/r*0.5, 0.0, 1.0)
   var f = 2.0*o^3 - 3.0*o^2 + 1.0
-  O[x, y, z] = f*(i-m)*d + (1.0-f)*(i-m)
+  O[x, y, oz] = LtoY( f*(i-m)*d + (1.0-f)*(i-m) + m )
 end
 
+-- G (XYZ | Y), T(L) -> O (L)
 kernel apply_LL(G, T, O, l, lvl) -- current lvl, total # of levels
   const x = get_global_id(0)
   const y = get_global_id(1)
-  const z = get_global_id(2)
 
-  var g = G[x, y, z]
-  var t = T[x, y, z]
-  var o = O[x, y, z]
+  var z = 0
+  if G.z==3 then z = 1 end
+
+  var g = YtoL(G[x, y, z])
+  var t = T[x, y]
+  var o = O[x, y]
 
   var v = g*lvl
   var vl = int(floor(v))
@@ -70,5 +77,5 @@ kernel apply_LL(G, T, O, l, lvl) -- current lvl, total # of levels
     o = o + (1.0-vf)*t
   end
 
-  O[x, y, z] = o
+  O[x, y] = o
 end

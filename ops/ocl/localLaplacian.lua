@@ -43,13 +43,15 @@ local function execute()
 
 	-- clear L output pyramid
 	for i = 1, 8 do
-		proc:executeKernel("zero_LL", proc:size3D(L[i]), {L[i]})
+		proc:executeKernel("zero_LL", proc:size2D(L[i]), {L[i]})
 	end
 
 	-- generate gaussian pyramid
-	proc:executeKernel("pyrDown", proc:size3D(G[1]), {I, G[1]})
+	proc:executeKernel("pyrDown", proc:size2D(G[1]), {I, G[1]})
+	--proc:executeKernel("pyrUpL", proc:size2D(G[1]), {I, G[1], L[1]})
 	for i = 2, 8 do
-		proc:executeKernel("pyrDown", proc:size3D(G[i]), {G[i-1], G[i]})
+		proc:executeKernel("pyrDown", proc:size2D(G[i]), {G[i-1], G[i]})
+		--proc:executeKernel("pyrUpL", proc:size2D(G[i]), {G[i-1], G[i], L[i]})
 	end
 
 	local lvl = hq:get(0, 0, 0)<0.5 and 15 or 127
@@ -65,26 +67,26 @@ local function execute()
 		proc:executeKernel("transform", proc:size2D(I), {I, D, R, O, cl_m})
 
 		-- generate transformed laplacian pyramid
-		proc:executeKernel("pyrDown", proc:size3D(T[2]), {O, T[2]})
-		proc:executeKernel("pyrUpL", proc:size3D(T[2]), {O, T[2], T[1]})
+		proc:executeKernel("pyrDown", proc:size2D(T[2]), {O, T[2]})
+		proc:executeKernel("pyrUpL", proc:size2D(T[2]), {O, T[2], T[1]})
 		for i = 2, 8 do
-			proc:executeKernel("pyrDown", proc:size3D(T[i+1]), {T[i], T[i+1]})
-			proc:executeKernel("pyrUpL", proc:size3D(T[i+1]), {T[i], T[i+1], T[i]})
+			proc:executeKernel("pyrDown", proc:size2D(T[i+1]), {T[i], T[i+1]})
+			proc:executeKernel("pyrUpL", proc:size2D(T[i+1]), {T[i], T[i+1], T[i]})
 		end
 
 		-- apply appropriate laplacians from T to L according to G
-		proc:executeKernel("apply_LL", proc:size3D(T[1]), {I, T[1], L[1], cl_i, cl_lvl})
+		proc:executeKernel("apply_LL", proc:size2D(T[1]), {I, T[1], L[1], cl_i, cl_lvl})
 		for i = 2, 8 do
-			proc:executeKernel("apply_LL", proc:size3D(T[i]), {G[i-1], T[i], L[i], cl_i, cl_lvl})
+			proc:executeKernel("apply_LL", proc:size2D(T[i]), {G[i-1], T[i], L[i], cl_i, cl_lvl})
 		end
 
 	end
 
 	-- combine L + G pyramids
 	for i = 8, 2, -1 do
-		proc:executeKernel("pyrUpG", proc:size3D(G[i]), {L[i], G[i], G[i-1], data.one})
+		proc:executeKernel("pyrUpG", proc:size2D(G[i]), {L[i], G[i], G[i-1], data.one})
 	end
-	proc:executeKernel("pyrUpG", proc:size3D(G[1]), {L[1], G[1], O, data.one})
+	proc:executeKernel("pyrUpG", proc:size2D(G[1]), {L[1], G[1], O, data.one})
 
 	proc:executeKernel("post_LL", proc:size2D(I), {I, O})
 
@@ -101,7 +103,7 @@ end
 
 local function init(d, c, q)
 	proc:init(d, c, q)
-	proc:loadSourceFile("localLaplacian.ivy", "pyr.ivy")
+	proc:loadSourceFile("localLaplacian.ivy", "pyr_c_2d.ivy")
 	return execute
 end
 
