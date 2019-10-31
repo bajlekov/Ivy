@@ -16,7 +16,7 @@
 */
 
 use std::cell::RefCell;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use crate::ast::{
     BinaryExpr, BinaryOp, ColorSpace, Expr, Index, Literal, Prop, Stmt, UnaryExpr, UnaryOp,
@@ -33,6 +33,7 @@ pub struct Generator<'a> {
     generated_constants: RefCell<Option<String>>,
     generated_functions: RefCell<HashMap<String, (String, String, VarType)>>, // collect specialized functions: (declaration, definition, return value)
     generated_kernels: RefCell<HashMap<String, String>>, // collect specialized kernels: (kernel)
+    used_functions: RefCell<HashSet<String>>,
     temp: RefCell<String>,
 }
 
@@ -48,6 +49,7 @@ impl<'a> Generator<'a> {
             generated_constants: RefCell::new(None),
             generated_functions: RefCell::new(HashMap::new()),
             generated_kernels: RefCell::new(HashMap::new()),
+            used_functions: RefCell::new(HashSet::new()),
             temp: RefCell::new(String::new()),
         }
     }
@@ -72,7 +74,14 @@ impl<'a> Generator<'a> {
     fn function(&'a self, name: &str, input: &[VarType]) -> String {
         let id = function_id(name, input);
 
-        if self.generated_functions.borrow().get(&id).is_some() {
+        if let Some((decl, def, _)) = self.generated_functions.borrow().get(&id) {
+            if !self.used_functions.borrow().contains(&id) {
+                let temp = self.temp.borrow().clone();
+                let temp = format!("{}\n{}\n{}\n", decl, temp, def);
+                self.temp.replace(temp);
+                self.used_functions.borrow_mut().insert(id.clone());
+            }
+
             return id;
         }
 
@@ -179,6 +188,7 @@ impl<'a> Generator<'a> {
             let temp = self.temp.borrow().clone();
             let temp = format!("{}\n{}\n{}\n", &decl, temp, &def);
             self.temp.replace(temp);
+            self.used_functions.borrow_mut().insert(id.clone());
 
             // TODO: register function return types in order to have them inferred properly
             // register generated_functions
@@ -222,6 +232,7 @@ impl<'a> Generator<'a> {
 
             self.temp
                 .replace(self.generated_constants.borrow().clone().unwrap());
+            self.used_functions.borrow_mut().clear();
 
             for (k, v) in args.iter().enumerate() {
                 let arg = format!(
