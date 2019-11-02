@@ -16,47 +16,47 @@
 ]]
 
 local ffi = require "ffi"
-local proc = require "lib.opencl.process".new()
+local proc = require "lib.opencl.process.ivy".new()
 local data = require "data"
 
 local ox = ffi.new("cl_int[1]", 0)
 local oy = ffi.new("cl_int[1]", 0)
 
 local function execute()
-	proc:getAllBuffers("in", "p1", "p2", "p3", "p4", "p5", "k", "out")
+	local I, p1, p2, p3, p4, p5, K, O = proc:getAllBuffers(8)
 
-	local x, y, z = proc.buffers.out:shape()
-	proc.buffers.t1 = data:new(x, y, 1)
-	proc.buffers.t2 = data:new(x, y, 1)
-	proc.buffers.t3 = data:new(x, y, z)
-	proc.buffers.t4 = data:new(x, y, z)
-	proc.buffers.wmax = data:new(x, y, z) -- keep largest weight for scaling
+	local x, y, z = O:shape()
+	local T1 = data:new(x, y, 1)
+	local T2 = data:new(x, y, 1)
+	local T3 = data:new(x, y, z)
+	local T4 = data:new(x, y, z)
+	local W = data:new(x, y, z) -- keep largest weight for scaling
 
-	proc:executeKernel("init", proc:size2D("out"), {"out", "t3", "t4", "wmax"})
+	proc:executeKernel("init", proc:size2D(O), {T3, T4, W})
 
-	local r = proc.buffers.p4:get(0, 0, 0) -- adjustable range
+	local r = p4:get(0, 0, 0) -- adjustable range
 
-	if proc.buffers.p4:get(0, 0, 1)<0.5 or proc.buffers.p4:get(0, 0, 0)<=8 then
+	if p4:get(0, 0, 1)<0.5 or p4:get(0, 0, 0)<=8 then
 		for x = 1, r do
 			ox[0] = x
 			-- circular clipping:
 			--local r = math.round(math.cos(math.abs(x) / r * math.pi / 2) * r)
 			for y = -r, r do
 				oy[0] = y
-				proc:executeKernel("dist", proc:size2D("out"), {"in", "t1", "p1", "p2", "p5", ox, oy})
-				proc:executeKernel("horizontal", proc:size2D("out"), {"t1", "t2", "k"})
-				proc:executeKernel("vertical", proc:size2D("out"), {"t2", "t1", "k"})
-				proc:executeKernel("accumulate", proc:size2D("out"), {"in", "t1", "t3", "t4", "wmax", "p1", "p2", ox, oy})
+				proc:executeKernel("dist", proc:size2D(O), {I, T1, p1, p2, p5, ox, oy})
+				proc:executeKernel("horizontal", proc:size2D(O), {T1, T2, K})
+				proc:executeKernel("vertical", proc:size2D(O), {T2, T1, K})
+				proc:executeKernel("accumulate", proc:size2D(O), {I, T1, T3, T4, W, p1, p2, ox, oy})
 			end
 		end
 		local x = 0
 		ox[0] = x
 		for y = -r, -1 do
 			oy[0] = y
-			proc:executeKernel("dist", proc:size2D("out"), {"in", "t1", "p1", "p2", "p5", ox, oy})
-			proc:executeKernel("horizontal", proc:size2D("out"), {"t1", "t2", "k"})
-			proc:executeKernel("vertical", proc:size2D("out"), {"t2", "t1", "k"})
-			proc:executeKernel("accumulate", proc:size2D("out"), {"in", "t1", "t3", "t4", "wmax", "p1", "p2", ox, oy})
+			proc:executeKernel("dist", proc:size2D(O), {I, T1, p1, p2, p5, ox, oy})
+			proc:executeKernel("horizontal", proc:size2D(O), {T1, T2, K})
+			proc:executeKernel("vertical", proc:size2D(O), {T2, T1, K})
+			proc:executeKernel("accumulate", proc:size2D(O), {I, T1, T3, T4, W, p1, p2, ox, oy})
 		end
 	else
 		math.haltonSeed()
@@ -68,30 +68,30 @@ local function execute()
 			--ox[0] = math.random(0, r)
 			--oy[0] = math.random(-r, r)
 			if not (ox[0]==0 and oy[0]==0) then
-				proc:executeKernel("dist", proc:size2D("out"), {"in", "t1", "p1", "p2", "p5", ox, oy})
-				proc:executeKernel("horizontal", proc:size2D("out"), {"t1", "t2", "k"})
-				proc:executeKernel("vertical", proc:size2D("out"), {"t2", "t1", "k"})
-				proc:executeKernel("accumulate", proc:size2D("out"), {"in", "t1", "t3", "t4", "wmax", "p1", "p2", ox, oy})
+				proc:executeKernel("dist", proc:size2D(O), {I, T1, p1, p2, p5, ox, oy})
+				proc:executeKernel("horizontal", proc:size2D(O), {T1, T2, K})
+				proc:executeKernel("vertical", proc:size2D(O), {T2, T1, K})
+				proc:executeKernel("accumulate", proc:size2D(O), {I, T1, T3, T4, W, p1, p2, ox, oy})
 			end
 		end
 	end
-	proc:executeKernel("norm", proc:size2D("out"), {"in", "t3", "t4", "wmax", "p3", "out"})
+	proc:executeKernel("norm", proc:size2D(O), {I, T3, T4, W, O, p3})
 
-	proc.buffers.t1:free()
-	proc.buffers.t2:free()
-	proc.buffers.t3:free()
-	proc.buffers.t4:free()
-	proc.buffers.wmax:free()
-	proc.buffers.t1 = nil
-	proc.buffers.t2 = nil
-	proc.buffers.t3 = nil
-	proc.buffers.t4 = nil
-	proc.buffers.wmax = nil
+	T1:free()
+	T2:free()
+	T3:free()
+	T4:free()
+	W:free()
+	T1 = nil
+	T2 = nil
+	T3 = nil
+	T4 = nil
+	W = nil
 end
 
 local function init(d, c, q)
 	proc:init(d, c, q)
-	proc:loadSourceFile("nlmeans.cl")
+	proc:loadSourceFile("nlmeans.ivy")
 	return execute
 end
 
