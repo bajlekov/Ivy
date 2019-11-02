@@ -25,44 +25,34 @@ kernel void convert(global float *I, global float *M, global float *W, global fl
 	const int x = get_global_id(0);
 	const int y = get_global_id(1);
 
-	float ri = $I[x, y, 0];
-	float gi = $I[x, y, 1];
-	float bi = $I[x, y, 2];
+	float3 i = $I[x, y];
 
-	if (flags[4]>0.5f) {
-		ri = ri * $W[0, 0, 0];
-		gi = gi * $W[0, 0, 1];
-		bi = bi * $W[0, 0, 2];
-	}
+	bool c = i.x>0.95f || i.y>0.95f || i.z>0.95f;
 
-	if (flags[5]>0.5f) {
-		float3 i = (float3)(ri, gi, bi);
-		float3 ci = fmin(i, 1.0f);
-		float3 r = ci/LRGBtoY(ci);
-		i = LRGBtoY(i)*r;
-		ri = i.x;
-		gi = i.y;
-		bi = i.z;
-	} else {
-		ri = clamp(ri, 0.0f, 1.0f);
-		gi = clamp(gi, 0.0f, 1.0f);
-		bi = clamp(bi, 0.0f, 1.0f);
-	}
+	if (flags[3]>0.5f)
+		i = i * $P[0, 0];
+
+	if (c && flags[5]>0.5f)
+		i = (float3)(LRGBtoY(i));
+
+	if (flags[4]>0.5f)
+		i = i * $W[0, 0];
 
 	if (flags[3]>0.5f) {
-		ri = ri * $P[0, 0, 0];
-		gi = gi * $P[0, 0, 1];
-		bi = bi * $P[0, 0, 2];
-		float ro = max(ri*$M[0, 0, 0] + gi*$M[0, 1, 0] + bi*$M[0, 2, 0], 0.0f);
-		float go = max(ri*$M[1, 0, 0] + gi*$M[1, 1, 0] + bi*$M[1, 2, 0], 0.0f);
-		float bo = max(ri*$M[2, 0, 0] + gi*$M[2, 1, 0] + bi*$M[2, 2, 0], 0.0f);
-		$I[x, y, 0] = ro;
-		$I[x, y, 1] = go;
-		$I[x, y, 2] = bo;
+		if (c && flags[5]<0.5f)
+			i = clamp(i, 0.0f, 1.0f);
+
+		float3 o = i;
+		o.x = i.x*$M[0, 0, 0] + i.y*$M[0, 1, 0] + i.z*$M[0, 2, 0];
+		o.y = i.x*$M[1, 0, 0] + i.y*$M[1, 1, 0] + i.z*$M[1, 2, 0];
+		o.z = i.x*$M[2, 0, 0] + i.y*$M[2, 1, 0] + i.z*$M[2, 2, 0];
+
+		if (c && flags[5]>0.5f)
+			o = (float3)(LRGBtoY(o));
+
+		$I[x, y] = o;
 	} else {
-		$I[x, y, 0] = ri;
-		$I[x, y, 1] = gi;
-		$I[x, y, 2] = bi;
+		$I[x, y] = i;
 	}
 }
 ]]
