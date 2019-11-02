@@ -114,8 +114,8 @@ do
 	end
 end
 
-local i32 = ffi.typeof("int32_t[1]")
-local f32 = ffi.typeof("float[1]")
+local i32 = ffi.typeof("cl_int[1]")
+local f32 = ffi.typeof("cl_float[1]")
 
 function process:getKernel(name, buffers)
 	if not self.ivy then

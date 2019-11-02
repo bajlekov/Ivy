@@ -878,7 +878,6 @@ impl<'a> Generator<'a> {
         match idx {
             Index::Vec(0) => {
                 let var = self.inference.borrow().var_type(expr);
-                dbg!(&var);
                 match var {
                     VarType::Vec => format!("{}.x", self.gen_expr(expr)),
                     VarType::Buffer { x, .. } => format!("{}", x),
