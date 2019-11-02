@@ -15,39 +15,35 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ]]
 
-local proc = require "lib.opencl.process".new()
+local proc = require "lib.opencl.process.ivy".new()
 
 local source = [[
-kernel void brightness(global float *p1, global float *p2, global float *p3)
-{
-  const int x = get_global_id(0);
-  const int y = get_global_id(1);
-	const int z = get_global_id(2);
+kernel brightness(I, P, O)
+  const x = get_global_id(0)
+  const y = get_global_id(1)
 
-  float i = $p1[x, y, z];
-  float b = $p2[x, y, 0] + 1.0f;
+  var i = I[x, y]
+  var p = P[x, y]
 
-  float o;
-	if (i<0.0f) {
-		o = b*i;
-	} else if (i>1.0f) {
-		o = 1.0f + (2.0f-b)*(i-1.0f);
-	} else {
-		o = (1.0f-b)*pown(i, 2) + b*i;
-	}
+  var l = YtoL(i.y)
 
+  if l<0.0 then
+    l = p*l
+  else
+    if l>1.0 then
+      l = 1.0 + (2.0-p)*(l-1.0)
+    else
+      l = (1.0-p)*l^2 + p*l
+    end
+  end
 
-
-  $p3[x, y, z] = o;
-}
+  O[x, y] = i/i.y * LtoY(l)
+end
 ]]
 
 local function execute()
-	proc:getAllBuffers("p1", "p2", "p3")
-	proc.buffers.p1.__write = false
-	proc.buffers.p2.__write = false
-	proc.buffers.p3.__read = false
-	proc:executeKernel("brightness", proc:size3D("p3"))
+	local I, P, O = proc:getAllBuffers(3)
+	proc:executeKernel("brightness", proc:size3D(O), {I, P, O})
 end
 
 local function init(d, c, q)

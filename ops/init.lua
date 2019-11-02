@@ -894,19 +894,13 @@ local function brightnessProcess(self)
 	b = t.inputParam(self, 1)
 	o = t.autoOutput(self, 0, data.superSize(i, b))
 	thread.ops.brightness({i, b, o}, self)
-
-	if self.elem[2].value then
-		thread.ops.setHue({o, i, o}, self)
-		o.cs = "LCH"
-	end
 end
 
 function ops.brightness(x, y)
 	local n = node:new("Brightness")
-	n:addPortIn(0, "LRGB")
-	n:addPortOut(0, "LRGB")
-	n:addPortIn(1, "Y"):addElem("float", 1, "Brightness", - 1, 1, 0)
-	n:addElem("bool", 2, "Preserve Hue", true)
+	n:addPortIn(0, "XYZ")
+	n:addPortOut(0, "XYZ")
+	n:addPortIn(1, "Y"):addElem("float", 1, "Brightness", 0, 2, 1)
 	n.process = brightnessProcess
 	n:setPos(x, y)
 	return n
