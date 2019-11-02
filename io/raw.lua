@@ -66,8 +66,6 @@ function raw.read(name)
 	local range = rawData.color.maximum - rawData.color.black
 	local mr, mg, mb = rawData.color.pre_mul[0], rawData.color.pre_mul[1], rawData.color.pre_mul[2]
 	local wr, wg, wb = rawData.color.cam_mul[0], rawData.color.cam_mul[1], rawData.color.cam_mul[2]
-	local mm = math.min(mr, mg, mb)
-	mr, mg, mb = mr/mm, mg/mm, mb/mm
 
 	local buffer = data:new(w, h, 3)
 
@@ -77,11 +75,17 @@ function raw.read(name)
 			local g = (img.data[((x+y*w)*3 + 1)*2] + img.data[((x+y*w)*3 + 1)*2 + 1]*256)/range
 			local b = (img.data[((x+y*w)*3 + 2)*2] + img.data[((x+y*w)*3 + 2)*2 + 1]*256)/range
 
-			buffer:set(x, h-y-1, 0, r*mr) -- pre-multiply RAW values
-			buffer:set(x, h-y-1, 1, g*mg)
-			buffer:set(x, h-y-1, 2, b*mb)
+			buffer:set(x, h-y-1, 0, r)
+			buffer:set(x, h-y-1, 1, g)
+			buffer:set(x, h-y-1, 2, b)
 		end
 	end
+
+	local P = ffi.new("float[3]") -- pre-multiply coefficients
+	local mm = math.min(mr, mg, mb)
+	P[0] = mr/mm
+	P[1] = mg/mm
+	P[2] = mb/mm
 
 	local M = ffi.new("float[3][4]") -- RAW to sRGB matrix
 	for i = 0, 2 do
@@ -106,9 +110,11 @@ function raw.read(name)
 
 	local SRGBmatrix = data:new(3, 4, 1)
 	local WBmultipliers = data:new(1, 1, 3)
+	local PREmultipliers = data:new(1, 1, 3)
 
 	for i = 0, 2 do
 		WBmultipliers:set(0, 0, i, W[i])
+		PREmultipliers:set(0, 0, i, P[i])
 		for j = 0, 3 do
 			SRGBmatrix:set(i, j, 0, M[i][j])
 		end
@@ -117,7 +123,7 @@ function raw.read(name)
 	libraw.libraw_dcraw_clear_mem(img)
 	libraw.libraw_close(rawData)
 
-	return buffer, SRGBmatrix, WBmultipliers
+	return buffer, SRGBmatrix, WBmultipliers, PREmultipliers
 end
 
 return raw

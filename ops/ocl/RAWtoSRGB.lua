@@ -20,7 +20,7 @@ local proc = require "lib.opencl.process".new()
 local source = [[
 #include "cs.cl"
 
-kernel void convert(global float *I, global float *M, global float *W, global float *flags)
+kernel void convert(global float *I, global float *M, global float *W, global float *P, global float *flags)
 {
 	const int x = get_global_id(0);
 	const int y = get_global_id(1);
@@ -50,6 +50,9 @@ kernel void convert(global float *I, global float *M, global float *W, global fl
 	}
 
 	if (flags[3]>0.5f) {
+		ri = ri * $P[0, 0, 0];
+		gi = gi * $P[0, 0, 1];
+		bi = bi * $P[0, 0, 2];
 		float ro = max(ri*$M[0, 0, 0] + gi*$M[0, 1, 0] + bi*$M[0, 2, 0], 0.0f);
 		float go = max(ri*$M[1, 0, 0] + gi*$M[1, 1, 0] + bi*$M[1, 2, 0], 0.0f);
 		float bo = max(ri*$M[2, 0, 0] + gi*$M[2, 1, 0] + bi*$M[2, 2, 0], 0.0f);
@@ -65,7 +68,7 @@ kernel void convert(global float *I, global float *M, global float *W, global fl
 ]]
 
 local function execute()
-	proc:getAllBuffers("I", "M", "W", "flags")
+	proc:getAllBuffers("I", "M", "W", "P", "flags")
 	proc.buffers.M.__write = false
 	proc.buffers.W.__write = false
 	proc:executeKernel("convert", proc:size2D("I"))
