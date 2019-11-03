@@ -240,6 +240,14 @@ local function execute()
 		-- merge colors from R in I according to C
 		proc:executeKernel("merge", proc:size2D("I"), {"I", "C", "O"})
 	end
+
+  proc.buffers.C:free()
+  proc.buffers.J:free()
+  proc.buffers.S:free()
+  proc.buffers.R:free()
+  proc.buffers.dHdx:free()
+  proc.buffers.dVdy:free()
+  proc.buffers.O:free()
 end
 
 local function init(d, c, q)
