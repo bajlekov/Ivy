@@ -105,12 +105,15 @@ kernel void convert(
 
 	float3 i = $I[x, y];
 
-	bool c = i.x>0.95f || i.y>0.95f || i.z>0.95f;
-	$C[x, y] = c ? 1.0f : 0.0f;
+	bool clip = i.x>0.95f || i.y>0.95f || i.z>0.95f;
 
 	if (flags[3]>0.5f)
 		i = i * $P[0, 0];
 
+  if (flags[4]>0.5f)
+		i = i * $W[0, 0];
+
+  float3 ir;
   if (flags[5]>0.5f) {
     // adapted from DarkTable's process_lch_bayer (GNU General Public License v3.0)
 
@@ -135,28 +138,41 @@ kernel void convert(
       h = h * r;
     }
 
-    i.x = l - h / 6.0f + c / SQRT12;
-    i.y = l - h / 6.0f - c / SQRT12;
-    i.z = l + h / 3.0f;
+    ir.x = l - h / 6.0f + c / SQRT12;
+    ir.y = l - h / 6.0f - c / SQRT12;
+    ir.z = l + h / 3.0f;
   }
 
-	if (flags[4]>0.5f)
-		i = i * $W[0, 0];
-
 	if (flags[3]>0.5f) {
-		float3 o = i;
+		float3 o;
 		o.x = i.x*$M[0, 0, 0] + i.y*$M[0, 1, 0] + i.z*$M[0, 2, 0];
 		o.y = i.x*$M[1, 0, 0] + i.y*$M[1, 1, 0] + i.z*$M[1, 2, 0];
 		o.z = i.x*$M[2, 0, 0] + i.y*$M[2, 1, 0] + i.z*$M[2, 2, 0];
 
-    // desaturate all clipped pixels if not reconstructed
-		if (c && flags[5]<0.5f)
+    if (clip) {
+      // desaturate clipped values
 			o = YtoLRGB(LRGBtoY(o));
+    }
+
+    if (flags[5]>0.5f) {
+      // replace luminance with reconstructed value
+      float3 or;
+      or.x = ir.x*$M[0, 0, 0] + ir.y*$M[0, 1, 0] + ir.z*$M[0, 2, 0];
+      or.y = ir.x*$M[1, 0, 0] + ir.y*$M[1, 1, 0] + ir.z*$M[1, 2, 0];
+      or.z = ir.x*$M[2, 0, 0] + ir.y*$M[2, 1, 0] + ir.z*$M[2, 2, 0];
+
+      float3 y = LRGBtoXYZ(o);
+      float yr = LRGBtoY(or);
+
+      o = XYZtoLRGB(y * yr/y.y);
+    }
 
 		$I[x, y] = o;
 	} else {
 		$I[x, y] = i;
 	}
+
+  $C[x, y] = clip ? 1.0f : 0.0f;
 }
 
 kernel void expand(global float *I, global float *C, global float *J, global float *O) {
