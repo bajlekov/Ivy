@@ -28,23 +28,23 @@ local proc = require "lib.opencl.process".new()
 local data = require "data"
 
 local source = [[
-kernel void derivative(global float *I, global float *dHdx, global float *dVdy, global float *S, global float *R)
+kernel void derivative(global float *J, global float *dHdx, global float *dVdy, global float *S, global float *R)
 {
   const int x = get_global_id(0);
   const int y = get_global_id(1);
 
-	float3 io = $I[x, y];
-	float3 ix = $I[x+1, y];
-	float3 iy = $I[x, y+1];
+	float3 jo = $J[x, y];
+	float3 jx = $J[x+1, y];
+	float3 jy = $J[x, y+1];
 
 	float s = $S[x, y];
 	float r = $R[x, y];
 	float sr = s/fmax(r, 0.0001f);
 
-	float3 h3 = fabs(ix-io);
+	float3 h3 = fabs(jx-jo);
 	float h = 1.0f + sr*(h3.x + h3.y + h3.z);
 
-	float3 v3 = fabs(iy-io);
+	float3 v3 = fabs(jy-jo);
 	float v = 1.0f + sr*(v3.x + v3.y + v3.z);
 
 	if (x+1<$dHdx.x$) $dHdx[x+1, y] = h;
@@ -98,16 +98,16 @@ kernel void vertical(global float *I, global float *dVdy, global float *O, globa
 ]]
 
 local function execute()
-	proc:getAllBuffers("I", "S", "R", "O")
+	proc:getAllBuffers("I", "J", "S", "R", "O")
 
 	local x, y, z = proc.buffers.O:shape()
 
 	-- allocate and calculate dHdx, dVdy
 	proc.buffers.dHdx = data:new(x, y, 1)
 	proc.buffers.dVdy = data:new(x, y, 1)
-	proc:executeKernel("derivative", proc:size2D("O"), {"I", "dHdx", "dVdy", "S", "R"})
+	proc:executeKernel("derivative", proc:size2D("O"), {"J", "dHdx", "dVdy", "S", "R"})
 
-	local N = 3 -- number of iterations
+	local N = 5 -- number of iterations
 	local h = ffi.new("float[1]")
 	local I = proc.buffers.I
 	local O = proc.buffers.O
@@ -118,10 +118,14 @@ local function execute()
 		-- in-place transform for all subsequent passes
 		proc.buffers.I = i==0 and I or O
 		proc:executeKernel("vertical", {x, 1}, {"I", "dVdy", "O", "S", h})
-		proc.buffers.I = O
+    proc.buffers.I = O
 		proc:executeKernel("horizontal", {1, y}, {"I", "dHdx", "O", "S", h})
 	end
 	proc.buffers.I = I
+	proc.buffers.dHdx:free()
+	proc.buffers.dVdy:free()
+	proc.buffers.dHdx = nil
+	proc.buffers.dVdy = nil
 end
 
 local function init(d, c, q)
