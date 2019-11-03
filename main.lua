@@ -313,8 +313,9 @@ panels.info.elem[16].onChange = function() loadInputImage = true end
 panels.info.elem[18].onChange = function() loadInputImage = true end
 panels.info.elem[19].onChange = function() loadInputImage = true end
 panels.info.elem[20].onChange = function() loadInputImage = true end
+panels.info.elem[21].onChange = function() loadInputImage = true end
 
-local flags = data:new(1, 1, 6) -- distortion, tca, vignetting, sRGB, WB, reconstruct
+local flags = data:new(1, 1, 7) -- distortion, tca, vignetting, sRGB, WB, reconstruct
 
 function love.update()
 
@@ -423,6 +424,7 @@ function love.update()
 				flags:set(0, 0, 3, panels.info.elem[18].value and 0 or 1)
 				flags:set(0, 0, 4, panels.info.elem[19].value and 1 or 0)
 				flags:set(0, 0, 5, panels.info.elem[20].value and 1 or 0)
+				flags:set(0, 0, 6, panels.info.elem[21].value and 1 or 0)
 				flags:toDevice()
 				thread.ops.RAWtoSRGB({pipeline.input.imageData, RAW_SRGBmatrix, RAW_WBmultipliers, RAW_PREmultipliers, flags}, "dev")
 			end

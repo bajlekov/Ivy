@@ -89,7 +89,8 @@ kernel void vertical(global float *dVdy, global float *O, global float *S, float
 }
 
 
-
+#define SQRT3 1.73205081
+#define SQRT12 3.46410162
 
 kernel void convert(
 	global float *I,
@@ -110,23 +111,47 @@ kernel void convert(
 	if (flags[3]>0.5f)
 		i = i * $P[0, 0];
 
-	if (c && flags[5]>0.5f)
-		i = (float3)(LRGBtoY(i));
+  if (flags[5]>0.5f) {
+    // adapted from DarkTable's process_lch_bayer (GNU General Public License v3.0)
+
+    float r = i.x;
+    float g = i.y;
+    float b = i.z;
+
+    float ro = min(r, 1.0f);
+    float go = min(g, 1.0f);
+    float bo = min(b, 1.0f);
+
+    float l = (r + g + b) / 3.0f;
+    float c = SQRT3 * (r-g);
+    float h = 2.0f * b - g - r;
+
+    float co = SQRT3 * (ro - go);
+    float ho = 2.0f * bo - go - ro;
+
+    if (r != g && g != b) {
+      float r = sqrt((co*co + ho*ho) / (c*c + h*h));
+      c = c * r;
+      h = h * r;
+    }
+
+    i.x = l - h / 6.0f + c / SQRT12;
+    i.y = l - h / 6.0f - c / SQRT12;
+    i.z = l + h / 3.0f;
+  }
 
 	if (flags[4]>0.5f)
 		i = i * $W[0, 0];
 
 	if (flags[3]>0.5f) {
-		if (c && flags[5]<0.5f)
-			i = clamp(i, 0.0f, 1.0f);
-
 		float3 o = i;
 		o.x = i.x*$M[0, 0, 0] + i.y*$M[0, 1, 0] + i.z*$M[0, 2, 0];
 		o.y = i.x*$M[1, 0, 0] + i.y*$M[1, 1, 0] + i.z*$M[1, 2, 0];
 		o.z = i.x*$M[2, 0, 0] + i.y*$M[2, 1, 0] + i.z*$M[2, 2, 0];
 
-		if (c && flags[5]>0.5f)
-			o = (float3)(LRGBtoY(o));
+    // desaturate all clipped pixels if not reconstructed
+		if (c && flags[5]<0.5f)
+			o = YtoLRGB(LRGBtoY(o));
 
 		$I[x, y] = o;
 	} else {
@@ -197,7 +222,7 @@ local function execute()
 
 	proc:executeKernel("convert", proc:size2D("I"), {"I", "M", "W", "P", "flags", "C"})
 
-	if proc.buffers.flags:get(0, 0, 5) > 0.5 then
+	if proc.buffers.flags:get(0, 0, 6) > 0.5 then -- reconstruct color
 		proc:executeKernel("expand", proc:size2D("I"), {"I", "C", "J", "O"})
 
 		-- DT dx, dy generate dHdx, dVdy from G
