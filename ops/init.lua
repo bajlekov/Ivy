@@ -627,7 +627,7 @@ end
 
 function ops.localLaplacian(x, y)
 	local n = node:new("Detail")
-	n:addPortIn(0, "LAB"):addPortOut(0, "LAB") -- XYZ color matching!
+	n:addPortIn(0, "XYZ"):addPortOut(0, "XYZ")
 	n:addPortIn(1, "Y"):addElem("float", 1, "Detail", -1, 1, 0)
 	n:addPortIn(2, "Y"):addElem("float", 2, "Range", 0, 1, 0.2)
 	n:addElem("bool", 3, "HQ", false)
