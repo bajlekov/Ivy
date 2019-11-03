@@ -145,6 +145,7 @@ local exifData
 local originalImage
 local RAW_SRGBmatrix
 local RAW_WBmultipliers
+local RAW_PREmultipliers
 
 local imageOffset = data:new(1, 1, 13)
 local previewImage
@@ -158,10 +159,11 @@ function love.filedropped(file)
 	collectgarbage("collect")
 	assert(file, "ERROR: File loading failed")
 
-	originalImage, RAW_SRGBmatrix, RAW_WBmultipliers = require("io."..settings.imageLoader).read(file)
+	originalImage, RAW_SRGBmatrix, RAW_WBmultipliers, RAW_PREmultipliers = require("io."..settings.imageLoader).read(file)
 	originalImage:toDevice(true)
 	if RAW_SRGBmatrix then RAW_SRGBmatrix:toDevice(true) end
 	if RAW_WBmultipliers then RAW_WBmultipliers:toDevice(true) end
+	if RAW_PREmultipliers then RAW_PREmultipliers:toDevice(true) end
 
 	love.window.setTitle("Ivy: "..( type(file) == "string" and file or file:getFilename() ))
 	exifData = require("io.exif").read(file)
@@ -311,8 +313,9 @@ panels.info.elem[16].onChange = function() loadInputImage = true end
 panels.info.elem[18].onChange = function() loadInputImage = true end
 panels.info.elem[19].onChange = function() loadInputImage = true end
 panels.info.elem[20].onChange = function() loadInputImage = true end
+panels.info.elem[21].onChange = function() loadInputImage = true end
 
-local flags = data:new(1, 1, 6) -- distortion, tca, vignetting, sRGB, WB, reconstruct
+local flags = data:new(1, 1, 7) -- distortion, tca, vignetting, sRGB, WB, reconstruct
 
 function love.update()
 
@@ -421,8 +424,9 @@ function love.update()
 				flags:set(0, 0, 3, panels.info.elem[18].value and 0 or 1)
 				flags:set(0, 0, 4, panels.info.elem[19].value and 1 or 0)
 				flags:set(0, 0, 5, panels.info.elem[20].value and 1 or 0)
+				flags:set(0, 0, 6, panels.info.elem[21].value and 1 or 0)
 				flags:toDevice()
-				thread.ops.RAWtoSRGB({pipeline.input.imageData, RAW_SRGBmatrix, RAW_WBmultipliers, flags}, "dev")
+				thread.ops.RAWtoSRGB({pipeline.input.imageData, RAW_SRGBmatrix, RAW_WBmultipliers, RAW_PREmultipliers, flags}, "dev")
 			end
 
 			pipeline.input.imageData.__cpuDirty = true

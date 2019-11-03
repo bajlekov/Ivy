@@ -56,7 +56,8 @@ info:addElem("bool", 16, "Chromatic aberration correction", true)
 info:addElem("text", 17, "[NYI] Vignetting correction")
 info:addElem("bool", 18, "RAW color space", false)
 info:addElem("bool", 19, "Camera white balance", false)
-info:addElem("bool", 20, "Reconstruct highlights", false)
+info:addElem("bool", 20, "Reconstruct highlight luminance", false)
+info:addElem("bool", 21, "Reconstruct highlight colors", false)
 
 do
 	local a = toolbox:addElem("bool", 1, "Move image", false)
