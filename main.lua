@@ -331,12 +331,12 @@ function love.update()
 			--node.list[currentID].state = "error"
 		elseif code == "start" and id then
 			local node = node.list[id]
-			if node.state == "waiting" then node.state = "processing" end
+			if node and node.state == "waiting" then node.state = "processing" end
 			currentID = id
 			processComplete = processComplete + 1
 		elseif code == "end" and id then
 			local node = node.list[id]
-			if node.state == "processing" then
+			if node and node.state == "processing" then
 				node.state = "ready"
 			end
 
