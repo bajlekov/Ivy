@@ -143,14 +143,19 @@ function process:getKernel(name, buffers)
 		return self.kernels[id]
 	else
 		local source = self.ivy:generate(name)
-		local program = self.context:create_program_with_source(source)
-		if not pcall(program.build, program, tools.buildParams) then
-			messageCh:push{"error", "ERROR ["..name.."]: \n"..program:get_build_info(self.device, "log")}
-			return nil
+		if #source>0 then
+			local program = self.context:create_program_with_source(source)
+			if not pcall(program.build, program, tools.buildParams) then
+				messageCh:push{"error", "ERROR ["..name.."]: \n"..program:get_build_info(self.device, "log")}
+				return nil
+			else
+				local kernel = program:create_kernel(name)
+				self.kernels[id] = kernel
+				return kernel
+			end
 		else
-			local kernel = program:create_kernel(name)
-			self.kernels[id] = kernel
-			return kernel
+			messageCh:push{"error", "ERROR ["..name.."]: \nIvyScript unable to parse source!"}
+			return nil
 		end
 	end
 end
