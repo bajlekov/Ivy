@@ -31,7 +31,6 @@ local function execute()
 	local I, O, n = proc:getAllBuffers(3)
 
 	local n = n:get(0, 0, 0)
-	debug.see(n)
 	local G = {}
 	G[0] = I
 
