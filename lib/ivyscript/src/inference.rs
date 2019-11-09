@@ -495,6 +495,8 @@ impl<'a> Inference<'a> {
             "LtoL" => self.cs_f(vars, F),
 
             "RGBA" if vars.len() == 2 => Some(F),
+            "FasI" if vars.len() == 1 => Some(I),
+            "IasF" if vars.len() == 1 => Some(F),
 
             // create vectors or enforce numeric types
             "vec" if vars.len() == 1 && self.is_num(&vars[0]) => Some(V),

@@ -350,6 +350,28 @@ float RGBA(float3 i, float a) {
 	return t.f;
 }
 
+//construct int
+float IasF(int i) {
+	union {
+		float f;
+		int i;
+	} t;
+
+	t.i = i;
+	return t.f;
+}
+
+//construct int
+int FasI(float i) {
+	union {
+		float f;
+		int i;
+	} t;
+
+	t.f = i;
+	return t.i;
+}
+
 inline void _atomic_float_add(volatile global float *addr, float val) {
 	union {
 		unsigned int u32;
