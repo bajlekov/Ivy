@@ -65,6 +65,7 @@ function process:loadSourceString(s)
 	assert(type(s) == "string")
 	self.source = self.source .. s
 	self.ivy = nil
+	self.kernels = {}
 end
 
 function process:loadSourceFile(...)
@@ -76,11 +77,13 @@ function process:loadSourceFile(...)
 	end
 	self.source = self.source .. s
 	self.ivy = nil
+	self.kernels = {}
 end
 
 function process:clearSource()
 	self.source = ""
 	self.ivy = nil
+	self.kernels = {}
 end
 
 do
