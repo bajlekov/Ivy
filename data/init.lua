@@ -149,6 +149,7 @@ end
 function data.stats.freeCPU(ptr)
 	local n = tonumber(ffi.cast("uintptr_t", ptr))
 	local m = data.stats.memCPU[n]
+	if not m then return end
 	data.stats.memCPU[n] = nil
 	sd.cpu = sd.cpu - m
 	sd.cpu_n = sd.cpu_n - 1
@@ -156,6 +157,7 @@ end
 function data.stats.freeGPU(ptr)
 	local n = tonumber(ffi.cast("uintptr_t", ptr))
 	local m = data.stats.memGPU[n]
+	if not m then return end
 	data.stats.memGPU[n] = nil
 	sd.gpu = sd.gpu - m
 	sd.gpu_n = sd.gpu_n - 1
