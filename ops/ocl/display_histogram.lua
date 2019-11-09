@@ -75,8 +75,7 @@ end
 local function execute()
 	local I, O, P, H = proc:getAllBuffers(4)
 
-  local preview = proc.context:create_buffer("write_only", O.x * O.y * ffi.sizeof("cl_float"))
-  O.dataOCL = preview
+  O.dataOCL = proc.context:create_buffer("write_only", O.x * O.y * ffi.sizeof("cl_float"))
   O.z = 1
   O.sx = 1
   O.sy = O.x
@@ -85,10 +84,8 @@ local function execute()
   proc:executeKernel("clearHist", {256, 1, 4}, {H})
   proc:executeKernel("display", proc:size2D(O), {I, O, P, H})
 
-  O:toHost(true)
+  O:freeDev(true)
   H:toHost(true)
-	O.dataOCL = nil
-	proc.context.release_mem_object(preview)
 end
 
 local function init(d, c, q)
