@@ -249,11 +249,10 @@ impl<'a> Inference<'a> {
 
     fn get_int_lit(&self, a: &Expr) -> i32 {
         if let Expr::Literal(Literal::Int(v)) = a {
-            Some(*v)
+            *v
         } else {
-            None
+            panic!("Expected integer literal expression!")
         }
-        .unwrap()
     }
 
     fn is_num_vec(&self, a: &Expr) -> bool {

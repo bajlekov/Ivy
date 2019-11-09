@@ -155,7 +155,12 @@ impl<'a> Generator<'a> {
                 def.push_str(&self.gen_stmt(v));
             }
 
-            let ret_type = self.inference.borrow().scope.get("return").unwrap();
+            let ret_type = self
+                .inference
+                .borrow()
+                .scope
+                .get("return")
+                .unwrap_or(VarType::Unknown);
 
             def = format!(
                 "{} {} {}}}",
@@ -220,9 +225,7 @@ impl<'a> Generator<'a> {
             return Some(k.clone());
         }
 
-        let kernels = self.kernels.borrow();
-        let kernel = kernels.get(name).unwrap();
-        if let Stmt::Kernel { id, args, body } = kernel {
+        if let Some(Stmt::Kernel { id, args, body }) = self.kernels.borrow().get(name) {
             let mut s = format!("kernel void {} (\n", id);
             self.inference.borrow().scope.open();
             self.inference
@@ -263,7 +266,9 @@ impl<'a> Generator<'a> {
                 s.push_str(&self.gen_stmt(v));
             }
 
-            assert!(self.inference.borrow().scope.get("return").unwrap() == VarType::Unknown);
+            if self.inference.borrow().scope.get("return") != Some(VarType::Unknown) {
+                return None;
+            }
 
             self.inference.borrow().scope.close();
             s.push_str("}");
@@ -318,7 +323,7 @@ impl<'a> Generator<'a> {
             } => self.gen_if_else(cond, if_body, else_body),
             Stmt::While { cond, body } => self.gen_while(cond, body),
             Stmt::Return(None) => {
-                if self.inference.borrow().scope.get("return").unwrap() == VarType::Unknown {
+                if let Some(VarType::Unknown) = self.inference.borrow().scope.get("return") {
                     String::from("return;\n")
                 } else {
                     String::from("// ERROR!!!\n")
@@ -329,7 +334,12 @@ impl<'a> Generator<'a> {
 
                 // return value is either new, same as--, or promoted from the previous one
                 let t1 = self.inference.borrow().var_type(expr);
-                let t2 = self.inference.borrow().scope.get("return").unwrap();
+                let t2 = self
+                    .inference
+                    .borrow()
+                    .scope
+                    .get("return")
+                    .unwrap_or(VarType::Unknown);
                 let t3 = self.inference.borrow().promote(t1, t2);
 
                 if t2 == VarType::Unknown {

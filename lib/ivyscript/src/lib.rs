@@ -47,7 +47,7 @@ pub extern "C" fn translator_new<'a>(source: *const c_char) -> *mut Translator<'
         assert!(!source.is_null());
         CStr::from_ptr(source)
     };
-    let mut scanner = Scanner::new(source.to_str().unwrap().to_string());
+    let mut scanner = Scanner::new(source.to_str().unwrap_or("").to_string());
     let tokens = scanner.scan();
 
     let parser = Parser::new(tokens);
@@ -92,7 +92,7 @@ pub extern "C" fn translator_generate(t: *mut Translator, kernel: *const c_char)
         assert!(!kernel.is_null());
         CStr::from_ptr(kernel)
     };
-    if let Some(ocl) = t.generator.kernel(kernel.to_str().unwrap(), &t.inputs) {
+    if let Some(ocl) = t.generator.kernel(kernel.to_str().unwrap_or(""), &t.inputs) {
         CString::new(ocl).unwrap().into_raw()
     } else {
         CString::new("").unwrap().into_raw()
@@ -110,7 +110,7 @@ pub extern "C" fn translator_get_id(t: *mut Translator, name: *const c_char) -> 
         CStr::from_ptr(name)
     };
 
-    CString::new(Generator::id(name.to_str().unwrap(), &t.inputs))
+    CString::new(Generator::id(name.to_str().unwrap_or(""), &t.inputs))
         .unwrap()
         .into_raw()
 }
