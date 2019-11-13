@@ -15,9 +15,6 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-extern crate libc;
-
-use libc::c_char;
 use std::ffi::{CStr, CString};
 
 mod ast;
@@ -52,7 +49,7 @@ pub struct Translator<'a> {
 
 // create new generator with source file:
 #[no_mangle]
-pub extern "C" fn translator_new_ocl<'a>(source: *const c_char) -> *mut Translator<'a> {
+pub extern "C" fn translator_new_ocl<'a>(source: *const i8) -> *mut Translator<'a> {
     let source = unsafe {
         assert!(!source.is_null());
         CStr::from_ptr(source)
@@ -86,7 +83,7 @@ pub extern "C" fn translator_new_ocl<'a>(source: *const c_char) -> *mut Translat
 }
 
 #[no_mangle]
-pub extern "C" fn translator_new_ispc<'a>(source: *const c_char) -> *mut Translator<'a> {
+pub extern "C" fn translator_new_ispc<'a>(source: *const i8) -> *mut Translator<'a> {
     let source = unsafe {
         assert!(!source.is_null());
         CStr::from_ptr(source)
@@ -130,7 +127,7 @@ pub extern "C" fn translator_free(t: *mut Translator) {
 }
 
 #[no_mangle]
-pub extern "C" fn translator_generate(t: *mut Translator, kernel: *const c_char) -> *mut c_char {
+pub extern "C" fn translator_generate(t: *mut Translator, kernel: *const i8) -> *mut i8 {
     let t = unsafe {
         assert!(!t.is_null());
         &mut *t
@@ -154,7 +151,7 @@ pub extern "C" fn translator_generate(t: *mut Translator, kernel: *const c_char)
 }
 
 #[no_mangle]
-pub extern "C" fn translator_get_id(t: *mut Translator, name: *const c_char) -> *mut c_char {
+pub extern "C" fn translator_get_id(t: *mut Translator, name: *const i8) -> *mut i8 {
     let t = unsafe {
         assert!(!t.is_null());
         &mut *t
