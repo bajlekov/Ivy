@@ -85,7 +85,39 @@ pub extern "C" fn translator_new_ocl<'a>(source: *const c_char) -> *mut Translat
     ptr
 }
 
+#[no_mangle]
+pub extern "C" fn translator_new_ispc<'a>(source: *const c_char) -> *mut Translator<'a> {
+    let source = unsafe {
+        assert!(!source.is_null());
+        CStr::from_ptr(source)
+    };
+    let mut scanner = Scanner::new(source.to_str().unwrap_or("").to_string());
+    let tokens = scanner.scan();
 
+    let parser = Parser::new(tokens);
+    let ast = parser.parse();
+
+    let generator = GeneratorISPC::new(ast);
+
+    let translator = Box::new(Translator {
+        generator: Generator::Ispc(generator),
+        inputs: Vec::new(),
+    });
+
+    let ptr = Box::into_raw(translator);
+
+    let translator = unsafe {
+        assert!(!ptr.is_null());
+        &mut *ptr
+    };
+
+    match &translator.generator {
+        Generator::Ocl(g) => g.prepare(),
+        Generator::Ispc(g) => g.prepare(),
+    }
+
+    ptr
+}
 
 #[no_mangle]
 pub extern "C" fn translator_free(t: *mut Translator) {
