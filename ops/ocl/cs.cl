@@ -462,5 +462,12 @@ inline void _atomic_float_max(volatile global float *addr, float val) {
 }
 
 
+inline float range(float p, float w, float x) {
+	x = (x-(p-w))/(2*w);
+	x = clamp(x, 0.0f, 1.0f);
+
+	return 2*pown(x, 3) - 3*pown(x, 2) + 1;
+}
+
 
 #endif
