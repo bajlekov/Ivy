@@ -23,6 +23,7 @@ use std::ffi::{CStr, CString};
 mod ast;
 mod buf_idx;
 mod function_id;
+mod generator_ispc;
 mod generator_ocl;
 mod inference;
 mod parser;
@@ -31,6 +32,7 @@ mod scope;
 mod tokens;
 
 use function_id::function_id;
+use generator_ispc::Generator as GeneratorISPC;
 use generator_ocl::Generator as GeneratorOCL;
 use parser::Parser;
 use scanner::Scanner;
@@ -40,6 +42,7 @@ use inference::VarType;
 
 pub enum Generator<'a> {
     Ocl(GeneratorOCL<'a>),
+    Ispc(GeneratorISPC<'a>),
 }
 
 pub struct Translator<'a> {
@@ -76,6 +79,7 @@ pub extern "C" fn translator_new_ocl<'a>(source: *const c_char) -> *mut Translat
 
     match &translator.generator {
         Generator::Ocl(g) => g.prepare(),
+        Generator::Ispc(g) => g.prepare(),
     }
 
     ptr
@@ -107,6 +111,7 @@ pub extern "C" fn translator_generate(t: *mut Translator, kernel: *const c_char)
 
     let source = match &t.generator {
         Generator::Ocl(g) => g.kernel(kernel, &t.inputs),
+        Generator::Ispc(g) => g.kernel(kernel, &t.inputs),
     };
 
     if let Some(ocl) = source {
