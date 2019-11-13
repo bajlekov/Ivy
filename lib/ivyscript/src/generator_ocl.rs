@@ -18,9 +18,8 @@
 use std::cell::RefCell;
 use std::collections::{HashMap, HashSet};
 
-use crate::ast::{
-    BinaryExpr, BinaryOp, ColorSpace, Expr, Index, Literal, Prop, Stmt, UnaryExpr, UnaryOp,
-};
+use crate::ast::{BinaryExpr, BinaryOp, Expr, Index, Literal, Prop, Stmt, UnaryExpr, UnaryOp};
+use crate::function_id::function_id;
 
 use crate::inference::{Inference, VarType};
 
@@ -281,10 +280,6 @@ impl<'a> Generator<'a> {
         }
 
         None
-    }
-
-    pub fn id(name: &str, input: &[VarType]) -> String {
-        function_id(name, input)
     }
 
     fn gen_stmt(&'a self, stmt: &Stmt) -> String {
@@ -932,9 +927,10 @@ impl<'a> Generator<'a> {
                         VarType::Buffer { z: 1, .. } => {
                             var.buf_idx_3d(id, &self.gen_expr(a), &self.gen_expr(b), "0")
                         }
-                        VarType::Buffer { z: 3, .. } => {
+                        VarType::Buffer { z: 3, .. } => format!(
+                            "(float3){}",
                             var.buf_idx_2d(id, &self.gen_expr(a), &self.gen_expr(b))
-                        }
+                        ),
                         VarType::BoolArray(2, ..)
                         | VarType::IntArray(2, ..)
                         | VarType::FloatArray(2, ..)
@@ -1003,7 +999,10 @@ impl<'a> Generator<'a> {
                                 if z == 1 {
                                     var.buf_idx_3d(id, &self.gen_expr(a), &self.gen_expr(b), "0")
                                 } else if z == 3 {
-                                    var.buf_idx_2d(id, &self.gen_expr(a), &self.gen_expr(b))
+                                    format!(
+                                        "(float3){}",
+                                        var.buf_idx_2d(id, &self.gen_expr(a), &self.gen_expr(b))
+                                    )
                                 } else {
                                     String::from("// ERROR!!!\n")
                                 }
@@ -1055,144 +1054,4 @@ impl<'a> Generator<'a> {
             _ => String::from("// ERROR!!!\n"),
         }
     }
-}
-
-impl VarType {
-    fn buf_idx_1d(&self, id: &str, ix: &str) -> String {
-        if let VarType::Buffer { x, y, z, .. } = self {
-            format!(
-                "{id}[clamp((int)({ix}), 0, {cx})]",
-                id = id,
-                ix = ix,
-                cx = x * y * z - 1,
-            )
-        } else {
-            String::from("// ERROR!!!\n")
-        }
-    }
-
-    fn idx_1d(&self, ix: &str) -> String {
-        if let VarType::Buffer { x, y, z, .. } = self {
-            format!("clamp((int)({ix}), 0, {cx})", ix = ix, cx = x * y * z - 1,)
-        } else {
-            String::from("// ERROR!!!\n")
-        }
-    }
-
-    fn buf_idx_2d(&self, id: &str, x: &str, y: &str) -> String {
-        format!(
-            "(float3)( {}, {}, {} )",
-            self.buf_idx_3d(id, x, y, "0"),
-            self.buf_idx_3d(id, x, y, "1"),
-            self.buf_idx_3d(id, x, y, "2"),
-        )
-    }
-
-    fn buf_idx_3d(&self, id: &str, ix: &str, iy: &str, iz: &str) -> String {
-        if let VarType::Buffer {
-            x,
-            y,
-            z,
-            sx,
-            sy,
-            sz,
-            ..
-        } = self
-        {
-            format!(
-            "{id}[clamp((int)({ix}), 0, {cx})*{sx} + clamp((int)({iy}), 0, {cy})*{sy} + clamp((int)({iz}), 0, {cz})*{sz}]",
-            id = id,
-            ix = ix,
-            iy = iy,
-            iz = iz,
-            cx = x - 1,
-            cy = y - 1,
-            cz = z - 1,
-            sx = sx,
-            sy = sy,
-            sz = sz,
-            )
-        } else {
-            String::from("// ERROR!!!\n")
-        }
-    }
-
-    fn idx_3d(&self, ix: &str, iy: &str, iz: &str) -> String {
-        if let VarType::Buffer {
-            x,
-            y,
-            z,
-            sx,
-            sy,
-            sz,
-            ..
-        } = self
-        {
-            format!(
-            "(clamp((int)({ix}), 0, {cx})*{sx} + clamp((int)({iy}), 0, {cy})*{sy} + clamp((int)({iz}), 0, {cz})*{sz})",
-            ix = ix,
-            iy = iy,
-            iz = iz,
-            cx = x - 1,
-            cy = y - 1,
-            cz = z - 1,
-            sx = sx,
-            sy = sy,
-            sz = sz,
-            )
-        } else {
-            String::from("// ERROR!!!\n")
-        }
-    }
-}
-
-pub fn function_id(name: &str, input: &[VarType]) -> String {
-    let mut id = String::from("___");
-    for v in input {
-        let s = match v {
-            VarType::Bool => String::from("Bool_"),
-            VarType::Int => String::from("Int_"),
-            VarType::Float => String::from("Float_"),
-            VarType::Vec => String::from("Vec_"),
-            VarType::BoolArray(n, x, y, z, w) => {
-                format!("BoolArray_{}_{}_{}_{}_{}_", n, x, y, z, w)
-            }
-            VarType::IntArray(n, x, y, z, w) => format!("IntArray_{}_{}_{}_{}_{}_", n, x, y, z, w),
-            VarType::FloatArray(n, x, y, z, w) => {
-                format!("FloatArray_{}_{}_{}_{}_{}_", n, x, y, z, w)
-            }
-            VarType::VecArray(n, x, y, z, w) => format!("VecArray_{}_{}_{}_{}_{}_", n, x, y, z, w),
-            VarType::Buffer {
-                x,
-                y,
-                z,
-                sx,
-                sy,
-                sz,
-                cs,
-            } => format!(
-                "Buffer_{}_{}_{}_{}_{}_{}_{}_",
-                x,
-                y,
-                z,
-                sx,
-                sy,
-                sz,
-                match cs {
-                    ColorSpace::SRGB => "SRGB",
-                    ColorSpace::LRGB => "LRGB",
-                    ColorSpace::XYZ => "XYZ",
-                    ColorSpace::LAB => "LAB",
-                    ColorSpace::LCH => "LCH",
-                    ColorSpace::Y => "Y",
-                    ColorSpace::L => "L",
-                }
-            ),
-            _ => String::from("/*** Error: Unknown type ***/"),
-        };
-        id.push_str(&s);
-    }
-    id.push_str("__");
-    id.push_str(name);
-    id
 }

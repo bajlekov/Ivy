@@ -21,19 +21,26 @@ use libc::c_char;
 use std::ffi::{CStr, CString};
 
 mod ast;
-mod generator;
+mod buf_idx;
+mod function_id;
+mod generator_ocl;
 mod inference;
 mod parser;
 mod scanner;
 mod scope;
 mod tokens;
 
-use generator::Generator;
+use function_id::function_id;
+use generator_ocl::Generator as GeneratorOCL;
 use parser::Parser;
 use scanner::Scanner;
 
 use ast::ColorSpace;
 use inference::VarType;
+
+pub enum Generator<'a> {
+    Ocl(GeneratorOCL<'a>),
+}
 
 pub struct Translator<'a> {
     generator: Generator<'a>,
@@ -42,7 +49,7 @@ pub struct Translator<'a> {
 
 // create new generator with source file:
 #[no_mangle]
-pub extern "C" fn translator_new<'a>(source: *const c_char) -> *mut Translator<'a> {
+pub extern "C" fn translator_new_ocl<'a>(source: *const c_char) -> *mut Translator<'a> {
     let source = unsafe {
         assert!(!source.is_null());
         CStr::from_ptr(source)
@@ -53,10 +60,10 @@ pub extern "C" fn translator_new<'a>(source: *const c_char) -> *mut Translator<'
     let parser = Parser::new(tokens);
     let ast = parser.parse();
 
-    let generator = Generator::new(ast);
+    let generator = GeneratorOCL::new(ast);
 
     let translator = Box::new(Translator {
-        generator,
+        generator: Generator::Ocl(generator),
         inputs: Vec::new(),
     });
 
@@ -67,10 +74,14 @@ pub extern "C" fn translator_new<'a>(source: *const c_char) -> *mut Translator<'
         &mut *ptr
     };
 
-    translator.generator.prepare();
+    match &translator.generator {
+        Generator::Ocl(g) => g.prepare(),
+    }
 
     ptr
 }
+
+
 
 #[no_mangle]
 pub extern "C" fn translator_free(t: *mut Translator) {
@@ -92,7 +103,13 @@ pub extern "C" fn translator_generate(t: *mut Translator, kernel: *const c_char)
         assert!(!kernel.is_null());
         CStr::from_ptr(kernel)
     };
-    if let Some(ocl) = t.generator.kernel(kernel.to_str().unwrap_or(""), &t.inputs) {
+    let kernel = kernel.to_str().unwrap_or("");
+
+    let source = match &t.generator {
+        Generator::Ocl(g) => g.kernel(kernel, &t.inputs),
+    };
+
+    if let Some(ocl) = source {
         CString::new(ocl).unwrap().into_raw()
     } else {
         CString::new("").unwrap().into_raw()
@@ -110,7 +127,7 @@ pub extern "C" fn translator_get_id(t: *mut Translator, name: *const c_char) -> 
         CStr::from_ptr(name)
     };
 
-    CString::new(Generator::id(name.to_str().unwrap_or(""), &t.inputs))
+    CString::new(function_id(name.to_str().unwrap_or(""), &t.inputs))
         .unwrap()
         .into_raw()
 }

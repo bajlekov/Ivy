@@ -19,7 +19,7 @@ use std::cell::RefCell;
 use std::collections::HashMap;
 
 use crate::ast::{BinaryOp, ColorSpace, Expr, Index, Literal, Prop, UnaryOp};
-use crate::generator::function_id;
+use crate::function_id::function_id;
 use crate::scope::ScopeTree;
 
 #[derive(Debug, Eq, PartialEq, Copy, Clone)]
