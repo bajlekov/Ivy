@@ -15,8 +15,6 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ]]
 
-local proc = require "lib.opencl.process.ivy".new()
-
 local source = [[
 kernel saturation(I, P, O)
   const x = get_global_id(0)
@@ -31,9 +29,28 @@ kernel saturation(I, P, O)
 end
 ]]
 
-local function execute()
-	local I, P, O = proc:getAllBuffers(3)
-	proc:executeKernel("saturation", proc:size2D(O), {I, P, O})
+local target = "ISPC"
+local proc
+local execute
+
+if target=="ISPC" then
+
+  proc = require "lib.opencl.process.ivy_ispc".new()
+  function execute()
+  	local I, P, O = proc:getAllBuffers(3)
+    I:toHost(true)
+  	proc:executeKernel("saturation", proc:size2D(O), {I, P, O})
+    O:toDevice(true)
+  end
+
+else
+
+  proc = require "lib.opencl.process.ivy".new()
+  function execute()
+  	local I, P, O = proc:getAllBuffers(3)
+  	proc:executeKernel("saturation", proc:size2D(O), {I, P, O})
+  end
+
 end
 
 local function init(d, c, q)

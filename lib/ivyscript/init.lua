@@ -23,7 +23,8 @@ local ffi = require "ffi"
 ffi.cdef([[
     typedef struct translator translator_t;
 
-    translator_t *translator_new(const char *);
+    translator_t *translator_new_ocl(const char *);
+    translator_t *translator_new_ispc(const char *);
     char *translator_generate(translator_t *, const char *);
     void translator_free(translator_t *);
 
@@ -51,8 +52,15 @@ ffi.cdef([[
 
 local lib = ffi.load "lib/ivyscript/target/release/ivyscript.dll"
 
-function ivy.new(source)
-  local t = lib.translator_new(source)
+local targetList = {
+  OCL = lib.translator_new_ocl,
+  ISPC = lib.translator_new_ispc,
+}
+
+function ivy.new(source, target)
+  target = target or "OCL"
+
+  local t = targetList[target](source)
   ffi.gc(t, lib.translator_free)
 
   local o = {
