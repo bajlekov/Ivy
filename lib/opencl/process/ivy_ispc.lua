@@ -121,6 +121,9 @@ local function file_exists(name)
 	 end
 end
 
+ffi.load("lib/ispc/chkstk.dll")
+ffi.load("lib/ispc/tasksys.dll")
+
 function process:getKernel(name, buffers)
 	if not self.generator then
 		self.generator = generator.new(self.source, "ISPC")
@@ -162,7 +165,7 @@ function process:getKernel(name, buffers)
 			end
 			os.remove("___temp.ispc")
 
-			os.execute("g++ -shared chkstk.dll ___temp.o tasksys.dll -o ISPCcache/"..id..".dll")
+			os.execute("g++ -shared lib/ispc/chkstk.dll lib/ispc/tasksys.dll ___temp.o -o ISPCcache/"..id..".dll")
 			if not file_exists("ISPCcache/"..id..".dll") then
 				messageCh:push{"error", "ERROR ["..name.."]: \nGCC unable to link object!"}
 				return nil
