@@ -98,6 +98,7 @@ end
 
 local function execute()
 	local I, J, S, R, O = proc:getAllBuffers(5)
+  if J.x==1 and J.y==1 then J = I end -- use input as guide if guide is missing
 
 	local x, y, z = O:shape()
 
