@@ -420,7 +420,7 @@ uniform int _nz = ceil((uniform float)_dim[5]/_dim[8]);
             self.inference.borrow().scope.add(var, var_type);
 
             s = format!(
-                "for ({var_type} {var} = {from}; {var}<={to}; {var} += {step}) {{\n",
+                "for ({var_type} {var} = {from}; ({step}>0)?({var}<={to}):({var}>={to}); {var} += {step}) {{\n",
                 var_type = match var_type {
                     VarType::Int => "int",
                     VarType::Float => "float",
@@ -443,17 +443,18 @@ uniform int _nz = ceil((uniform float)_dim[5]/_dim[8]);
             };
             self.inference.borrow().scope.add(var, var_type);
 
-            s = format!("for ({var_type} {var} = {from}; ({step}>0)?({var}<={to}):({var}>={to}); {var} += {step}) {{\n",
-            var_type = match var_type{
-                VarType::Int => "int",
-                VarType::Float => "float",
-                VarType::Vec => "float<3>",
-                _ => "/*** Error: Unknown type ***/"
-            },
-            var = var,
-            from = self.gen_expr(&from),
-            to = self.gen_expr(&to),
-            step = self.gen_expr(&step),
+            s = format!(
+                "for ({var_type} {var} = {from}; {var}<={to}; {var} += {step}) {{\n",
+                var_type = match var_type {
+                    VarType::Int => "int",
+                    VarType::Float => "float",
+                    VarType::Vec => "float<3>",
+                    _ => "/*** Error: Unknown type ***/",
+                },
+                var = var,
+                from = self.gen_expr(&from),
+                to = self.gen_expr(&to),
+                step = self.gen_expr(&step),
             )
         }
 
