@@ -24,108 +24,100 @@
 -- Proceedings of SIGGRAPH 2011, Article 69.
 
 local ffi = require "ffi"
-local proc = require "lib.opencl.process".new()
+local proc = require "lib.opencl.process.ivy".new()
 local data = require "data"
 
 local source = [[
-kernel void derivative(global float *J, global float *dHdx, global float *dVdy, global float *S, global float *R)
-{
-  const int x = get_global_id(0);
-  const int y = get_global_id(1);
+const eps = 0.0001
 
-	float3 jo = $J[x, y];
-	float3 jx = $J[x+1, y];
-	float3 jy = $J[x, y+1];
+kernel derivative(J, dHdx, dVdy, S, R)
+  const x = get_global_id(0)
+  const y = get_global_id(1)
 
-	float s = $S[x, y];
-	float r = $R[x, y];
-	float sr = s/fmax(r, 0.0001f);
+	var jo = J[x, y].LAB
+	var jx = J[x+1, y].LAB
+	var jy = J[x, y+1].LAB
 
-	float3 h3 = fabs(jx-jo);
-	float h = 1.0f + sr*(h3.x + h3.y + h3.z);
+	var s = S[x, y]
+	var r = R[x, y]
+	var sr = s/max(r, eps)
 
-	float3 v3 = fabs(jy-jo);
-	float v = 1.0f + sr*(v3.x + v3.y + v3.z);
+	var h3 = abs(jx-jo)
+	var h = 1.0 + sr*(h3.x + h3.y + h3.z)
 
-	if (x+1<$dHdx.x$) $dHdx[x+1, y] = h;
-	if (y+1<$dVdy.y$) $dVdy[x, y+1] = v;
-}
+	var v3 = abs(jy-jo)
+	var v = 1.0 + sr*(v3.x + v3.y + v3.z)
 
-kernel void horizontal(global float *I, global float *dHdx, global float *O, global float *S, float h) {
-	//const int x = get_global_id(0);
-	const int y = get_global_id(1);
+	dHdx[x+1, y] = h
+	dVdy[x, y+1] = v
+end
 
-	$O[0, y] = $I[0, y];
-	for (int x = 1; x<$O.x$; x++) {
-		float3 io = $I[x, y];
-		float3 ix = $O[x-1, y];
-		float a = exp( -sqrt(2.0f) / ($S[x, y]*h));
-		float v = pow(a, $dHdx[x, y]);
-		$O[x, y] = io + v * (ix - io);
-	}
+kernel horizontal(I, dHdx, O, S, h)
+	const y = get_global_id(1)
 
-	for (int x = $O.x$-2; x>=0; x--) {
-		float3 io = $O[x, y];
-		float3 ix = $O[x+1, y];
-		float a = exp( -sqrt(2.0f) / ($S[x+1, y]*h));
-		float v = pow(a, $dHdx[x+1, y]);
-		$O[x, y] = io + v * (ix - io);
-	}
-}
+	O[0, y] = I[0, y]
+	for x = 1, O.x-1 do
+		var io = I[x, y]
+		var ix = O[x-1, y]
+		var a = exp( -sqrt(2.0) / (S[x, y]*h) )
+		var v = a ^ dHdx[x, y]
+    O[x, y] = io + v * (ix - io)
+	end
 
-kernel void vertical(global float *I, global float *dVdy, global float *O, global float *S, float h) {
-	const int x = get_global_id(0);
-	//const int y = get_global_id(1);
+	for x = O.x - 2, 0, -1 do
+		var io = O[x, y]
+		var ix = O[x+1, y]
+		var a = exp( -sqrt(2.0) / (S[x+1, y]*h) )
+		var v = a ^ dHdx[x+1, y]
+    O[x, y] = io + v * (ix - io)
+	end
+end
 
-	$O[x, 0] = $I[x, 0];
-	for (int y = 1; y<$O.y$; y++) {
-		float3 io = $I[x, y];
-		float3 iy = $O[x, y-1];
-		float a = exp( -sqrt(2.0f) / ($S[x, y]*h));
-		float v = pow(a, $dVdy[x, y]);
-		$O[x, y] = io + v * (iy - io);
-	}
+kernel vertical(I, dVdy, O, S, h)
+	const x = get_global_id(0)
 
-	for (int y = $O.y$-2; y>=0; y--) {
-		float3 io = $O[x, y];
-		float3 iy = $O[x, y+1];
-		float a = exp( -sqrt(2.0f) / ($S[x, y+1]*h));
-		float v = pow(a, $dVdy[x, y+1]);
-		$O[x, y] = io + v * (iy - io);
-	}
-}
+	O[x, 0] = I[x, 0]
+	for y = 1, O.y-1 do
+		var io = I[x, y]
+		var iy = O[x, y-1]
+		var a = exp( -sqrt(2.0) / (S[x, y]*h) )
+		var v = a ^ dVdy[x, y]
+    $O[x, y] = io + v * (iy - io)
+	end
+
+	for y = O.y - 2, 0, -1 do
+		var io = O[x, y]
+		var iy = O[x, y+1]
+		var a = exp( -sqrt(2.0) / (S[x, y+1]*h) )
+		var v = a ^ dVdy[x, y+1]
+    O[x, y] = io + v * (iy - io)
+	end
+end
 
 ]]
 
 local function execute()
-	proc:getAllBuffers("I", "J", "S", "R", "O")
+	local I, J, S, R, O = proc:getAllBuffers(5)
 
-	local x, y, z = proc.buffers.O:shape()
+	local x, y, z = O:shape()
 
 	-- allocate and calculate dHdx, dVdy
-	proc.buffers.dHdx = data:new(x, y, 1)
-	proc.buffers.dVdy = data:new(x, y, 1)
-	proc:executeKernel("derivative", proc:size2D("O"), {"J", "dHdx", "dVdy", "S", "R"})
+	local dHdx = data:new(x, y, 1)
+	local dVdy = data:new(x, y, 1)
+	proc:executeKernel("derivative", proc:size2D(O), {J, dHdx, dVdy, S, R})
 
 	local N = 5 -- number of iterations
 	local h = ffi.new("float[1]")
-	local I = proc.buffers.I
-	local O = proc.buffers.O
-	for i = 0, N-1 do
-		h[0] = math.sqrt(3) * 2^(N - (i+1)) / math.sqrt(4^N - 1)
+	for i = 1, N do
+		h[0] = math.sqrt(3) * 2^(N - i) / math.sqrt(4^N - 1)
 		-- vertical pass optimizes the slower initial copy from I to O better (memory locality?)
 		-- read from input buffer in first pass of first iteration
 		-- in-place transform for all subsequent passes
-		proc.buffers.I = i==0 and I or O
-		proc:executeKernel("vertical", {x, 1}, {"I", "dVdy", "O", "S", h})
-    proc.buffers.I = O
-		proc:executeKernel("horizontal", {1, y}, {"I", "dHdx", "O", "S", h})
+		proc:executeKernel("vertical", {x, 1}, {i==1 and I or O, dVdy, O, S, h})
+		proc:executeKernel("horizontal", {1, y}, {O, dHdx, O, S, h})
 	end
-	proc.buffers.I = I
-	proc.buffers.dHdx:free()
-	proc.buffers.dVdy:free()
-	proc.buffers.dHdx = nil
-	proc.buffers.dVdy = nil
+	dHdx:free()
+	dVdy:free()
 end
 
 local function init(d, c, q)
