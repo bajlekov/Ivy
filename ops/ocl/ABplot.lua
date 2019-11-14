@@ -25,7 +25,7 @@ kernel clearPlot(C)
   const x = get_global_id(0)
 	const y = get_global_id(1)
 
-  C[x, y] = IasF(0)
+  C[x, y].int = 0
 end
 
 kernel plot(I, C, clip)
@@ -53,7 +53,7 @@ kernel scalePlot(C, S, W, I)
 	const y = get_global_id(1)
 
 	var s = S[0]
-	var c = FasI(C[x, y])
+	var c = C[x, y].int
 
 	if c>0.0 then
 		s = s*2048*5/(I.x*I.y) -- add I to arguments to force recompile on change
