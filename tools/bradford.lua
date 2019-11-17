@@ -15,33 +15,24 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ]]
 
-local proc = require "lib.opencl.process".new()
+local function fwd(X, Y, Z)
+  -- Bradford matrix:
+	-- http://www.brucelindbloom.com/index.html?Eqn_ChromAdapt.html
+	local L =  0.8951000*X + 0.2664000*Y - 0.1614000*Z
+	local M = -0.7502000*X + 1.7135000*Y + 0.0367000*Z
+	local S =  0.0389000*X - 0.0685000*Y + 1.0296000*Z
 
-local source = [[
-kernel void colorSample(global float *I, global float *P, global float *S) {
-  const int x = P[0];
-  const int y = P[1];
-
-  float3 s = (float3)0.0f;
-	for (int i = -2; i<=2; i++)
-		for (int j = -2; j<=2; j++)
-			s += $I[x+i, y+j]XYZ;
-
-	s = XYZto$$I.cs$$(s/25.0f);
-
-  $S[0, 0] = s;
-}
-]]
-
-local function execute()
-	proc:getAllBuffers("I", "P", "S")
-	proc:executeKernel("colorSample", {1, 1})
+  return L, M, S
 end
 
-local function init(d, c, q)
-	proc:init(d, c, q)
-	proc:loadSourceString(source)
-	return execute
+local function inv(L, M, S)
+  -- Bradford matrix:
+	-- http://www.brucelindbloom.com/index.html?Eqn_ChromAdapt.html
+	local X =  0.9869929*L + 0.1470543*M + 0.1599627*S
+	local Y =  0.4323053*L + 0.5183603*M + 0.0492912*S
+	local Z = -0.0085287*L + 0.0400428*M + 0.9684867*S
+
+  return X, Y, Z
 end
 
-return init
+return {fwd = fwd, inv = inv}

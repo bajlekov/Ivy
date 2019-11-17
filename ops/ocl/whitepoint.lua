@@ -17,21 +17,49 @@
 
 local proc = require "lib.opencl.process.ivy".new()
 
+-- adjust color to a new whitepoint expressed as a LMS multiplyer P
+
+-- forward and inverse Bradford matrices
+-- http://www.brucelindbloom.com/index.html?Eqn_ChromAdapt.html
 local source = [[
-kernel autoWB(I, S, O)
+const M = {
+  { 0.8951000,  0.2664000, -0.1614000},
+  {-0.7502000,  1.7135000,  0.0367000},
+  { 0.0389000, -0.0685000,  1.0296000}
+}
+
+const M_1 = {
+  { 0.9869929, -0.1470543,  0.1599627},
+  { 0.4323053,  0.5183603,  0.0492912},
+  {-0.0085287,  0.0400428,  0.9684867}
+}
+
+kernel whitepoint(I, P, O)
   const x = get_global_id(0)
   const y = get_global_id(1)
 
   var i = I[x, y]
-	var s = S[0, 0]
+	var p = P[0, 0]
 
-	O[x, y] = vec(s.y/s.x, 1, s.y/s.z) * i
+	var lms = vec(0.0)
+	lms.x = M[0, 0]*i.x + M[0, 1]*i.y + M[0, 2]*i.z
+	lms.y = M[1, 0]*i.x + M[1, 1]*i.y + M[1, 2]*i.z
+	lms.z = M[2, 0]*i.x + M[2, 1]*i.y + M[2, 2]*i.z
+
+	lms = lms*p
+
+	var o = vec(0.0)
+	o.x = M_1[0, 0]*lms.x + M_1[0, 1]*lms.y + M_1[0, 2]*lms.z
+	o.y = M_1[1, 0]*lms.x + M_1[1, 1]*lms.y + M_1[1, 2]*lms.z
+	o.z = M_1[2, 0]*lms.x + M_1[2, 1]*lms.y + M_1[2, 2]*lms.z
+
+  O[x, y] = o
 end
 ]]
 
 local function execute()
-	local I, S, O = proc:getAllBuffers(3)
-	proc:executeKernel("autoWB", proc:size2D(O), {I, S, O})
+	local I, P, O = proc:getAllBuffers(3)
+	proc:executeKernel("whitepoint", proc:size2D(O), {I, P, O})
 end
 
 local function init(d, c, q)

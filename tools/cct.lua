@@ -19,7 +19,7 @@ return function(T, tint)
 	local x, y
 
 	-- Source: ufraw https://github.com/sergiomb2/ufraw/blob/1aec313/ufraw_routines.c#L246-L294
-
+	-- http://www.brucelindbloom.com/index.html?Eqn_T_to_xy.html
 	-- daylight illuminant
 	if T<=4000 then
 		x = 0.27475E9 / (T^3) - 0.98598E6 / (T^2) + 1.17444E3 / T + 0.145986
@@ -29,20 +29,16 @@ return function(T, tint)
 		x = -2.0064E9 / (T^3) + 1.9018E6 / (T^2) + 0.24748E3 / T + 0.237040
 	end
 
-	y = -3 * x^2 + 2.87 * x - 0.275
+	y = -3 * x^2 + 2.87 * x - 0.275 -- Judd et al.
 
+	-- http://www.brucelindbloom.com/index.html?Eqn_xyY_to_XYZ.html
 	local Y = 1
 	local X = (x * Y) / y
 	local Z = ((1 - x - y) * Y) / y
 
 	Y = Y * (tint or 1)
 
-	-- Bradford matrix:
-	local L =  0.8951000*X + 0.2664000*Y - 0.1614000*Z
-	local M = -0.7502000*X + 1.7135000*Y + 0.0367000*Z
-	local S =  0.0389000*X - 0.0685000*Y + 1.0296000*Z
-
-	return L, M, S
+	return X, Y, Z
 end
 
 
@@ -61,7 +57,7 @@ end
 
 local a, b, c, d, e, f, g, h
 a = {-0.2661239e9,-3.0258469e9}
-b = {-0.2343580e6, 2.1070379e6}
+b = {-0.2343589e6, 2.1070379e6}
 c = { 0.8776956e3, 0.2226347e3}
 d = { 0.179910, 0.240390}
 e = {-1.1063814 ,-0.9549476 , 3.0817580 }
