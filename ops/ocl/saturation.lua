@@ -29,7 +29,7 @@ kernel saturation(I, P, O)
 end
 ]]
 
-local target = "ISPC"
+local target = "OCL"
 local proc
 local execute
 
