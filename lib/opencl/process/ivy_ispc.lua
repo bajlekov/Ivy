@@ -36,7 +36,7 @@ local dataCh = love.thread.getChannel("dataCh_scheduler")
 local syncCh = love.thread.getChannel("syncCh_scheduler")
 local messageCh = love.thread.getChannel("messageCh")
 
-function process.new(device, context, queue)
+function process.new()
 	local o = {
 		source = "",
 		generator = nil,
@@ -121,8 +121,21 @@ local function file_exists(name)
 	 end
 end
 
-ffi.load("lib/ispc/chkstk.dll")
-ffi.load("lib/ispc/tasksys.dll")
+global("__chkstk", ffi.load("lib/ispc/chkstk.dll"))
+global("__tasksys", ffi.load("lib/ispc/tasksys.dll"))
+
+collectgarbage("collect")
+
+ffi.cdef([[
+    void ivyjit_init();
+    void* ivyjit_new();
+    void ivyjit_module(void*, const char*);
+    void* ivyjit_lookup(void*, const char*);
+    void ivyjit_free(void*);
+]])
+
+local jit = ffi.load("lib/ispc/ivyJIT.dll")
+jit.ivyjit_init()
 
 function process:getKernel(name, buffers)
 	if not self.generator then
@@ -146,11 +159,8 @@ function process:getKernel(name, buffers)
 	end
 
 	local id = self.generator:id(name)
-
-	decl = "void "..id.."(int *, "..table.concat(decl, ", ")..");"
-
 	if self.kernels[id] then
-		return self.kernels[id], id
+		return self.kernels[id].k
 	else
 		local source = self.generator:generate(name)
 		if #source>0 then
@@ -158,25 +168,23 @@ function process:getKernel(name, buffers)
 			f:write(source)
 			f:close()
 
-			os.execute("lib\\ispc\\ispc ___temp.ispc -o ___temp.o -O3 --wno-perf --opt=fast-math --math-lib=fast -Iops/ocl/")
-			if not file_exists("___temp.o") then
+			os.execute("lib\\ispc\\ispc ___temp.ispc --emit-llvm-text -o ___temp.ll -O3 --opt=fast-math --math-lib=fast -Iops/ocl/")
+			if not file_exists("___temp.ll") then
 				messageCh:push{"error", "ERROR ["..name.."]: \nISPC unable to compile source!"}
 				return nil
 			end
 			os.remove("___temp.ispc")
 
-			os.execute("g++ -shared lib/ispc/chkstk.dll lib/ispc/tasksys.dll ___temp.o -o ISPCcache/"..id..".dll")
-			if not file_exists("ISPCcache/"..id..".dll") then
-				messageCh:push{"error", "ERROR ["..name.."]: \nGCC unable to link object!"}
-				return nil
-			end
-			os.remove("___temp.o")
+			local J = ffi.gc(jit.ivyjit_new(), jit.ivyjit_free)
 
-			local kernel = ffi.load("ISPCcache/"..id..".dll")
-			ffi.cdef(decl)
+			local f = io.open("___temp.ll", "rb")
+			jit.ivyjit_module(J, "___temp.ll")
+			f:close()
+			os.remove("___temp.ll")
 
-			self.kernels[id] = kernel
-			return kernel, id
+			local kernel = ffi.cast("void (*)(int *, "..table.concat(decl, ", ")..")", jit.ivyjit_lookup(J, id))
+			self.kernels[id] = {k = kernel, j = J}
+			return kernel
 		else
 			messageCh:push{"error", "ERROR ["..name.."]: \nIvyScript unable to parse source!"}
 			return nil
@@ -210,7 +218,7 @@ dim[7] = 512 -- workgroup y
 dim[8] = 1
 
 function process:enqueueKernel(name, size, buffers)
-	local kernel, id = self:getKernel(name, buffers)
+	local kernel = self:getKernel(name, buffers)
 	if not kernel then return end
 
 	dim[3] = size[1] or 1
@@ -218,7 +226,7 @@ function process:enqueueKernel(name, size, buffers)
 	dim[5] = size[3] or 1
 
 	local t1 = love.timer.getTime()
-	kernel[id](dim, args(buffers))
+	kernel(dim, args(buffers))
 	local t2 = love.timer.getTime()
 
 	if oclProfile then
