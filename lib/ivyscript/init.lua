@@ -30,20 +30,13 @@ ffi.cdef([[
 
     void translator_clear_inputs(translator_t *);
 
-    uint64_t translator_add_buffer_srgb(translator_t *,
-        uint64_t, uint64_t, uint64_t, uint64_t, uint64_t, uint64_t);
-    uint64_t translator_add_buffer_lrgb(translator_t *,
-        uint64_t, uint64_t, uint64_t, uint64_t, uint64_t, uint64_t);
-    uint64_t translator_add_buffer_xyz(translator_t *,
-        uint64_t, uint64_t, uint64_t, uint64_t, uint64_t, uint64_t);
-    uint64_t translator_add_buffer_lab(translator_t *,
-        uint64_t, uint64_t, uint64_t, uint64_t, uint64_t, uint64_t);
-    uint64_t translator_add_buffer_lch(translator_t *,
-        uint64_t, uint64_t, uint64_t, uint64_t, uint64_t, uint64_t);
-    uint64_t translator_add_buffer_y(translator_t *,
-        uint64_t, uint64_t, uint64_t, uint64_t, uint64_t, uint64_t);
-    uint64_t translator_add_buffer_l(translator_t *,
-        uint64_t, uint64_t, uint64_t, uint64_t, uint64_t, uint64_t);
+    uint64_t translator_add_buffer_srgb(translator_t *, uint64_t);
+    uint64_t translator_add_buffer_lrgb(translator_t *, uint64_t);
+    uint64_t translator_add_buffer_xyz(translator_t *, uint64_t);
+    uint64_t translator_add_buffer_lab(translator_t *, uint64_t);
+    uint64_t translator_add_buffer_lch(translator_t *, uint64_t);
+    uint64_t translator_add_buffer_y(translator_t *, uint64_t);
+    uint64_t translator_add_buffer_l(translator_t *, uint64_t);
     uint64_t translator_add_int(translator_t *);
     uint64_t translator_add_float(translator_t *);
 
@@ -86,7 +79,7 @@ local cs = {
 }
 
 function ivy:addBuffer(buf)
-  return cs[buf.cs](self.t, buf.x, buf.y, buf.z, buf.sx, buf.sy, buf.sz)
+  return cs[buf.cs](self.t, buf.z)
 end
 
 function ivy:addInt()

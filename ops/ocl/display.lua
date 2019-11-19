@@ -62,6 +62,7 @@ local function execute()
   O.sx = 1
   O.sy = O.x
   O.sz = 1
+  O:allocDev()
 
   proc:executeKernel("display", proc:size2D(O), {I, O, P})
 

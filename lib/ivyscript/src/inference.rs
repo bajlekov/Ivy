@@ -32,15 +32,7 @@ pub enum VarType {
     IntArray(u8, u64, u64, u64, u64),
     FloatArray(u8, u64, u64, u64, u64),
     VecArray(u8, u64, u64, u64, u64),
-    Buffer {
-        x: u64,
-        y: u64,
-        z: u64,
-        sx: u64,
-        sy: u64,
-        sz: u64,
-        cs: ColorSpace,
-    },
+    Buffer { z: u64, cs: ColorSpace },
     Unknown,
 }
 

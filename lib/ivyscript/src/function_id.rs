@@ -17,22 +17,9 @@ pub fn function_id(name: &str, input: &[VarType]) -> String {
                 format!("FloatArray_{}_{}_{}_{}_{}_", n, x, y, z, w)
             }
             VarType::VecArray(n, x, y, z, w) => format!("VecArray_{}_{}_{}_{}_{}_", n, x, y, z, w),
-            VarType::Buffer {
-                x,
-                y,
+            VarType::Buffer { z, cs } => format!(
+                "Buffer_{}_{}_",
                 z,
-                sx,
-                sy,
-                sz,
-                cs,
-            } => format!(
-                "Buffer_{}_{}_{}_{}_{}_{}_{}_",
-                x,
-                y,
-                z,
-                sx,
-                sy,
-                sz,
                 match cs {
                     ColorSpace::SRGB => "SRGB",
                     ColorSpace::LRGB => "LRGB",

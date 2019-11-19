@@ -207,8 +207,15 @@ function data:allocDev(transfer)
 	self.dataOCL = context:create_buffer(self.x * self.y * self.z * ffi.sizeof("cl_float")) -- allocate OCL data
 	data.stats.allocGPU(self)
 
+	self.strOCL = context:create_buffer(6 * ffi.sizeof("cl_int"))
+	queue:enqueue_write_buffer(self.strOCL, true, ffi.new("int32_t[6]", self.x, self.y, self.z, self.sx, self.sy, self.sz))
+
 	if transfer then self:toDevice(true) end
 	return self
+end
+
+function data:updateStrOCL()
+	queue:enqueue_write_buffer(self.strOCL, true, ffi.new("int32_t[6]", self.x, self.y, self.z, self.sx, self.sy, self.sz))
 end
 
 function data:freeDev(transfer)
@@ -313,6 +320,7 @@ function data:toChTable()
 	local o = {
 		data = tonumber(ffi.cast("uintptr_t", self.data)),
 		dataOCL = tonumber(ffi.cast("uintptr_t", self.dataOCL)),
+		strOCL = tonumber(ffi.cast("uintptr_t", self.strOCL)),
 		x = self.x,
 		y = self.y,
 		z = self.z,
@@ -332,6 +340,7 @@ function data:fromChTable()
 	local o = {
 		data = ffi.cast("float*", self.data),
 		dataOCL = ffi.cast("cl_mem", self.dataOCL),
+		strOCL = ffi.cast("cl_mem", self.strOCL),
 		x = self.x,
 		y = self.y,
 		z = self.z,

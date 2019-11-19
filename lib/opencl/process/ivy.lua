@@ -161,16 +161,20 @@ function process:getKernel(name, buffers)
 end
 
 local function setArgs(kernel, buffers)
+	local n = 0
 	for k, v in ipairs(buffers) do
 		if type(v)=="table" then
 			assert(type(v.dataOCL)=="cdata")
 			if oclDebug then print("["..(k-1).."]", b.dataOCL, tostring(b)) end
-			kernel:set_arg(k - 1, v.dataOCL)
+			kernel:set_arg(n, v.dataOCL)
+			n = n + 1
+			kernel:set_arg(n, v.strOCL)
 		else
 			assert(type(v)=="cdata")
 			assert(ffi.istype(v, i32) or ffi.istype(v, f32))
-			kernel:set_arg(k - 1, v)
+			kernel:set_arg(n, v)
 		end
+		n = n + 1
 	end
 end
 
