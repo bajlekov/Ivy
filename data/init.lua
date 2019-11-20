@@ -218,17 +218,24 @@ function data:allocDev(transfer)
 end
 
 function data:updateStr()
-	if self.strOCL and not self.strOCL==NULL then
+	if self.dataOCL and self.dataOCL~=NULL then
+		if not self.strOCL or self.strOCL==NULL then
+			self.strOCL = context:create_buffer(6 * ffi.sizeof("cl_int"))
+		end
 		queue:enqueue_write_buffer(self.strOCL, true, ffi.new("int32_t[6]", self.x, self.y, self.z, self.sx, self.sy, self.sz))
 	end
 
-	if self.str and not self.str==NULL then
-		self.str[0] = self.x
-		self.str[1] = self.y
-		self.str[2] = self.z
-		self.str[3] = self.sx
-		self.str[4] = self.sy
-		self.str[5] = self.sz
+	if self.data and self.data~=NULL then
+		if not self.str or self.str==NULL then
+			self.str = ffi.new("int32_t[6]", self.x, self.y, self.z, self.sx, self.sy, self.sz)
+		else
+			self.str[0] = self.x
+			self.str[1] = self.y
+			self.str[2] = self.z
+			self.str[3] = self.sx
+			self.str[4] = self.sy
+			self.str[5] = self.sz
+		end
 	end
 end
 
