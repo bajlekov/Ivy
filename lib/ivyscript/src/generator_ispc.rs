@@ -97,7 +97,7 @@ impl<'a> Generator<'a> {
 
         // parse function
         if let Some(Stmt::Function { args, body, .. }) = self.functions.borrow().get(&name) {
-            let mut def = String::from("(\n");
+            let mut def = String::from("(varying int _x, varying int _y, varying int _z, \n");
             let mut decl;
 
             for (k, v) in args.iter().enumerate() {
@@ -353,6 +353,10 @@ uniform int _nz = ceil((uniform float)_dim[5]/_dim[8]);
                     format!("{};\n", self.gen_call(id, &args_str, &vars))
                 } else {
                     let id = self.function(id, &vars);
+                    let mut args_str = args_str;
+                    let mut vars = vars;
+                    args_str.insert(0, String::from("_x, _y, _z"));
+                    vars.insert(0, VarType::Unknown);
                     format!("{};\n", self.gen_call(&id, &args_str, &vars))
                 }
             }
@@ -622,6 +626,10 @@ uniform int _nz = ceil((uniform float)_dim[5]/_dim[8]);
                     self.gen_call(id, &args_str, &vars)
                 } else {
                     let id = self.function(id, &vars);
+                    let mut args_str = args_str;
+                    let mut vars = vars;
+                    args_str.insert(0, String::from("_x, _y, _z"));
+                    vars.insert(0, VarType::Unknown);
                     self.gen_call(&id, &args_str, &vars)
                 }
             }
