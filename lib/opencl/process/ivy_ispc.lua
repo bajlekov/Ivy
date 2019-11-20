@@ -147,14 +147,15 @@ function process:getKernel(name, buffers)
 		if type(v)=="cdata" then
 			if ffi.istype(v, i32) then
 				self.generator:addInt()
-				decl[k] = "int"
+				table.insert(decl, "int")
 			elseif ffi.istype(v, f32) then
 				self.generator:addFloat()
-				decl[k] = "float"
+				table.insert(decl, "float")
 			end
 		else
 			self.generator:addBuffer(v)
-			decl[k] = "float *"
+			table.insert(decl, "float *")
+			table.insert(decl, "int *")
 		end
 	end
 
@@ -168,7 +169,7 @@ function process:getKernel(name, buffers)
 			f:write(source)
 			f:close()
 
-			os.execute("lib\\ispc\\ispc ___temp.ispc --emit-llvm-text -o ___temp.ll -O3 --opt=fast-math --math-lib=fast -Iops/ocl/")
+			os.execute("lib\\ispc\\ispc ___temp.ispc --target=host --emit-llvm-text -o ___temp.ll -O3 --opt=fast-math --math-lib=fast -Iops/ocl/ --wno-perf")
 			if not file_exists("___temp.ll") then
 				messageCh:push{"error", "ERROR ["..name.."]: \nISPC unable to compile source!"}
 				return nil
@@ -197,11 +198,12 @@ local function args(buffers)
 	for k, v in ipairs(buffers) do
 		if type(v)=="table" then
 			assert(type(v.data)=="cdata")
-			args[k] = v.data
+			table.insert(args, v.data)
+			table.insert(args, v.str)
 		else
 			assert(type(v)=="cdata")
 			assert(ffi.istype(v, i32) or ffi.istype(v, f32))
-			args[k] = v[0]
+			table.insert(args, v[0])
 		end
 	end
 	return unpack(args)

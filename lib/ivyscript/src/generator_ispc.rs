@@ -100,7 +100,9 @@ impl<'a> Generator<'a> {
 
             for (k, v) in args.iter().enumerate() {
                 let arg = match input[k] {
-                    VarType::Buffer { .. } => format!("uniform float {}[]", v),
+                    VarType::Buffer { .. } => {
+                        format!("uniform float {}[], uniform int ___str_{}[]", v, v)
+                    }
                     VarType::Int => format!("int {}", v),
                     VarType::Float => format!("float {}", v),
                     VarType::Vec => format!("float<3> {}", v),
@@ -238,21 +240,21 @@ impl<'a> Generator<'a> {
             let mut a = String::from("\n\tuniform int _dim[],\n");
             for (k, v) in args.iter().enumerate() {
                 let arg = format!(
-                    "{}{}{}",
+                    "{} {}{}",
                     match input[k] {
-                        VarType::Buffer { .. } => "uniform float ",
-                        VarType::Int => "uniform int ",
-                        VarType::Float => "uniform float ",
-                        VarType::IntArray(1, ..) => "uniform int ",
-                        VarType::FloatArray(1, ..) => "uniform float ",
+                        VarType::Buffer { .. } => "uniform float",
+                        VarType::Int => "uniform int",
+                        VarType::Float => "uniform float",
+                        VarType::IntArray(1, ..) => "uniform int",
+                        VarType::FloatArray(1, ..) => "uniform float",
                         _ => "/*** Error: Unknown type ***/",
                     },
                     v,
                     match input[k] {
-                        VarType::Buffer { .. } => "[]",
-                        VarType::IntArray(1, ..) => "[]",
-                        VarType::FloatArray(1, ..) => "[]",
-                        _ => "",
+                        VarType::Buffer { .. } => format!("[], uniform int ___str_{}[]", v),
+                        VarType::IntArray(1, ..) => String::from("[]"),
+                        VarType::FloatArray(1, ..) => String::from("[]"),
+                        _ => String::from(""),
                     },
                 );
 
@@ -307,10 +309,14 @@ uniform int _nz = ceil((uniform float)_dim[5]/_dim[8]);
             s.push_str("\n\t_dim,\n\t");
 
             for (k, v) in args.iter().enumerate() {
+                match input[k] {
+                    VarType::Buffer { .. } => s.push_str(&format!("{}, ___str_{}", v, v)),
+                    _ => s.push_str(&format!("{}", v)),
+                }
                 if k < args.len() - 1 {
-                    s.push_str(&format!("{}, ", v));
+                    s.push_str(", ");
                 } else {
-                    s.push_str(&format!("{});\n", v));
+                    s.push_str(");\n");
                 }
             }
 
@@ -342,10 +348,10 @@ uniform int _nz = ceil((uniform float)_dim[5]/_dim[8]);
                     .map(|e| self.inference.borrow().var_type(e))
                     .collect::<Vec<VarType>>();
                 if self.inference.borrow().builtin(id, args).is_some() {
-                    format!("{};", self.gen_call(id, &args_str, &vars))
+                    format!("{};\n", self.gen_call(id, &args_str, &vars))
                 } else {
                     let id = self.function(id, &vars);
-                    format!("{};", self.gen_call(&id, &args_str, &vars))
+                    format!("{};\n", self.gen_call(&id, &args_str, &vars))
                 }
             }
             Stmt::For {
@@ -760,6 +766,11 @@ uniform int _nz = ceil((uniform float)_dim[5]/_dim[8]);
         let mut s = String::new();
         for (k, v) in args.iter().enumerate() {
             s.push_str(&v);
+            if let VarType::Buffer { .. } = vars[k] {
+                s.push_str(", ___str_");
+                s.push_str(&v);
+            }
+
             if k < args.len() - 1 {
                 s.push_str(", ");
             }
@@ -776,13 +787,13 @@ uniform int _nz = ceil((uniform float)_dim[5]/_dim[8]);
                     if let Expr::Identifier(name) = &**id {
                         if let Index::Array2D(a, b) = &**idx {
                             let var = self.inference.borrow().var_type(id);
-                            if let VarType::Buffer { x, y, z, cs, .. } = var {
+                            if let VarType::Buffer { z, cs } = var {
                                 let cs = format!("{}to{}", cs_from, cs);
                                 let a = self.gen_expr(a);
                                 let b = self.gen_expr(b);
                                 let guard = format!(
-                                    "cif ({}>=0 && {}<{} && {}>=0 && {}<{}) ",
-                                    a, a, x, b, b, y
+                                    "cif ({}>=0 && {}<___str_{}[0] && {}>=0 && {}<___str_{}[1]) ",
+                                    a, a, name, b, b, name
                                 );
                                 let val = self.gen_expr(val);
                                 if z == 3 {
@@ -820,10 +831,13 @@ uniform int _nz = ceil((uniform float)_dim[5]/_dim[8]);
                         | VarType::VecArray(1, ..) => {
                             format!("{}[{}] = {};\n", name, self.gen_expr(a), self.gen_expr(val))
                         }
-                        VarType::Buffer { x, y, z, .. } => {
+                        VarType::Buffer { .. } => {
                             let a = self.gen_expr(a);
                             let val = self.gen_expr(val);
-                            let guard = format!("cif ({}>=0 && {}<{}) ", a, a, x * y * z,);
+                            let guard = format!(
+                                "cif ({}>=0 && {}<(___str_{}[0] * ___str_{}[1] * ___str_{}[2])) ",
+                                a, a, name, name, name,
+                            );
 
                             let id = var.buf_idx_1d(name, &a);
                             format!("{} {} = {};\n", guard, id, val)
@@ -837,24 +851,24 @@ uniform int _nz = ceil((uniform float)_dim[5]/_dim[8]);
                 let var = self.inference.borrow().var_type(expr);
                 if let Expr::Identifier(name) = &**expr {
                     match var {
-                        VarType::Buffer { x, y, z: 1, .. } => {
+                        VarType::Buffer { z: 1, .. } => {
                             let a = self.gen_expr(a);
                             let b = self.gen_expr(b);
                             let guard = format!(
-                                "cif ({}>=0 && {}<{} && {}>=0 && {}<{}) ",
-                                a, a, x, b, b, y
+                                "cif ({}>=0 && {}<___str_{}[0] && {}>=0 && {}<___str_{}[1]) ",
+                                a, a, name, b, b, name
                             );
                             let val = self.gen_expr(val);
 
                             let id = var.buf_idx_3d(name, &a, &b, "0");
                             format!("{} {} = {};\n", guard, id, val)
                         }
-                        VarType::Buffer { x, y, z: 3, .. } => {
+                        VarType::Buffer { z: 3, .. } => {
                             let a = self.gen_expr(a);
                             let b = self.gen_expr(b);
                             let guard = format!(
-                                "cif ({}>=0 && {}<{} && {}>=0 && {}<{}) ",
-                                a, a, x, b, b, y
+                                "cif ({}>=0 && {}<___str_{}[0] && {}>=0 && {}<___str_{}[1]) ",
+                                a, a, name, b, b, name
                             );
                             let val = self.gen_expr(val);
 
@@ -896,13 +910,13 @@ uniform int _nz = ceil((uniform float)_dim[5]/_dim[8]);
                             self.gen_expr(c),
                             self.gen_expr(val)
                         ),
-                        VarType::Buffer { x, y, z, .. } => {
+                        VarType::Buffer { .. } => {
                             let a = self.gen_expr(a);
                             let b = self.gen_expr(b);
                             let c = self.gen_expr(c);
                             let guard = format!(
-                                "cif ({}>=0 && {}<{} && {}>=0 && {}<{} && {}>=0 && {}<{}) ",
-                                a, a, x, b, b, y, c, c, z
+                                "cif ({}>=0 && {}<___str_{}[0] && {}>=0 && {}<___str_{}[1] && {}>=0 && {}<___str_{}[2]) ",
+                                a, a, name, b, b, name, c, c, name
                             );
                             let val = self.gen_expr(val);
 
@@ -945,12 +959,17 @@ uniform int _nz = ceil((uniform float)_dim[5]/_dim[8]);
     }
 
     fn gen_index(&'a self, expr: &Expr, idx: &Index) -> String {
+        let name = if let Expr::Identifier(name) = expr {
+            name
+        } else {
+            "/***ERROR***/"
+        };
         match idx {
             Index::Vec(0) => {
                 let var = self.inference.borrow().var_type(expr);
                 match var {
                     VarType::Vec => format!("{}.x", self.gen_expr(expr)),
-                    VarType::Buffer { x, .. } => format!("{}", x),
+                    VarType::Buffer { .. } => format!("___str_{}[0]", name),
                     _ => String::from("// ERROR!!!\n"),
                 }
             }
@@ -958,7 +977,7 @@ uniform int _nz = ceil((uniform float)_dim[5]/_dim[8]);
                 let var = self.inference.borrow().var_type(expr);
                 match var {
                     VarType::Vec => format!("{}.y", self.gen_expr(expr)),
-                    VarType::Buffer { y, .. } => format!("{}", y),
+                    VarType::Buffer { .. } => format!("___str_{}[1]", name),
                     _ => String::from("// ERROR!!!\n"),
                 }
             }
@@ -966,7 +985,7 @@ uniform int _nz = ceil((uniform float)_dim[5]/_dim[8]);
                 let var = self.inference.borrow().var_type(expr);
                 match var {
                     VarType::Vec => format!("{}.z", self.gen_expr(expr)),
-                    VarType::Buffer { z, .. } => format!("{}", z),
+                    VarType::Buffer { .. } => format!("___str_{}[2]", name),
                     _ => String::from("// ERROR!!!\n"),
                 }
             }
@@ -1093,14 +1112,17 @@ uniform int _nz = ceil((uniform float)_dim[5]/_dim[8]);
                         let idx = &**idx;
                         let idx = match (var, idx) {
                             (VarType::Buffer { .. }, Index::Array1D(a)) => {
-                                var.idx_1d(&self.gen_expr(a))
+                                var.idx_1d(id, &self.gen_expr(a))
                             }
                             (VarType::Buffer { z: 1, .. }, Index::Array2D(a, b)) => {
-                                var.idx_3d(&self.gen_expr(a), &self.gen_expr(b), "0")
+                                var.idx_3d(id, &self.gen_expr(a), &self.gen_expr(b), "0")
                             }
-                            (VarType::Buffer { .. }, Index::Array3D(a, b, c)) => {
-                                var.idx_3d(&self.gen_expr(a), &self.gen_expr(b), &self.gen_expr(c))
-                            }
+                            (VarType::Buffer { .. }, Index::Array3D(a, b, c)) => var.idx_3d(
+                                id,
+                                &self.gen_expr(a),
+                                &self.gen_expr(b),
+                                &self.gen_expr(c),
+                            ),
                             _ => String::from("// ERROR!!!\n"),
                         };
                         match prop {

@@ -189,6 +189,9 @@ function data:allocHost()
 	if not self.data or self.data==NULL then
 		self.data = alloc.float32(self.x * self.y * self.z)
 		data.stats.allocCPU(self)
+
+		self.str = ffi.new("int32_t[6]", self.x, self.y, self.z, self.sx, self.sy, self.sz)
+
 		self.data_u32 = ffi.cast("uint32_t*", self.data)
 		self.data_i32 = ffi.cast("int32_t*", self.data)
 		self.__cpuDirty = true
@@ -214,8 +217,19 @@ function data:allocDev(transfer)
 	return self
 end
 
-function data:updateStrOCL()
-	queue:enqueue_write_buffer(self.strOCL, true, ffi.new("int32_t[6]", self.x, self.y, self.z, self.sx, self.sy, self.sz))
+function data:updateStr()
+	if self.strOCL and not self.strOCL==NULL then
+		queue:enqueue_write_buffer(self.strOCL, true, ffi.new("int32_t[6]", self.x, self.y, self.z, self.sx, self.sy, self.sz))
+	end
+
+	if self.str and not self.str==NULL then
+		self.str[0] = self.x
+		self.str[1] = self.y
+		self.str[2] = self.z
+		self.str[3] = self.sx
+		self.str[4] = self.sy
+		self.str[5] = self.sz
+	end
 end
 
 function data:freeDev(transfer)
@@ -319,6 +333,7 @@ end
 function data:toChTable()
 	local o = {
 		data = tonumber(ffi.cast("uintptr_t", self.data)),
+		str = tonumber(ffi.cast("uintptr_t", self.str)),
 		dataOCL = tonumber(ffi.cast("uintptr_t", self.dataOCL)),
 		strOCL = tonumber(ffi.cast("uintptr_t", self.strOCL)),
 		x = self.x,
@@ -339,6 +354,7 @@ end
 function data:fromChTable()
 	local o = {
 		data = ffi.cast("float*", self.data),
+		str = ffi.cast("int*", self.str),
 		dataOCL = ffi.cast("cl_mem", self.dataOCL),
 		strOCL = ffi.cast("cl_mem", self.strOCL),
 		x = self.x,
