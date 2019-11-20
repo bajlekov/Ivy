@@ -5,20 +5,16 @@ pub fn function_id(name: &str, input: &[VarType]) -> String {
     let mut id = String::from("___");
     for v in input {
         let s = match v {
-            VarType::Bool => String::from("Bool_"),
-            VarType::Int => String::from("Int_"),
-            VarType::Float => String::from("Float_"),
-            VarType::Vec => String::from("Vec_"),
-            VarType::BoolArray(n, x, y, z, w) => {
-                format!("BoolArray_{}_{}_{}_{}_{}_", n, x, y, z, w)
-            }
-            VarType::IntArray(n, x, y, z, w) => format!("IntArray_{}_{}_{}_{}_{}_", n, x, y, z, w),
-            VarType::FloatArray(n, x, y, z, w) => {
-                format!("FloatArray_{}_{}_{}_{}_{}_", n, x, y, z, w)
-            }
-            VarType::VecArray(n, x, y, z, w) => format!("VecArray_{}_{}_{}_{}_{}_", n, x, y, z, w),
+            VarType::Bool => String::from("B_"),
+            VarType::Int => String::from("I_"),
+            VarType::Float => String::from("F_"),
+            VarType::Vec => String::from("V_"),
+            VarType::BoolArray(n, x, y, z, w) => format!("BA{}_{}_{}_{}_{}_", n, x, y, z, w),
+            VarType::IntArray(n, x, y, z, w) => format!("IA{}_{}_{}_{}_{}_", n, x, y, z, w),
+            VarType::FloatArray(n, x, y, z, w) => format!("FA{}_{}_{}_{}_{}_", n, x, y, z, w),
+            VarType::VecArray(n, x, y, z, w) => format!("VA{}_{}_{}_{}_{}_", n, x, y, z, w),
             VarType::Buffer { z, cs } => format!(
-                "Buffer_{}_{}_",
+                "BUF{}{}_",
                 z,
                 match cs {
                     ColorSpace::SRGB => "SRGB",
@@ -34,7 +30,7 @@ pub fn function_id(name: &str, input: &[VarType]) -> String {
         };
         id.push_str(&s);
     }
-    id.push_str("__");
+    id.push_str("___");
     id.push_str(name);
     id
 }
