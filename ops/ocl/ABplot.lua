@@ -56,11 +56,11 @@ kernel scalePlot(C, S, W, I)
 	var c = C[x, y].int
 
 	if c>0.0 then
-		s = s*2048*5/(I.x*I.y) -- add I to arguments to force recompile on change
+		s = s*2048*5/(I.x*I.y)
 		var v = clamp(c*s, 0.0, 255.0)
 
-		var a = (x - 73.0)*2.0/C.x;
-		var b = -(y - 71.0)*2.0/C.x;
+		var a = (x - 73.0)*2.0/C.x
+		var b = -(y - 71.0)*2.0/C.x
 
 		var srgb = LABtoSRGB(vec(1.0 - 0.5*sqrt(a^2 + b^2), a, b))
 		srgb = srgb*clamp(s*c, 0.0, 1.0)
@@ -80,6 +80,7 @@ local function execute()
   W.sx = 1
   W.sy = W.x
   W.sz = 1
+  W:updateStr()
 
 	local C = data:new(W.x, W.y, 1)
 
