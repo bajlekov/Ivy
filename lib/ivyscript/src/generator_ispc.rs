@@ -807,14 +807,14 @@ uniform int _nz = ceil((uniform float)_dim[5]/_dim[8]);
                                 );
                                 let val = self.gen_expr(val);
                                 if z == 3 {
-                                    let id_x = var.buf_idx_3d(name, &a, &b, "0");
-                                    let id_y = var.buf_idx_3d(name, &a, &b, "1");
-                                    let id_z = var.buf_idx_3d(name, &a, &b, "2");
+                                    let id_x = format!("{}[(varying int)({})]", name, var.idx_3d(name, &a, &b, "0"));
+                                    let id_y = format!("{}[(varying int)({})]", name, var.idx_3d(name, &a, &b, "1"));
+                                    let id_z = format!("{}[(varying int)({})]", name, var.idx_3d(name, &a, &b, "2"));
                                     format!("{} {{ float<3> __v = {}({}); {} = __v.x; {} = __v.y; {} = __v.z; }}\n",
                                         guard, cs, val, id_x, id_y, id_z)
                                 } else if z == 1 {
                                     // match buffer storage size to color space
-                                    let id = var.buf_idx_3d(name, &a, &b, "0");
+                                    let id = format!("{}[(varying int)({})]", name, var.idx_3d(name, &a, &b, "0"));
                                     format!("{} {} = {}({});\n", guard, id, cs, val)
                                 } else {
                                     String::from("// ERROR!!!\n")
@@ -849,7 +849,7 @@ uniform int _nz = ceil((uniform float)_dim[5]/_dim[8]);
                                 a, a, name, name, name,
                             );
 
-                            let id = var.buf_idx_1d(name, &a);
+                            let id = format!("{}[(varying int)({})]", name, var.idx_1d(name, &a));
                             format!("{} {} = {};\n", guard, id, val)
                         }
                         _ => String::from("// ERROR!!!\n"),
@@ -870,7 +870,7 @@ uniform int _nz = ceil((uniform float)_dim[5]/_dim[8]);
                             );
                             let val = self.gen_expr(val);
 
-                            let id = var.buf_idx_3d(name, &a, &b, "0");
+                            let id = format!("{}[(varying int)({})]", name, var.idx_3d(name, &a, &b, "0"));
                             format!("{} {} = {};\n", guard, id, val)
                         }
                         VarType::Buffer { z: 3, .. } => {
@@ -882,9 +882,9 @@ uniform int _nz = ceil((uniform float)_dim[5]/_dim[8]);
                             );
                             let val = self.gen_expr(val);
 
-                            let id_x = var.buf_idx_3d(name, &a, &b, "0");
-                            let id_y = var.buf_idx_3d(name, &a, &b, "1");
-                            let id_z = var.buf_idx_3d(name, &a, &b, "2");
+                            let id_x = format!("{}[(varying int)({})]", name, var.idx_3d(name, &a, &b, "0"));
+                            let id_y = format!("{}[(varying int)({})]", name, var.idx_3d(name, &a, &b, "1"));
+                            let id_z = format!("{}[(varying int)({})]", name, var.idx_3d(name, &a, &b, "2"));
                             format!(
                                 "{} {{ float<3> __v = {}; {} = __v.x; {} = __v.y; {} = __v.z; }}\n",
                                 guard, val, id_x, id_y, id_z
@@ -930,7 +930,7 @@ uniform int _nz = ceil((uniform float)_dim[5]/_dim[8]);
                             );
                             let val = self.gen_expr(val);
 
-                            let id = var.buf_idx_3d(name, &a, &b, &c);
+                            let id = format!("{}[(varying int)({})]", name, var.idx_3d(name, &a, &b, &c));
                             format!("{} {} = {};\n", guard, id, val)
                         }
                         _ => String::from("// ERROR!!!\n"),
