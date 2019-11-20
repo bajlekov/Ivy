@@ -58,6 +58,8 @@ function process:init(device, context, queue)
 	self.device = device
 	self.context = context
 	self.queue = queue
+
+	self:clearSource()
 end
 
 local function signature(data, chain)

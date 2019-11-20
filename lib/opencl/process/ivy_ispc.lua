@@ -46,7 +46,9 @@ function process.new()
 	return o
 end
 
-function process:init() end
+function process:init()
+	self:clearSource()
+end
 
 function process:setWorkgroupSize(size)
 	self.workgroupSize = size
