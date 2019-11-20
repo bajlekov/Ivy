@@ -2,7 +2,7 @@ use crate::ast::ColorSpace;
 use crate::inference::VarType;
 
 pub fn function_id(name: &str, input: &[VarType]) -> String {
-    let mut id = String::from("___");
+    let mut id = format!("___{}_", input.len());
     for v in input {
         let s = match v {
             VarType::Bool => String::from("B_"),

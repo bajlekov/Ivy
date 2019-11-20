@@ -59,8 +59,9 @@ impl<'a> Generator<'a> {
                 Stmt::Const(id, expr) => {
                     self.constants.borrow_mut().insert(id.clone(), &expr);
                 }
-                Stmt::Function { id, .. } => {
-                    self.functions.borrow_mut().insert(id.clone(), &stmt);
+                Stmt::Function { id, args, .. } => {
+                    let id = format!("___{}_{}", args.len(), id);
+                    self.functions.borrow_mut().insert(id, &stmt);
                 }
                 Stmt::Kernel { id, .. } => {
                     self.kernels.borrow_mut().insert(id.clone(), &stmt);
@@ -72,6 +73,7 @@ impl<'a> Generator<'a> {
 
     fn function(&'a self, name: &str, input: &[VarType]) -> String {
         let id = function_id(name, input);
+        let name = format!("___{}_{}", input.len(), name);
 
         if let Some((decl, def, _)) = self.generated_functions.borrow().get(&id) {
             if !self.used_functions.borrow().contains(&id) {
@@ -94,7 +96,7 @@ impl<'a> Generator<'a> {
             .add("return", VarType::Unknown);
 
         // parse function
-        if let Some(Stmt::Function { args, body, .. }) = self.functions.borrow().get(name) {
+        if let Some(Stmt::Function { args, body, .. }) = self.functions.borrow().get(&name) {
             let mut def = String::from("(\n");
             let mut decl;
 
