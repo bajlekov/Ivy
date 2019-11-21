@@ -59,7 +59,7 @@ function data.initDev(c, q)
 		queue = q
 	end
 
-	data.sink = data:new()
+	data.sink = data:new(1, 1, 3)
 	data.one = data:new()
 	data.one:set(0, 0, 0, 1)
 	data.one:toDevice()
