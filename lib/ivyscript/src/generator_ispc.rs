@@ -280,7 +280,26 @@ uniform int _ymax = _dim[1] + min(((uniform int)taskIndex1 + 1)*_dim[7], _dim[4]
 uniform int _zmin = _dim[2] + taskIndex2*_dim[8];
 uniform int _zmax = _dim[2] + min(((uniform int)taskIndex2 + 1)*_dim[8], _dim[5]);
 
-foreach (_z = _zmin ... _zmax, _y = _ymin ... _ymax, _x = _xmin ... _xmax) {\n",
+// swap _x___ and _y___ if _dim[3]==0
+cif (_dim[3]<16 && _dim[4]>16) {
+    uniform int _tmin = _ymin;
+    uniform int _tmax = _ymax;
+    _ymin = _xmin;
+    _ymax = _xmax;
+    _xmin = _tmin;
+    _xmax = _tmax;
+}
+
+foreach (_z = _zmin ... _zmax, _1 = _ymin ... _ymax, _0 = _xmin ... _xmax) {
+
+int _x, _y;
+cif (_dim[3]<16 && _dim[4]>16) {
+    _y = _0;
+    _x = _1;   
+} else {
+    _x = _0;
+    _y = _1;   
+}\n",
             );
 
             for v in body {
