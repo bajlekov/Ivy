@@ -67,14 +67,14 @@ local function temperatureProcess(self)
 	local p = t.autoTempBuffer(self, 1, 1, 1, 3)
 	local o = t.autoOutput(self, 0, i:shape())
 
-	local Li, Mi, Si = cct(self.elem[1].value, self.elem[2].value)
-	local Lo, Mo, So = cct(6500)
+	local Li, Mi, Si = bradford.fwd(cct(self.elem[1].value, self.elem[2].value))
+	local Lo, Mo, So = bradford.fwd(cct(6500))
 	print(Lo/Li, Mo/Mi, So/Si)
 	p:set(0, 0, 0, Lo / Li)
 	p:set(0, 0, 1, Mo / Mi)
 	p:set(0, 0, 2, So / Si)
 	p:toDevice()
-	thread.ops.temperature({i, p, o}, self)
+	thread.ops.whitepoint({i, p, o}, self)
 end
 
 function ops.temperature(x, y)
@@ -400,7 +400,7 @@ ops.tune = function(x, y)
 end
 --]]
 
-local function processAutoWB(self)
+local function processSampleWB(self)
 	self.procType = "dev"
 	local i = t.inputSourceBlack(self, 0)
 	local o = t.autoOutputSink(self, 0, i:shape())
@@ -413,20 +413,20 @@ local function processAutoWB(self)
 	p:toDevice()
 
 	if update or self.elem[2].value then
-		thread.ops.colorSample5x5({i, p, s}, self)
+		thread.ops.whitepointSample({i, p, s}, self)
 	end
 
-	thread.ops.autoWB({i, s, o}, self)
+	thread.ops.whitepoint({i, s, o}, self)
 end
 
-function ops.autoWB(x, y)
+function ops.sampleWB(x, y)
 	local n = node:new("Sample WB")
 	n.data.tweak = require "ui.widget.tweak"()
-	n:addPortIn(0, "LRGB")
-	n:addPortOut(0, "LRGB")
+	n:addPortIn(0, "XYZ")
+	n:addPortOut(0, "XYZ")
 	n.data.tweak.toolButton(n, 1, "Sample WB")
 	n:addElem("bool", 2, "Resample pos.", false)
-	n.process = processAutoWB
+	n.process = processSampleWB
 
 	local s = t.autoTempBuffer(n, -2, 1, 1, 3)
 	s:set(0, 0, 0, 1)
