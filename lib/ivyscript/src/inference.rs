@@ -411,6 +411,7 @@ impl<'a> Inference<'a> {
             "round" => self.math_1(vars),
             "fmin" => self.math_2(vars),
             "fmax" => self.math_2(vars),
+            "mod" => self.math_2(vars),
 
             // OpenCL geometric built-in functions
             "cross" => self.geom_2(vars, V),

@@ -685,6 +685,7 @@ impl<'a> Generator<'a> {
             "int" => "(int)",
             "float" => "(float)",
             "vec" => "(float3)",
+            "mod" => "fmod",
             _ => id,
         };
 
