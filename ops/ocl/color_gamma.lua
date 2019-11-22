@@ -15,28 +15,23 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ]]
 
-local proc = require "lib.opencl.process".new()
+local proc = require "lib.opencl.process.ivy".new()
 
 local source = [[
-kernel void gamma(global float *I, global float *P, global float *O) {
-	const int x = get_global_id(0);
-	const int y = get_global_id(1);
+kernel gamma(I, P, O)
+	const x = get_global_id(0)
+	const y = get_global_id(1)
 
-	float3 i = $I[x, y];
-	float3 p = $P[x, y];
+	var i = I[x, y]
+	var p = P[x, y]
 
-	i = pow(fmax(i, 0.0f), log(p)/log(0.5f));
-
-	$O[x, y] = i;
-}
+	O[x, y] = max(i, 0.0) ^ (log(p)/log(0.5))
+end
 ]]
 
 local function execute()
-	proc:getAllBuffers("I", "P", "O")
-	proc.buffers.I.__write = false
-	proc.buffers.P.__write = false
-	proc.buffers.O.__read = false
-	proc:executeKernel("gamma", proc:size2D("O"))
+	local I, P, O = proc:getAllBuffers(3)
+	proc:executeKernel("gamma", proc:size2D(O), {I, P, O})
 end
 
 local function init(d, c, q)
