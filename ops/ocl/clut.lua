@@ -15,78 +15,65 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ]]
 
-local proc = require "lib.opencl.process".new()
+local proc = require "lib.opencl.process.ivy".new()
 
 local source = [[
-#include "cs.cl"
+const Q = 144
+const D = 1727
+const F = 12
+-- D = Q^(3/2) - 1
+-- F = 144^(1/2)
 
-#define Q 144
-#define D 1727
-#define F 12
-// D = Q^(3/2) - 1
-// F = 144^(1/2)
+function getColor(LUT, r, g, b)
+	r = clamp(r, 0, Q-1)
+	g = clamp(g, 0, Q-1)
+	b = clamp(b, 0, Q-1)
+	var x = r + mod(g, float(F)) * Q
+	var y = D - (b*F + g/F)
+	return LUT[x, y]
+end
 
-int2 getCoord(int r, int g, int b) {
-	r = clamp(r, 0, Q-1);
-	g = clamp(g, 0, Q-1);
-	b = clamp(b, 0, Q-1);
-	return (int2)(r + fmod(g, (float)F)*Q, D-(b*F + g/F));
-}
+kernel clut(I, LUT, O, MIX)
+  const x = get_global_id(0)
+  const y = get_global_id(1)
 
-kernel void clut(global float *p1, global float *p2, global float *p3, global float *p4)
-{
-  const int x = get_global_id(0);
-  const int y = get_global_id(1);
+	var i = I[x, y]
+  var v = LRGBtoSRGB(i) -- sample CLUT based on sRGB coordinates
+ 	var s = clamp(floor(v*(Q-1.0)), 0.0, (Q-1.0))
+  var d = v*(Q-1.0) - s
 
-  float3 vl = $p1[x, y];
-  float3 v = LRGBtoSRGB(vl);
-  float3 s = clamp(floor(v*(Q-1)), 0.0f, (Q-1));
-  float3 d = ((v*(Q-1)) - s);
-  int3 i = (int3)(s.x, s.y, s.z);
+	var r = int(s.x)
+	var g = int(s.y)
+	var b = int(s.z)
 
-  int2 xy;
-  xy = getCoord(i.x  , i.y  , i.z  );
-  float3 s1 = $p2[xy.x, xy.y];
+  var s1 = getColor(LUT, r  , g  , b  )
+	var s2 = getColor(LUT, r+1, g  , b  )
+	var s3 = getColor(LUT, r+1, g+1, b  )
+	var s4 = getColor(LUT, r  , g+1, b  )
+	var s5 = getColor(LUT, r  , g  , b+1)
+	var s6 = getColor(LUT, r+1, g  , b+1)
+	var s7 = getColor(LUT, r+1, g+1, b+1)
+	var s8 = getColor(LUT, r  , g+1, b+1)
 
-  xy = getCoord(i.x+1, i.y  , i.z  );
-  float3 s2 = $p2[xy.x, xy.y];
+  var s15 = s1 + d.z*(s5-s1)
+  var s26 = s2 + d.z*(s6-s2)
+  var s37 = s3 + d.z*(s7-s3)
+  var s48 = s4 + d.z*(s8-s4)
 
-  xy = getCoord(i.x+1, i.y+1, i.z  );
-  float3 s3 = $p2[xy.x, xy.y];
+  var s1526 = s15 + d.x*(s26-s15)
+  var s4837 = s48 + d.x*(s37-s48)
 
-  xy = getCoord(i.x  , i.y+1, i.z  );
-  float3 s4 = $p2[xy.x, xy.y];
+  var o = clamp(s1526 + d.y*(s4837-s1526), 0.0, 1.0)
 
-  xy = getCoord(i.x  , i.y  , i.z+1);
-  float3 s5 = $p2[xy.x, xy.y];
+	o = i + (o-i) * MIX[x, y]
 
-  xy = getCoord(i.x+1, i.y  , i.z+1);
-  float3 s6 = $p2[xy.x, xy.y];
-
-  xy = getCoord(i.x+1, i.y+1, i.z+1);
-  float3 s7 = $p2[xy.x, xy.y];
-
-  xy = getCoord(i.x  , i.y+1, i.z+1);
-  float3 s8 = $p2[xy.x, xy.y];
-
-  float3 s15 = s1 + d.z*(s5-s1);
-  float3 s26 = s2 + d.z*(s6-s2);
-  float3 s37 = s3 + d.z*(s7-s3);
-  float3 s48 = s4 + d.z*(s8-s4);
-
-  float3 s1526 = s15 + d.x*(s26-s15);
-  float3 s4837 = s48 + d.x*(s37-s48);
-
-  float3 o = clamp(s1526 + d.y*(s4837-s1526), 0.0f, 1.0f);
-  o = vl + (o-vl)*$p4[x, y];
-
-  $p3[x, y] = o;
-}
+  O[x, y] = o
+end
 ]]
 
 local function execute()
-  proc:getAllBuffers("p1", "p2", "p3", "p4")
-  proc:executeKernel("clut", proc:size2D("p3"))
+  local I, LUT, O, MIX = proc:getAllBuffers(4)
+  proc:executeKernel("clut", proc:size2D(O), {I, LUT, O, MIX})
 end
 
 local function init(d, c, q)
