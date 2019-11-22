@@ -217,9 +217,6 @@ local dim = ffi.new("int[9]")
 dim[0] = 0 -- offset x
 dim[1] = 0 -- offset y
 dim[2] = 0 -- offset z
-dim[6] = 512 -- workgroup x
-dim[7] = 512 -- workgroup y
-dim[8] = 1
 
 function process:enqueueKernel(name, size, buffers)
 	local kernel = self:getKernel(name, buffers)
@@ -228,6 +225,10 @@ function process:enqueueKernel(name, size, buffers)
 	dim[3] = size[1] or 1
 	dim[4] = size[2] or 1
 	dim[5] = size[3] or 1
+
+	dim[6] = math.max(dim[3]/16, 16)
+	dim[7] = math.max(dim[4]/16, 16)
+	dim[8] = 1
 
 	local t1 = love.timer.getTime()
 	kernel(dim, args(buffers))
