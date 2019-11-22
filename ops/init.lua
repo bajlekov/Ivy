@@ -1108,48 +1108,48 @@ local function getChannelNames(cs)
 	end
 end
 
-local function decomposeProcess(self)
+local function splitProcess(self)
 	self.procType = "dev"
-	local p1, p2, p3, p4
-	p1 = t.inputSourceBlack(self, 0)
-	p2 = t.autoOutputSink(self, 1, p1.x, p1.y, 1)
-	p3 = t.autoOutputSink(self, 2, p1.x, p1.y, 1)
-	p4 = t.autoOutputSink(self, 3, p1.x, p1.y, 1)
-	thread.ops.decompose({p1, p2, p3, p4}, self)
+	local i, o1, o2, o3
+	i = t.inputSourceBlack(self, 0)
+	o1 = t.autoOutputSink(self, 1, i.x, i.y, 1)
+	o2 = t.autoOutputSink(self, 2, i.x, i.y, 1)
+	o3 = t.autoOutputSink(self, 3, i.x, i.y, 1)
+	thread.ops.splitCS({i, o1, o2, o3}, self)
 end
 
-local function genDecompose(cs)
+local function genSplit(cs)
 	return function (x, y)
-		local n = node:new("Split")
+		local n = node:new(channelNames[cs][1])
 		n:addPortIn(0, cs)
-		n:addPortOut(1, "Y"):addElem("text", 1, channelNames[cs][1], channelNames[cs][2])
+		n:addPortOut(1, "Y"):addElem("text", 1, "", channelNames[cs][2])
 		n:addPortOut(2, "Y"):addElem("text", 2, "", channelNames[cs][3])
 		n:addPortOut(3, "Y"):addElem("text", 3, "", channelNames[cs][4])
-		n.process = decomposeProcess
+		n.process = splitProcess
 		n.w = 75
 		n:setPos(x, y)
 		return n
 	end
 end
 
-ops.decomposeSRGB = genDecompose("SRGB")
-ops.decomposeLRGB = genDecompose("LRGB")
-ops.decomposeXYZ = genDecompose("XYZ")
-ops.decomposeLAB = genDecompose("LAB")
-ops.decomposeLCH = genDecompose("LCH")
+ops.splitSRGB = genSplit("SRGB")
+ops.splitLRGB = genSplit("LRGB")
+ops.splitXYZ = genSplit("XYZ")
+ops.splitLAB = genSplit("LAB")
+ops.splitLCH = genSplit("LCH")
 
-local function composeProcess(self)
+local function mergeProcess(self)
 	self.procType = "dev"
-	local p1, p2, p3, p4
-	p1 = t.inputParam(self, 1)
-	p2 = t.inputParam(self, 2)
-	p3 = t.inputParam(self, 3)
-	local x, y, z = data.superSize(p1, p2, p3)
-	p4 = t.autoOutput(self, 0, x, y, 3)
-	thread.ops.compose({p1, p2, p3, p4}, self)
+	local i1, i2, i3, o
+	i1 = t.inputParam(self, 1)
+	i2 = t.inputParam(self, 2)
+	i3 = t.inputParam(self, 3)
+	local x, y, z = data.superSize(i1, i2, i3)
+	o = t.autoOutput(self, 0, x, y, 3)
+	thread.ops.mergeCS({i1, i2, i3, o}, self)
 end
 
-local function genCompose(cs)
+local function genMerge(cs)
 	return function(x, y)
 		local n = node:new(channelNames[cs][1])
 		n:addPortOut(0, cs)
@@ -1164,18 +1164,18 @@ local function genCompose(cs)
 			n.elem[3].value = 0
 			n.elem[3].default = 0
 		end
-		n.process = composeProcess
+		n.process = mergeProcess
 		n.w = 75
 		n:setPos(x, y)
 		return n
 	end
 end
 
-ops.composeSRGB = genCompose("SRGB")
-ops.composeLRGB = genCompose("LRGB")
-ops.composeXYZ = genCompose("XYZ")
-ops.composeLAB = genCompose("LAB")
-ops.composeLCH = genCompose("LCH")
+ops.mergeSRGB = genMerge("SRGB")
+ops.mergeLRGB = genMerge("LRGB")
+ops.mergeXYZ = genMerge("XYZ")
+ops.mergeLAB = genMerge("LAB")
+ops.mergeLCH = genMerge("LCH")
 
 
 

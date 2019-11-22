@@ -198,8 +198,8 @@ overlayCS:addElem("menu", 2, "Merge", overlayCSmerge)
 overlayCS:addElem("menu", 3, "Convert", overlayCSconvert)
 overlayCS:addElem("menu", 4, "Override", overlayCSoverride)
 for k, v in ipairs{"SRGB", "LRGB", "XYZ", "LAB", "LCH"} do
-	overlayCSsplit:addElem("addNode", k, v, {ops, "decompose"..v})
-	overlayCSmerge:addElem("addNode", k, v, {ops, "compose"..v})
+	overlayCSsplit:addElem("addNode", k, v, {ops, "split"..v})
+	overlayCSmerge:addElem("addNode", k, v, {ops, "merge"..v})
 end
 for k, v in ipairs{"SRGB", "LRGB", "XYZ", "LAB", "LCH", "Y", "L"} do
 	overlayCSconvert:addElem("addNode", k, v, {ops, "cs", v})

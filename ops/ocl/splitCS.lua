@@ -15,23 +15,22 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ]]
 
-local proc = require "lib.opencl.process".new()
+local proc = require "lib.opencl.process.ivy".new()
 
 local source = [[
-kernel void decompose(global float *p1, global float *p2, global float *p3, global float *p4)
-{
-  const int x = get_global_id(0);
-  const int y = get_global_id(1);
+kernel split(I, O1, O2, O3)
+  const x = get_global_id(0)
+  const y = get_global_id(1)
 
-  $p2[x, y, 0] = $p1[x, y, 0];
-  $p3[x, y, 0] = $p1[x, y, 1];
-  $p4[x, y, 0] = $p1[x, y, 2];
-}
+  O1[x, y] = I[x, y, 0]
+  O2[x, y] = I[x, y, 1]
+  O3[x, y] = I[x, y, 2]
+end
 ]]
 
 local function execute()
-  proc:getAllBuffers("p1", "p2", "p3", "p4")
-  proc:executeKernel("decompose", proc:size2D("p1"))
+  local I, O1, O2, O3 = proc:getAllBuffers(4)
+  proc:executeKernel("split", proc:size2D(I), {I, O1, O2, O3})
 end
 
 local function init(d, c, q)

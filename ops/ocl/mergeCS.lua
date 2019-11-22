@@ -15,23 +15,20 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ]]
 
-local proc = require "lib.opencl.process".new()
+local proc = require "lib.opencl.process.ivy".new()
 
 local source = [[
-kernel void compose(global float *p1, global float *p2, global float *p3, global float *p4)
-{
-  const int x = get_global_id(0);
-  const int y = get_global_id(1);
+kernel merge(I1, I2, I3, O)
+  const x = get_global_id(0)
+  const y = get_global_id(1)
 
-  $p4[x, y, 0] = $p1[x, y, 0];
-  $p4[x, y, 1] = $p2[x, y, 1];
-  $p4[x, y, 2] = $p3[x, y, 2];
-}
+  O[x, y] = vec(I1[x, y], I2[x, y], I3[x, y])
+end
 ]]
 
 local function execute()
-  proc:getAllBuffers("p1", "p2", "p3", "p4")
-  proc:executeKernel("compose", proc:size2D("p4"))
+  local I1, I2, I3, O = proc:getAllBuffers(4)
+  proc:executeKernel("merge", proc:size2D(O), {I1, I2, I3, O})
 end
 
 local function init(d, c, q)
