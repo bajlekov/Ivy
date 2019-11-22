@@ -35,7 +35,7 @@ local function demand()
 	return buf
 end
 
-function ops.initDev(device, context, queue)
+function ops.init(device, context, queue)
 	local data = require "data"
 	local image = require "ui.image"
 
@@ -102,6 +102,8 @@ function ops.initDev(device, context, queue)
 	gen2("diff", "math_kernels_2.cl")
 	gen2("GT", "math_kernels_2.cl")
 	gen2("LT", "math_kernels_2.cl")
+	gen2("closer", "math_kernels_2.cl")
+	gen2("farther", "math_kernels_2.cl")
 
 	genCS("SRGB")
 	genCS("LRGB")

@@ -58,7 +58,7 @@ local function parse(parseType, device, context, queue)
 		local dim2 = s:match("get_global_id%W*%(%W*2%W*%)") and true or false
 
 		if parseType == "ocl" then
-			local ops = require "thread.workerDev"
+			local ops = require "thread.worker"
 			local proc = require "lib.opencl.process".new()
 
 			proc:init(device, context, queue)

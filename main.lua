@@ -111,7 +111,7 @@ end
 
 local data = require "data"
 local thread = require "thread"
-thread.init(oclPlatform, oclDevice, settings.nativeCoreCount)
+thread.init(oclPlatform, oclDevice)
 data.initDev(thread.getContext(), thread.getQueue())
 
 local image = require "ui.image"
