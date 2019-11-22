@@ -18,7 +18,7 @@
 local proc = require "lib.opencl.process.ivy".new()
 
 local source = [[
-kernel brightness(I, P, O)
+kernel contrast(I, P, O)
   const x = get_global_id(0)
   const y = get_global_id(1)
 
@@ -46,7 +46,7 @@ end
 
 local function execute()
 	local I, P, O = proc:getAllBuffers(3)
-	proc:executeKernel("brightness", proc:size3D(O), {I, P, O})
+	proc:executeKernel("contrast", proc:size3D(O), {I, P, O})
 end
 
 local function init(d, c, q)
