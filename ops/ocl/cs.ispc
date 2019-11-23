@@ -519,4 +519,19 @@ inline float<3> max(float<3> a, float<3> b) {
 // similar needs to be done for all math functions!!
 // pre-compile and link this instead of including as source once done!!
 
+inline float pown(float a, int b) {
+  if (b<0) return 1.0/pown(a, -b);
+  else if (b==0) return 1;
+  else if (b==1) return a;
+  else if (b==2) return a*a;
+  else if (b==3) return a*a*a;
+  else if (b==4) return a*a*a*a;
+  else if (a>0) return pow(a, b);
+  else {
+    float p = a;
+    for (int i = 1; i<b; i++) p*= a;
+    return p;
+  }
+}
+
 #endif

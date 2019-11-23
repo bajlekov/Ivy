@@ -723,7 +723,7 @@ uniform int _nz = ceil((uniform float)_dim[5]/_dim[8]);
             ),
             BinaryOp::Pow => {
                 let call = if self.inference.borrow().var_type(&expr.right) == VarType::Int {
-                    "pow"
+                    "pown"
                 } else {
                     "pow"
                 };
