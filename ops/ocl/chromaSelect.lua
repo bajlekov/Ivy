@@ -22,16 +22,14 @@ kernel chromaSelect(I, R, S, O, M)
   const x = get_global_id(0)
   const y = get_global_id(1)
 
-	var r = R[x, y, 0]
-	var s = S[0, 0]
   var i = I[x, y]
+	var r = R[x, y]
+	var s = S[0, 0]
 
   var mask = range(r, r, abs(s.y-i.y))
-  if O.z==3 then
-    O[x, y, 0] = i.x
-    O[x, y, 1] = i.y*mask
-    O[x, y, 2] = i.z
-  end
+
+  i.y = i.y*mask
+  O[x, y] = i
   M[x, y] = mask
 end
 ]]

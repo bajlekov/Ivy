@@ -15,34 +15,40 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ]]
 
-local proc = require "lib.opencl.process".new()
+local proc = require "lib.opencl.process.ivy".new()
 
 local source = [[
-kernel void hueMask(global float *I, global float *C, global float *P, global float *O)
-{
-  const int x = get_global_id(0);
-  const int y = get_global_id(1);
+kernel hueMask(I, C, P, O)
+  const x = get_global_id(0)
+  const y = get_global_id(1)
 
-  float i = $I[x, y, 2];
-	i = i - floor(i);
+  var i = I[x, y, 2]
+	i = i - floor(i)
 
-  int lowIdx = clamp(floor(i*255), 0.0f, 255.0f);
-	int highIdx = clamp(ceil(i*255), 0.0f, 255.0f);
+  var lowIdx = clamp(int(floor(i*255.0)), 0, 255)
+	var highIdx = clamp(int(ceil(i*255.0)), 0, 255)
 
-	float lowVal = C[lowIdx];
-	float highVal = C[highIdx];
+	var lowVal = C[lowIdx]
+	var highVal = C[highIdx]
 
-	float factor = lowIdx==highIdx ? 1.0f : (i*255.0f-lowIdx)/(highIdx-lowIdx);
-	float o = lowVal*(1.0f - factor) + highVal*factor;
+	var factor = 0.0
+  if lowIdx==highIdx then
+    factor = 1.0
+  else
+    factor = i*255.0-lowIdx
+  end
 
-  float c = $I[x, y, 1];
-  $O[x, y, 0] = o * ($P[x, y]<0.5f ? 1.0f : c);
-}
+  var o = lowVal*(1.0 - factor) + highVal*factor
+  if P[0]>0.5 then
+    o = o * I[x, y, 1]
+  end
+  O[x, y, 0] = o
+end
 ]]
 
 local function execute()
-	proc:getAllBuffers("I", "C", "P", "O")
-	proc:executeKernel("hueMask", proc:size2D("O"))
+  local I, C, P, O = proc:getAllBuffers(4)
+	proc:executeKernel("hueMask", proc:size2D(O), {I, C, P, O})
 end
 
 local function init(d, c, q)

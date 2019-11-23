@@ -15,43 +15,33 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ]]
 
-local proc = require "lib.opencl.process".new()
+local proc = require "lib.opencl.process.ivy".new()
 
 local source = [[
-float range(float a, float b, float s) {
-  float x = (a-b)*s;
-  x = clamp(x, -1.0f, 1.0f);
-  float x2 = x*x;
-  float x4 = x2*x2;
-  return (1.0f-2.0f*x2+x4);
-}
+function range_circular(p, w, x)
+  return range(p, w, abs(x)) + range(p, w, abs(x-1.0))
+end
 
-float range_circular(float a, float b, float s) {
-  return range(a, b, s) + range(a, b-1, s) + range(a, b+1, s);
-}
+kernel hueSelect(I, R, S, O, M)
+  const x = get_global_id(0)
+  const y = get_global_id(1)
 
-kernel void hueSelect(global float *I, float global *R, global float *S, global float *O, global float *M)
-{
-  const int x = get_global_id(0);
-  const int y = get_global_id(1);
+  var i = I[x, y]
+  i = i - floor(i)
+  var r = R[x, y]*0.5
+  var s = S[0, 0]
 
-	float r = 1.0f/$R[x, y, 0];
+  var mask = range_circular(r, r, abs(s.z-i.z))
 
-	float3 s = $S[0, 0];
-  float3 i = $I[x, y];
-
-  float mask = range(s.z, i.z, r);
-
-  $O[x, y, 0] = i.x;
-  $O[x, y, 1] = i.y*mask;
-  $O[x, y, 2] = s.z;
-  $M[x, y, 0] = mask;
-}
+  i.y = i.y*mask
+  O[x, y] = i
+  M[x, y] = mask
+end
 ]]
 
 local function execute()
-  proc:getAllBuffers("I", "R", "S", "O", "M")
-  proc:executeKernel("hueSelect", proc:size2Dmax("O", "M"))
+  local I, R, S, O, M = proc:getAllBuffers(5)
+  proc:executeKernel("hueSelect", proc:size2Dmax(O, M), {I, R, S, O, M})
 end
 
 local function init(d, c, q)
