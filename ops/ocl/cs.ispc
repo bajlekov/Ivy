@@ -122,8 +122,8 @@ inline float _lab(float v) {
 }
 
 inline float _xyz(float V) {
-  if (pow(V, 3)>E) {
-    return pow(V, 3);
+  if (V*V*V>E) {
+    return V*V*V;
   } else {
     return (116.0f*V - 16.0f)/K;
   }
@@ -171,7 +171,7 @@ inline float _L_Y(float i) {
 inline float<3> _LAB_LCH(float<3> i) {
 	float<3> o;
 	o.x = i.x;
-	o.y = sqrt(pow(i.y, 2) + pow(i.z, 2));
+	o.y = sqrt(i.y*i.y + i.z*i.z);
 	o.z = atan2(i.z, i.y)*M_1_2PI;
 	return o;
 }
@@ -479,26 +479,10 @@ inline void _atomic_float_max(volatile global float *addr, float val) {
 
 
 inline float range(float p, float w, float x) {
-	x = (x-(p-w))/(2*w);
+	x = (x-(p-w))/(2*w+0.000001f);
 	x = clamp(x, 0.0f, 1.0f);
 
-	return 2*pow(x, 3) - 3*pow(x, 2) + 1;
-}
-
-inline float pow(float a, int b) {
-	return pow(a, (float)b);
-}
-
-inline uniform float pow(uniform float a, uniform int b) {
-	return pow(a, (uniform float)b);
-}
-
-inline float<3> pow(float<3> a, int b) {
-	return vec(pow(a.x, b), pow(a.y, b), pow(a.z, b));
-}
-
-inline float<3> pow(float<3> a, float b) {
-	return vec(pow(a.x, b), pow(a.y, b), pow(a.z, b));
+	return 2.0f*x*x*x - 3.0f*x*x + 1.0f;
 }
 
 inline float<3> pow(float<3> a, float<3> b) {
@@ -507,6 +491,10 @@ inline float<3> pow(float<3> a, float<3> b) {
 
 inline float<3> exp(float<3> a) {
 	return vec(exp(a.x), exp(a.y), exp(a.z));
+}
+
+inline float<3> abs(float<3> a) {
+	return vec(abs(a.x), abs(a.y), abs(a.z));
 }
 
 inline float<3> sqrt(float<3> a) {
@@ -518,6 +506,19 @@ inline float<3> max(float<3> a, float<3> b) {
 }
 // similar needs to be done for all math functions!!
 // pre-compile and link this instead of including as source once done!!
+
+inline float mix(float a, float b, float c) {
+  //c = clamp(c, 0.0f, 1.0f); // opencl mix does not implement a clamp!
+  return a*(1.0-c) + b*c;
+}
+
+inline float<3> mix(float<3> a, float<3> b, float<3> c) {
+	return vec(mix(a.x, b.x, c.x), mix(a.y, b.y, c.y), mix(a.z, b.z, c.z));
+}
+
+inline float<3> clamp(float<3> v, float l, float h) {
+  return vec(clamp(v.x, l, h), clamp(v.y, l, h), clamp(v.z, l, h));
+}
 
 inline float pown(float a, int b) {
   if (b<0) return 1.0/pown(a, -b);
