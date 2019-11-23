@@ -606,11 +606,21 @@ impl<'a> Generator<'a> {
                 self.gen_expr(&expr.left),
                 self.gen_expr(&expr.right)
             ),
-            BinaryOp::Div => format!(
-                "{}/{}",
-                self.gen_expr(&expr.left),
-                self.gen_expr(&expr.right)
-            ),
+            BinaryOp::Div => {
+                if self.inference.borrow().var_type(&expr.left) == VarType::Int {
+                    format!(
+                        "((float){})/{}",
+                        self.gen_expr(&expr.left),
+                        self.gen_expr(&expr.right),
+                    )
+                } else {
+                    format!(
+                        "{}/{}",
+                        self.gen_expr(&expr.left),
+                        self.gen_expr(&expr.right),
+                    )
+                }
+            },
             BinaryOp::Mul => format!(
                 "{}*{}",
                 self.gen_expr(&expr.left),

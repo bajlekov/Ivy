@@ -696,11 +696,21 @@ uniform int _nz = ceil((uniform float)_dim[5]/_dim[8]);
                 self.gen_expr(&expr.left),
                 self.gen_expr(&expr.right)
             ),
-            BinaryOp::Div => format!(
-                "{}/{}",
-                self.gen_expr(&expr.left),
-                self.gen_expr(&expr.right)
-            ),
+            BinaryOp::Div => {
+                if self.inference.borrow().var_type(&expr.left) == VarType::Int {
+                    format!(
+                        "((float){})/{}",
+                        self.gen_expr(&expr.left),
+                        self.gen_expr(&expr.right),
+                    )
+                } else {
+                    format!(
+                        "{}/{}",
+                        self.gen_expr(&expr.left),
+                        self.gen_expr(&expr.right),
+                    )
+                }
+            },
             BinaryOp::Mul => format!(
                 "{}*{}",
                 self.gen_expr(&expr.left),

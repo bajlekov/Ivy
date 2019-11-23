@@ -83,6 +83,7 @@ impl<'a> Inference<'a> {
                 (BinaryOp::Less, l, r) if (l == I || l == F) && (r == I || r == F) => B,
                 (BinaryOp::LessEqual, l, r) if (l == I || l == F) && (r == I || r == F) => B,
                 (BinaryOp::Pow, l, r) => self.promote(self.promote(l, r), F),
+                (BinaryOp::Div, l, r) => self.promote(self.promote(l, r), F),
                 (_, l, r) => self.promote_num(l, r),
             },
             Expr::Index(expr, idx) => match (self.var_type(expr), &**idx) {
