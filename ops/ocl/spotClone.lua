@@ -15,47 +15,45 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ]]
 
-local proc = require "lib.opencl.process".new()
+local proc = require "lib.opencl.process.ivy".new()
 
 local source = [[
-#include "range.cl"
+kernel spotClone(I, O, P, idx)
+	const x = get_global_id(0)
+	const y = get_global_id(1)
+	const z = get_global_id(2)
 
-kernel void spotClone(global float *I, global float *O, global float *P, int idx) {
-	const int x = get_global_id(0);
-	const int y = get_global_id(1);
-	const int z = get_global_id(2);
+	var s = P[0, idx, 4] -- spot size
+	var f = P[0, idx, 5] -- spot falloff
 
-	int s = $P[0, idx, 4];		// spot size
-	float f = $P[0, idx, 5];		// spot falloff
+	var sx = floor(P[0, idx, 0] * O.x) - s + x -- source x
+	var sy = floor(P[0, idx, 1] * O.y) - s + y -- source y
+	var dx = floor(P[0, idx, 2] * O.x) - s + x -- destination x
+	var dy = floor(P[0, idx, 3] * O.y) - s + y -- destination y
 
-	int sx = floor($P[0, idx, 0]*$O.x$) - s + x;	// source x
-	int sy = floor($P[0, idx, 1]*$O.y$) - s + y;	// source y
-	int dx = floor($P[0, idx, 2]*$O.x$) - s + x;	// destination x
-	int dy = floor($P[0, idx, 3]*$O.y$) - s + y;	// destination y
+	if dx<0 or dx>=O.x or dy<0 or dy>=O.y then
+		return
+	end
 
-	if (dx<0 || dx>=$O.x$ || dy<0 || dy>=$O.y$) return; // clamp to image
+	var d = sqrt((x-s)^2 + (y-s)^2) -- distance from center
+	var mask = range(1.0-f*0.5, f*0.5, d/s)
 
-	float d = sqrt( (float)((x-s)*(x-s) + (y-s)*(y-s)) ); // distance from center
-	float mask = range(d, s/(1 + f), f);
+	var o = O[dx, dy, z]
+	var i = I[sx, sy, z]
 
-	float o = $O[dx, dy, z];
-	float i = $I[sx, sy, z];
-
-	$O[dx, dy, z] = (1-mask)*o + mask*i;
-}
+	O[dx, dy, z] = mix(o, i, mask)
+end
 ]]
 
 local ffi = require "ffi"
 local idx = ffi.new("cl_int[1]", 0)
 
 local function execute()
-	proc:getAllBuffers("I", "O", "P")
-	proc.buffers.P.__write = false
-	proc.buffers.I.__write = false
-	for i = 0, proc.buffers.P.y-1 do
+	local I, O, P = proc:getAllBuffers(3)
+	for i = 0, P.y-1 do
 		idx[0] = i
-		local ps = math.ceil(proc.buffers.P:get(0, i, 4)) -- brush size
-		proc:executeKernel("spotClone", {ps*2+1, ps*2+1, proc.buffers.O.z}, {"I", "O", "P", idx})
+		local ps = math.ceil(P:get(0, i, 4)) -- brush size
+		proc:executeKernel("spotClone", {ps*2+1, ps*2+1, O.z}, {I, O, P, idx})
 		proc.queue:finish()
 	end
 end

@@ -16,113 +16,71 @@
 ]]
 
 local ffi = require "ffi"
-local proc = require "lib.opencl.process".new()
+local proc = require "lib.opencl.process.ivy".new()
 local data = require "data"
 
 local source = [[
-#include "range.cl"
+const pad = 32
 
-kernel void take(global float *O, global float *S, global float *D, global float *M, global float *P, int idx, int ox, int oy) {
-	const int x = get_global_id(0);
-	const int y = get_global_id(1);
-	const int z = get_global_id(2);
+kernel take(O, S, D, M, P, idx)
+	const x = get_global_id(0)
+	const y = get_global_id(1)
 
-	int s = $P[0, idx, 4];		// spot size
-	float f = $P[0, idx, 5];		// spot falloff
+	var s = P[0, idx, 4] -- spot size
+	var f = P[0, idx, 5] -- spot falloff
 
-	int sx = floor($P[0, idx, 0]*$O.x$) - ox + x;	// source x
-	int sy = floor($P[0, idx, 1]*$O.y$) - oy + y;	// source y
-	int dx = floor($P[0, idx, 2]*$O.x$) - ox + x;	// destination x
-	int dy = floor($P[0, idx, 3]*$O.y$) - oy + y;	// destination y
+	var sx = floor(P[0, idx, 0] * O.x) - s - pad + x -- source x
+	var sy = floor(P[0, idx, 1] * O.y) - s - pad + y -- source y
+	var dx = floor(P[0, idx, 2] * O.x) - s - pad + x -- destination x
+	var dy = floor(P[0, idx, 3] * O.y) - s - pad + y -- destination y
 
-	$S[x, y, z] = $O[sx, sy, z];
-	$D[x, y, z] = $O[dx, dy, z];
+	S[x, y] = O[sx, sy]
+	D[x, y] = O[dx, dy]
 
-	float d = sqrt( (float)((x - ox)*(x - ox) + (y - oy)*(y - oy)) ); // distance from center
-	float mask = range(d, s/(1 + f), f);
+	var d = sqrt((x-s-pad)^2 + (y-s-pad)^2) -- distance from center
+	M[x, y] = range(1.0-f*0.5, f*0.5, d/s)
+end
 
-	$M[x, y, 0] = mask; // todo: separate 1ch process with reduced calculation outside of bounding box
-}
+kernel place(O, S, P, idx)
+	const x = get_global_id(0)
+	const y = get_global_id(1)
 
-kernel void place(global float *O, global float *S, global float *P, int idx, int ox, int oy) {
-	const int x = get_global_id(0);
-	const int y = get_global_id(1);
-	const int z = get_global_id(2);
+	var s = P[0, idx, 4] -- spot size
 
-	int s = $P[0, idx, 4];		// spot size
+	var dx = floor(P[0, idx, 2] * O.x) - s - pad + x -- destination x
+	var dy = floor(P[0, idx, 3] * O.y) - s - pad + y -- destination y
+	O[dx, dy] = S[x, y]
+end
 
-	int dx = floor($P[0, idx, 2]*$O.x$) - ox + x;	// destination x
-	int dy = floor($P[0, idx, 3]*$O.y$) - oy + y;	// destination y
-	if (dx<0 || dx>=$O.x$ || dy<0 || dy>=$O.y$) return; // clamp to image
+kernel mixfactor(A, B, F, O)
+	const x = get_global_id(0)
+	const y = get_global_id(1)
 
-	$O[dx, dy, z] = $S[x, y, z];
-}
+	var f = F[x, y]
+	var a = A[x, y]
+	var b = B[x, y]
 
-#if $$ A and B and F and O and 1 or 0 $$
-kernel void mixfactor(global float *A, global float *B, global float *F, global float *O) {
-	const int x = get_global_id(0);
-	const int y = get_global_id(1);
-	const int z = get_global_id(2);
-
-	float f = $F[x, y, z];
-	f = clamp(f, 0.0f, 1.0f);
-
-	$O[x, y, z] = $A[x, y, z]*f + $B[x, y, z]*(1.0f - f);
-}
-#endif
+	O[x, y] = mix(b, a, clamp(f, 0.0, 1.0))
+end
 ]]
 
 local downsize = require "tools.downsize"
 local idx = ffi.new("cl_int[1]", 0)
-local ox = ffi.new("cl_int[1]", 0)
-local oy = ffi.new("cl_int[1]", 0)
 
 local function execute()
-	proc:getAllBuffers("O", "P")
-	proc.buffers.P.__write = false
-	for i = 0, proc.buffers.P.y-1 do
+	local O, P = proc:getAllBuffers(2)
+
+	for i = 0, P.y-1 do
 
 		idx[0] = i
-		local s = math.ceil(proc.buffers.P:get(0, i, 4)) -- brush size
+		local s = math.ceil(P:get(0, i, 4))*2 + 64 -- brush size + padding
+		local sz = O.z
 
-		if s<=128 then
-			ox[0] = 256
-			oy[0] = 256
-		elseif s<=384 then
-			ox[0] = 512
-			oy[0] = 512
-		elseif s<=640 then
-			ox[0] = 768
-			oy[0] = 768
-		elseif s<=896 then
-			ox[0] = 1024
-			oy[0] = 1024
-		elseif s<=1152 then
-			ox[0] = 1280
-			oy[0] = 1280
-		elseif s<=1408 then
-			ox[0] = 1536
-			oy[0] = 1536
-		elseif s<=1664 then
-			ox[0] = 1792
-			oy[0] = 1792
-		elseif s<=1920 then
-			ox[0] = 2048
-			oy[0] = 2048
-		else
-			error("Brush size not supported!")
-		end
-		local sz = proc.buffers.O.z
+		local M = data:new(s, s, sz)  -- mask
+		local S = data:new(s, s, sz) -- source patch
+		local D = data:new(s, s, sz) -- dest patch
 
-		local M = data:new(ox[0]*2, oy[0]*2, 1)	-- mask
-		local S = data:new(ox[0]*2, oy[0]*2, sz)	-- source patch
-		local D = data:new(ox[0]*2, oy[0]*2, sz) -- dest patch
-
-		local O = proc.buffers.O
-		proc.buffers.S = S
-		proc.buffers.D = D
-		proc.buffers.M = M
-		proc:executeKernel("take", {ox[0]*2, oy[0]*2, sz}, {"O", "S", "D", "M", "P", idx, ox, oy})
+		proc:executeKernel("take", {s, s}, {O, S, D, M, P, idx})
 
 		local MG = {} -- mask gaussian levels
 		local SL = {} -- source laplacian levels
@@ -143,129 +101,71 @@ local function execute()
 		local DG = data:new(downsize(DL[4]))
 
 		-- perform mix6
-		proc.buffers.I = S
-		proc.buffers.L = SL[1]
-		proc.buffers.G = G[1]
-		proc:executeKernel("pyrDown", proc:size3D("G"), {"I", "G"})
-		proc:executeKernel("pyrUpL", proc:size3D("G"), {"I", "L", "G"})
+		proc:executeKernel("pyrDown", proc:size2D(G[1]), {S, G[1]})
+		proc:executeKernel("pyrUpL", proc:size2D(G[1]), {S, G[1], SL[1]})
 		for i = 2, 3 do
-			proc.buffers.I = G[i-1]
-			proc.buffers.L = SL[i]
-			proc.buffers.G = G[i]
-			proc:executeKernel("pyrDown", proc:size3D("G"), {"I", "G"})
-			proc:executeKernel("pyrUpL", proc:size3D("G"), {"I", "L", "G"})
+			proc:executeKernel("pyrDown", proc:size2D(G[i]), {G[i-1], G[i]})
+			proc:executeKernel("pyrUpL", proc:size2D(G[i]), {G[i-1], G[i], SL[i]})
 		end
-		proc.buffers.I = G[3]
-		proc.buffers.L = SL[4]
-		proc.buffers.G = SG
-		proc:executeKernel("pyrDown", proc:size3D("G"), {"I", "G"})
-		proc:executeKernel("pyrUpL", proc:size3D("G"), {"I", "L", "G"})
+		proc:executeKernel("pyrDown", proc:size2D(SG), {G[3], SG})
+		proc:executeKernel("pyrUpL", proc:size2D(SG), {G[3], SG, SL[4]})
 
-		proc.buffers.I = D
-		proc.buffers.L = DL[1]
-		proc.buffers.G = G[1]
-		proc:executeKernel("pyrDown", proc:size3D("G"), {"I", "G"})
-		proc:executeKernel("pyrUpL", proc:size3D("G"), {"I", "L", "G"})
+		proc:executeKernel("pyrDown", proc:size2D(G[1]), {D, G[1]})
+		proc:executeKernel("pyrUpL", proc:size2D(G[1]), {D, G[1], DL[1]})
 		for i = 2, 3 do
-			proc.buffers.I = G[i-1]
-			proc.buffers.L = DL[i]
-			proc.buffers.G = G[i]
-			proc:executeKernel("pyrDown", proc:size3D("G"), {"I", "G"})
-			proc:executeKernel("pyrUpL", proc:size3D("G"), {"I", "L", "G"})
+			proc:executeKernel("pyrDown", proc:size2D(G[i]), {G[i-1], G[i]})
+			proc:executeKernel("pyrUpL", proc:size2D(G[i]), {G[i-1], G[i], DL[i]})
 		end
-		proc.buffers.I = G[3]
-		proc.buffers.L = DL[4]
-		proc.buffers.G = DG
-		proc:executeKernel("pyrDown", proc:size3D("G"), {"I", "G"})
-		proc:executeKernel("pyrUpL", proc:size3D("G"), {"I", "L", "G"})
+		proc:executeKernel("pyrDown", proc:size2D(DG), {G[3], DG})
+		proc:executeKernel("pyrUpL", proc:size2D(DG), {G[3], DG, DL[4]})
 
-		proc.buffers.I = M
-		proc.buffers.G = MG[1]
-		proc:executeKernel("pyrDown", proc:size3D("G"), {"I", "G"})
+		proc:executeKernel("pyrDown", proc:size2D(MG[1]), {M, MG[1]})
 		for i = 2, 4 do
-			proc.buffers.I = MG[i-1]
-			proc.buffers.G = MG[i]
-			proc:executeKernel("pyrDown", proc:size3D("G"), {"I", "G"})
+			proc:executeKernel("pyrDown", proc:size2D(MG[i]), {MG[i-1], MG[i]})
 		end
 
-		proc.buffers.A = SL[1]
-		proc.buffers.B = DL[1]
-		proc.buffers.F = M
-		proc.buffers.O = SL[1]
-		proc:executeKernel("mixfactor", proc:size3D("O"), {"A", "B", "F", "O"})
+		proc:executeKernel("mixfactor", proc:size2D(SL[1]), {SL[1], DL[1], M, SL[1]})
 		for i = 2, 4 do
-			proc.buffers.A = SL[i]
-			proc.buffers.B = DL[i]
-			proc.buffers.F = MG[i-1]
-			proc.buffers.O = SL[i]
-			proc:executeKernel("mixfactor", proc:size3D("O"), {"A", "B", "F", "O"})
+			proc:executeKernel("mixfactor", proc:size2D(SL[i]), {SL[i], DL[i], MG[i-1], SL[i]})
 		end
-		proc.buffers.A = SG
-		proc.buffers.B = DG
-		proc.buffers.F = MG[4]
-		proc.buffers.O = SG
-		proc:executeKernel("mixfactor", proc:size3D("O"), {"A", "B", "F", "O"})
+		proc:executeKernel("mixfactor", proc:size2D(SG), {SG, DG, MG[4], SG})
 
-		proc.buffers.L = SL[4]
-		proc.buffers.G = DG
-		proc.buffers.O = G[3]
-		proc.buffers.f = data.one
-		local x, y, z = proc.buffers.O:shape()
+		local x, y, z = G[3]:shape()
 		x = math.ceil(x/2)
 		y = math.ceil(y/2)
-		proc:executeKernel("pyrUpG", {x, y, z}, {"L", "G", "O", "f"})
+		proc:executeKernel("pyrUpG", {x, y}, {SL[4], DG, G[3], data.one})
 		for i = 3, 2, -1 do
-			proc.buffers.L = SL[i]
-			proc.buffers.G = G[i]
-			proc.buffers.O = G[i - 1]
-			proc.buffers.f = data.one
-			local x, y, z = proc.buffers.O:shape()
+			local x, y, z = G[i-1]:shape()
 			x = math.ceil(x/2)
 			y = math.ceil(y/2)
-			proc:executeKernel("pyrUpG", {x, y, z}, {"L", "G", "O", "f"})
+			proc:executeKernel("pyrUpG", {x, y}, {SL[i], G[i], G[i-1], data.one})
 		end
-		proc.buffers.L = SL[1]
-		proc.buffers.G = G[1]
-		proc.buffers.O = S
-		proc.buffers.f = data.one
-		local x, y, z = proc.buffers.O:shape()
+		local x, y, z = S:shape()
 		x = math.ceil(x/2)
 		y = math.ceil(y/2)
-		proc:executeKernel("pyrUpG", {x, y, z}, {"L", "G", "O", "f"})
+		proc:executeKernel("pyrUpG", {x, y}, {SL[1], G[1], S, data.one})
 
 		-- return
-		proc.buffers.O = O
-		proc.buffers.S = S
-		proc:executeKernel("place", {ox[0]*2, oy[0]*2, sz}, {"O", "S", "P", idx, ox, oy})
-		proc.queue:finish()
+		proc:executeKernel("place", {s, s}, {O, S, P, idx})
 
 		-- cleanup
 		M:free()
-		M = nil
 		S:free()
-		S = nil
 		D:free()
-		D = nil
 		SG:free()
-		SG = nil
 		DG:free()
-		DG = nil
 		for i = 1, 4 do
 			MG[i]:free()
-			MG[i] = nil
 			SL[i]:free()
-			SL[i] = nil
 			DL[i]:free()
-			DL[i] = nil
 			G[i]:free()
-			G[i] = nil
 		end
 	end
 end
 
 local function init(d, c, q)
 	proc:init(d, c, q)
-	proc:loadSourceFile("pyr.cl")
+	proc:loadSourceFile("pyr_c_3d.ivy")
 	proc:loadSourceString(source)
 	return execute
 end
