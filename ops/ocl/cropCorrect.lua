@@ -15,162 +15,122 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ]]
 
-local proc = require "lib.opencl.process".new()
+local proc = require "lib.opencl.process.ivy".new()
 
 local source = [[
-inline float rd(float ru,
-								float A,
-								float B,
-								float C,
-								float BR,
-								float CR,
-								float VR
-							) {
-  ru = ru*(A*ru*ru*ru + B*ru*ru + C*ru + (1-A-B-C));
-	return ru*(BR*ru*ru + CR*ru + VR);
-}
+function rd(ru, A, B, C, BR, CR, VR)
+  ru = ru*(A*ru*ru*ru + B*ru*ru + C*ru + (1.0-A-B-C))
+	return ru*(BR*ru*ru + CR*ru + VR)
+end
 
-inline float filterLinear(float y0, float y1, float x) {
-  return y1*x + y0*(1-x);
-}
+function filterLinear(y0, y1, x)
+  return y1*x + y0*(1.0-x)
+end
 
-inline float filterCubic(float y0, float y1, float y2, float y3, float x) {
-  float a = 0.5*(-y0 + 3*y1 -3*y2 +y3);
-  float b = y0 -2.5*y1 + 2*y2 - 0.5*y3;
-  float c = 0.5*(-y0 + y2);
-  float d = y1;
+function filterCubic(y0, y1, y2, y3, x)
+  var a = 0.5*(-y0 + 3.0*y1 -3.0*y2 +y3)
+  var b = y0 -2.5*y1 + 2.0*y2 - 0.5*y3
+  var c = 0.5*(-y0 + y2)
+  var d = y1
 
-  return a*x*x*x + b*x*x + c*x + d;
-}
+  return a*x^3 + b*x^2 + c*x + d
+end
 
-kernel void cropCorrect(global float *I, global float *O, global float *offset, global float *flags)
-{
-  const int x = get_global_id(0);
-  const int y = get_global_id(1);
-  const int z = get_global_id(2);
+kernel cropCorrect(I, O, offset, flags)
+  const x = get_global_id(0)
+  const y = get_global_id(1)
+  const z = get_global_id(2)
 
-  float ox = round(offset[0]);
-  float oy = round(offset[1]);
-  float s = offset[2];
+  var ox = round(offset[0])
+  var oy = round(offset[1])
+  var s = offset[2]
 
-	float A, B, C;
-	float gs = 1.0f;
-	if (flags[0]>0.5f) {
-  	A = offset[3];
-  	B = offset[4];
-  	C = offset[5];
-		gs = offset[12];
-	} else {
-		A = 0.0f;
-  	B = 0.0f;
-  	C = 0.0f;
-	}
+	var A = 0.0
+	var B = 0.0
+	var C = 0.0
+	var gs = 1.0
 
-	float BR, CR, VR;
-	if (flags[1]>0.5f) {
-		if (z==0) {
-			BR = offset[6];
-			CR = offset[7];
-			VR = offset[8];
-		} else if (z==2) {
-			BR = offset[9];
-			CR = offset[10];
-			VR = offset[11];
-		} else {
-			BR = 0.0f;
-			CR = 0.0f;
-			VR = 1.0f;
-		}
-	} else {
-		BR = 0.0f;
-		CR = 0.0f;
-		VR = 1.0f;
-	}
+	if flags[0]>0.5 then
+  	A = offset[3]
+  	B = offset[4]
+  	C = offset[5]
+		gs = offset[12]
+	end
 
-  float x_2 = $I.x$ * 0.5f;
-  float y_2 = $I.y$ * 0.5f;
-  float fn_1 = min(x_2, y_2);
-  float fn = 1.0/fn_1;
+	var BR = 0.0
+	var CR = 0.0
+	var VR = 1.0
+	if flags[1]>0.5 then
+		if z==0 then
+			BR = offset[6]
+			CR = offset[7]
+			VR = offset[8]
+		end
+		if z==2 then
+			BR = offset[9]
+			CR = offset[10]
+			VR = offset[11]
+		end
+	end
 
-  float cy = y*s+oy;
-  float cx = x*s+ox;
+  var x_2 = I.x*0.5
+  var y_2 = I.y*0.5
+  var fn_1 = min(x_2, y_2)
+  var fn = 1.0/fn_1
 
-  float cxn = (cx - x_2)*fn;
-  float cyn = (cy - y_2)*fn;
+  var cy = y*s+oy
+  var cx = x*s+ox
 
-  float r = sqrt(cxn*cxn + cyn*cyn);
+  var cxn = (cx - x_2)*fn
+  var cyn = (cy - y_2)*fn
 
-  float sd = rd(r, A, B, C, BR, CR, VR)/(r + 1.0e-15)*gs;
-  cx = sd*cxn*fn_1 + x_2;
-  cy = sd*cyn*fn_1 + y_2;
+  var r = sqrt(cxn^2 + cyn^2)
 
-  // bicubic filtering
-  int xm = floor(cx);
-  float xf = cx - xm;
-  int ym = floor(cy);
-  float yf = cy - ym;
+  var sd = rd(r, A, B, C, BR, CR, VR) / max(r, 0.000001)*gs
+  cx = sd*cxn*fn_1 + x_2
+  cy = sd*cyn*fn_1 + y_2
 
-  float v00, v01, v02, v03;
-  float v10, v11, v12, v13;
-  float v20, v21, v22, v23;
-  float v30, v31, v32, v33;
+  -- bicubic filtering
+  var xm = int(floor(cx))
+  var xf = cx - xm
+  var ym = int(floor(cy))
+  var yf = cy - ym
 
-  v00 = $I[xm-1, ym-1, z];
-  v01 = $I[xm-1, ym  , z];
-  v02 = $I[xm-1, ym+1, z];
-  v03 = $I[xm-1, ym+2, z];
-  v10 = $I[xm  , ym-1, z];
-  v11 = $I[xm  , ym  , z];
-  v12 = $I[xm  , ym+1, z];
-  v13 = $I[xm  , ym+2, z];
-  v20 = $I[xm+1, ym-1, z];
-  v21 = $I[xm+1, ym  , z];
-  v22 = $I[xm+1, ym+1, z];
-  v23 = $I[xm+1, ym+2, z];
-  v30 = $I[xm+2, ym-1, z];
-  v31 = $I[xm+2, ym  , z];
-  v32 = $I[xm+2, ym+1, z];
-  v33 = $I[xm+2, ym+2, z];
+	var v = array(4, 4)
 
-  $O[x, y, z] = filterCubic(
-    filterCubic(v00, v01, v02, v03, yf),
-    filterCubic(v10, v11, v12, v13, yf),
-    filterCubic(v20, v21, v22, v23, yf),
-    filterCubic(v30, v31, v32, v33, yf),
-    xf);
+  v[0, 0] = I[xm-1, ym-1, z]
+  v[0, 1] = I[xm-1, ym  , z]
+  v[0, 2] = I[xm-1, ym+1, z]
+  v[0, 3] = I[xm-1, ym+2, z]
+  v[1, 0] = I[xm  , ym-1, z]
+  v[1, 1] = I[xm  , ym  , z]
+  v[1, 2] = I[xm  , ym+1, z]
+  v[1, 3] = I[xm  , ym+2, z]
+  v[2, 0] = I[xm+1, ym-1, z]
+  v[2, 1] = I[xm+1, ym  , z]
+  v[2, 2] = I[xm+1, ym+1, z]
+  v[2, 3] = I[xm+1, ym+2, z]
+  v[3, 0] = I[xm+2, ym-1, z]
+  v[3, 1] = I[xm+2, ym  , z]
+  v[3, 2] = I[xm+2, ym+1, z]
+  v[3, 3] = I[xm+2, ym+2, z]
 
-  /*
-  // bilinear filtering
-  int xm = floor(cx);
-  float xf = cx - xm;
-  int ym = floor(cy);
-  float yf = cy - ym;
+  O[x, y, z] = filterCubic(
+    filterCubic(v[0, 0], v[0, 1], v[0, 2], v[0, 3], yf),
+    filterCubic(v[1, 0], v[1, 1], v[1, 2], v[1, 3], yf),
+    filterCubic(v[2, 0], v[2, 1], v[2, 2], v[2, 3], yf),
+    filterCubic(v[3, 0], v[3, 1], v[3, 2], v[3, 3], yf),
+    xf)
 
-  float v00, v01, v10, v11;
-
-  v00 = $I[xm  , ym  , z];
-  v01 = $I[xm  , ym+1, z];
-  v10 = $I[xm+1, ym  , z];
-  v11 = $I[xm+1, ym+1, z];
-
-  $O[x, y, z] = filterLinear(
-    filterLinear(v00, v01, yf),
-    filterLinear(v10, v11, yf),
-    xf);
-  */
-
-  /*
-  // nearest neighbor filtering
-  $O[x, y, z] = $I[(int)(cx), (int)(cy), z];
-  */
-
-	if (xm<0 || ym<0 || xm>$$I.x-1$$ || ym>$$I.y-1$$) $O[x, y, z] = 0.0f;
-}
+	if xm<0 or ym<0 or xm>I.x-1 or ym>I.y-1 then
+		O[x, y, z] = 0.0
+	end
+end
 ]]
 
 local function execute()
-	proc:getAllBuffers("I", "O", "offset", "flags")
-	proc:executeKernel("cropCorrect", proc:size3D("O"))
+	local I, O, offset, flags = proc:getAllBuffers(4)
+	proc:executeKernel("cropCorrect", proc:size3D(O), {I, O, offset, flags})
 end
 
 local function init(d, c, q)

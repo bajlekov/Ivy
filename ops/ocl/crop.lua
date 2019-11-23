@@ -15,26 +15,25 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ]]
 
-local proc = require "lib.opencl.process".new()
+local proc = require "lib.opencl.process.ivy".new()
 
 local source = [[
-kernel void crop(global float *p1, global float *p2, global float *offset)
-{
-  const int x = get_global_id(0);
-  const int y = get_global_id(1);
-  const int z = get_global_id(2);
+kernel crop(I, O, offset)
+  const x = get_global_id(0)
+  const y = get_global_id(1)
+  const z = get_global_id(2)
 
-  float ox = offset[0];
-  float oy = offset[1];
-  float s = offset[2];
+  var ox = offset[0]
+  var oy = offset[1]
+  var s = offset[2]
 
-  $p2[x, y, z] = $p1[(int)(x*s+ox), (int)(y*s+oy), z];
-}
+  O[x, y, z] = I[x*s+ox, y*s+oy, z]
+end
 ]]
 
 local function execute()
-  proc:getAllBuffers("p1", "p2", "offset")
-  proc:executeKernel("crop", proc:size3D("p2"))
+  local I, O, offset = proc:getAllBuffers(3)
+  proc:executeKernel("crop", proc:size3D(O), {I, O, offset})
 end
 
 local function init(d, c, q)
