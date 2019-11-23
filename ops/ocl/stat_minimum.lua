@@ -15,45 +15,28 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ]]
 
-local proc = require "lib.opencl.process".new()
+local proc = require "lib.opencl.process.ivy".new()
 
 local source = [[
-inline void atomic_min_f(volatile global float *addr, float val) {
-	union {
-		unsigned int u32;
-		float        f32;
-	} next, expected, current;
+kernel set_high(O)
+	const z = get_global_id(2)
+	O[z] = float(INFINITY)
+end
 
-	current.f32 = *addr;
-	next.f32 = val;
+kernel minimum(I, O)
+	const x = get_global_id(0)
+	const y = get_global_id(1)
+	const z = get_global_id(2)
 
-	do {
-		if (current.f32 <= val) return;
-		expected.f32 = current.f32;
-		current.u32  = atomic_cmpxchg( (volatile __global unsigned int *)addr, expected.u32, next.u32);
-	} while( current.u32 != expected.u32 );
-}
-
-kernel void set_high(global float *O) {
-	const int z = get_global_id(2);
-	O[z] = INFINITY;
-}
-
-kernel void minimum(global float *I, global float *O) {
-	const int x = get_global_id(0);
-	const int y = get_global_id(1);
-	const int z = get_global_id(2);
-
-	atomic_min_f(O + z, $I[x, y, z]);
-}
+	atomic_min(O[z].ptr, I[x, y, z])
+end
 ]]
 
 local function execute()
-	proc:getAllBuffers("I", "O")
-	proc.buffers.I.__write = false
-	proc.buffers.O.__read = false
-	proc:executeKernel("set_high", proc:size3D("O"), {"O"})
-	proc:executeKernel("minimum", proc:size3D("I"))
+	local I, O = proc:getAllBuffers(2)
+	local size = proc:size3D(I)
+	proc:executeKernel("set_high", proc:size3D(O), {O})
+	proc:executeKernel("minimum", proc:size3D(I), {I, O})
 end
 
 local function init(d, c, q)
