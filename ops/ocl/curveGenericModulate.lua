@@ -15,37 +15,35 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ]]
 
-local proc = require "lib.opencl.process".new()
+local proc = require "lib.opencl.process.ivy".new()
 
 local source = [[
-kernel void curveGenericModulate(global float *I, global float *D, global float *C, global float *R, global float *O)
-{
-	const int x = get_global_id(0);
-  const int y = get_global_id(1);
+kernel curveGenericModulate(I, D, C, O)
+	const x = get_global_id(0)
+  const y = get_global_id(1)
 
-	bool r = R[0];
+  var j = clamp(D[x, y], 0.0, 1.0)
 
-	float d = $D[x, y, 0];
-	d = r ? d*0.5f + 0.5f : d; // [-1, 1] range
+	var lowIdx = clamp(int(floor(j*255)), 0, 255)
+	var highIdx = clamp(int(ceil(j*255)), 0, 255)
 
-  float f = clamp(d, 0.0f, 1.0f);
+	var lowVal = C[lowIdx]
+	var highVal = C[highIdx]
 
-  int lowIdx = clamp(floor(f*255), 0.0f, 255.0f);
-	int highIdx = clamp(ceil(f*255), 0.0f, 255.0f);
+  var factor = 0.0
+  if lowIdx==highIdx then
+    factor = 1.0
+  else
+    factor = j*255.0-lowIdx
+  end
 
-	float lowVal = C[lowIdx];
-	float highVal = C[highIdx];
-
-	float factor = lowIdx==highIdx ? 1.0f : (f*255.0f-lowIdx)/(highIdx-lowIdx);
-	f = lowVal*(1.0f - factor) + highVal*factor;
-
-  $O[x, y, 0] = $I[x, y, 0]*f*2.0f;
-}
+  O[x, y] = I[x, y] * mix(lowVal, highVal, factor) * 2.0
+end
 ]]
 
 local function execute()
-	proc:getAllBuffers("I", "D", "C", "R", "O")
-	proc:executeKernel("curveGenericModulate", proc:size2D("O"))
+	local I, D, C, O = proc:getAllBuffers(4)
+	proc:executeKernel("curveGenericModulate", proc:size2D(O), {I, D, C, O})
 end
 
 local function init(d, c, q)

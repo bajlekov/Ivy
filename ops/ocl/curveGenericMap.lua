@@ -15,36 +15,35 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ]]
 
-local proc = require "lib.opencl.process".new()
+local proc = require "lib.opencl.process.ivy".new()
 
 local source = [[
-kernel void curveGenericMap(global float *I, global float *C, global float *R, global float *O)
-{
-  const int x = get_global_id(0);
-  const int y = get_global_id(1);
+kernel curveGenericMap(I, C, O)
+  const x = get_global_id(0)
+  const y = get_global_id(1)
 
-	bool r = R[0];
-	float i = $I[x, y, 0];
+	var j = clamp(I[x, y], 0.0, 1.0)
 
-	i = r ? i*0.5f + 0.5f : i; // [-1, 1] range
-  i = clamp(i, 0.0f, 1.0f);
+  var lowIdx = clamp(int(floor(j*255)), 0, 255)
+	var highIdx = clamp(int(ceil(j*255)), 0, 255)
 
-  int lowIdx = clamp(floor(i*255), 0.0f, 255.0f);
-	int highIdx = clamp(ceil(i*255), 0.0f, 255.0f);
+	var lowVal = C[lowIdx]
+	var highVal = C[highIdx]
 
-	float lowVal = C[lowIdx];
-	float highVal = C[highIdx];
+  var factor = 0.0
+  if lowIdx==highIdx then
+    factor = 1.0
+  else
+    factor = j*255.0-lowIdx
+  end
 
-	float factor = lowIdx==highIdx ? 1.0f : (i*255.0f-lowIdx)/(highIdx-lowIdx);
-	i = lowVal*(1.0f - factor) + highVal*factor;
-
-  $O[x, y, 0] = r ? (i-0.5f)*2.0f : i;
-}
+	O[x, y] = mix(lowVal, highVal, factor)
+end
 ]]
 
 local function execute()
-	proc:getAllBuffers("I", "C", "R", "O")
-	proc:executeKernel("curveGenericMap", proc:size2D("O"))
+  local I, C, O = proc:getAllBuffers(3)
+	proc:executeKernel("curveGenericMap", proc:size2D(O), {I, C, O})
 end
 
 local function init(d, c, q)

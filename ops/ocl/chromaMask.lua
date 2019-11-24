@@ -38,7 +38,7 @@ kernel chromaMask(I, C, O)
     factor = i*255.0-lowIdx
   end
 
-	O[x, y, 0] = lowVal*(1.0 - factor) + highVal*factor
+	O[x, y, 0] = mix(lowVal, highVal, factor)
 end
 ]]
 

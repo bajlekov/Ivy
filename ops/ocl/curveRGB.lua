@@ -15,33 +15,36 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ]]
 
-local proc = require "lib.opencl.process".new()
+local proc = require "lib.opencl.process.ivy".new()
 
 local source = [[
-kernel void curveRGB(global float *I, global float *C, global float *O)
-{
-  const int x = get_global_id(0);
-  const int y = get_global_id(1);
-	const int z = get_global_id(2);
+kernel curveRGB(I, C, O)
+  const x = get_global_id(0)
+  const y = get_global_id(1)
+	const z = get_global_id(2)
 
-  float i = clamp($I[x, y, z], 0.0f, 1.0f);
+  var j = YtoL(clamp(I[x, y, z], 0.0, 1.0))
 
-  int lowIdx = clamp(floor(i*255), 0.0f, 255.0f);
-	int highIdx = clamp(ceil(i*255), 0.0f, 255.0f);
+  var lowIdx = clamp(int(floor(j*255)), 0, 255)
+	var highIdx = clamp(int(ceil(j*255)), 0, 255)
 
-	float lowVal = $C[lowIdx, 0, z];
-	float highVal = $C[highIdx, 0, z];
+	var lowVal = C[lowIdx, 0, z]
+	var highVal = C[highIdx, 0, z]
 
-	float factor = lowIdx==highIdx ? 1.0f : (i*255.0f-lowIdx)/(highIdx-lowIdx);
-	i = lowVal*(1.0f - factor) + highVal*factor;
+  var factor = 0.0
+  if lowIdx==highIdx then
+    factor = 1.0
+  else
+    factor = j*255.0-lowIdx
+  end
 
-  $O[x, y, z] = i;
-}
+  O[x, y, z] = LtoY(mix(lowVal, highVal, factor))
+end
 ]]
 
 local function execute()
-	proc:getAllBuffers("I", "C", "O")
-	proc:executeKernel("curveRGB", proc:size3D("O"))
+	local I, C, O = proc:getAllBuffers(3)
+	proc:executeKernel("curveRGB", proc:size3D(O), {I, C, O})
 end
 
 local function init(d, c, q)
