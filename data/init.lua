@@ -60,14 +60,93 @@ function data.initDev(c, q)
 	end
 
 	data.sink = data:new(1, 1, 3)
-	data.one = data:new()
-	data.one:set(0, 0, 0, 1)
-	data.one:toDevice()
-	data.one.cs = "Y"
-	data.zero = data:new()
-	data.zero:set(0, 0, 0, 0)
-	data.zero:toDevice()
-	data.zero.cs = "Y"
+
+	data.oneCS = {}
+	data.zeroCS = {}
+
+	data.oneCS.SRGB = data:new(1, 1, 3)
+	data.oneCS.SRGB:set(0, 0, 0, 1)
+	data.oneCS.SRGB:set(0, 0, 1, 1)
+	data.oneCS.SRGB:set(0, 0, 2, 1)
+	data.oneCS.SRGB:toDevice()
+	data.oneCS.SRGB.cs = "SRGB"
+	data.oneCS.LRGB = data:new(1, 1, 3)
+	data.oneCS.LRGB:set(0, 0, 0, 1)
+	data.oneCS.LRGB:set(0, 0, 1, 1)
+	data.oneCS.LRGB:set(0, 0, 2, 1)
+	data.oneCS.LRGB:toDevice()
+	data.oneCS.LRGB.cs = "LRGB"
+	data.oneCS.XYZ = data:new(1, 1, 3)
+	data.oneCS.XYZ:set(0, 0, 0, 0.95047)
+	data.oneCS.XYZ:set(0, 0, 1, 1)
+	data.oneCS.XYZ:set(0, 0, 2, 1.08883)
+	data.oneCS.XYZ:toDevice()
+	data.oneCS.XYZ.cs = "XYZ"
+	data.oneCS.LAB = data:new(1, 1, 3)
+	data.oneCS.LAB:set(0, 0, 0, 1)
+	data.oneCS.LAB:set(0, 0, 1, 0)
+	data.oneCS.LAB:set(0, 0, 2, 0)
+	data.oneCS.LAB:toDevice()
+	data.oneCS.LAB.cs = "LAB"
+	data.oneCS.LCH = data:new(1, 1, 3)
+	data.oneCS.LCH:set(0, 0, 0, 1)
+	data.oneCS.LCH:set(0, 0, 1, 0)
+	data.oneCS.LCH:set(0, 0, 2, 0)
+	data.oneCS.LCH:toDevice()
+	data.oneCS.LCH.cs = "LCH"
+	data.oneCS.Y = data:new(1, 1, 1)
+	data.oneCS.Y:set(0, 0, 0, 1)
+	data.oneCS.Y:toDevice()
+	data.oneCS.Y.cs = "Y"
+	data.oneCS.L = data:new(1, 1, 1)
+	data.oneCS.L:set(0, 0, 0, 1)
+	data.oneCS.L:toDevice()
+	data.oneCS.L.cs = "L"
+
+	data.zeroCS.SRGB = data:new(1, 1, 3)
+	data.zeroCS.SRGB:set(0, 0, 0, 0)
+	data.zeroCS.SRGB:set(0, 0, 1, 0)
+	data.zeroCS.SRGB:set(0, 0, 2, 0)
+	data.zeroCS.SRGB:toDevice()
+	data.zeroCS.SRGB.cs = "SRGB"
+	data.zeroCS.LRGB = data:new(1, 1, 3)
+	data.zeroCS.LRGB:set(0, 0, 0, 0)
+	data.zeroCS.LRGB:set(0, 0, 1, 0)
+	data.zeroCS.LRGB:set(0, 0, 2, 0)
+	data.zeroCS.LRGB:toDevice()
+	data.zeroCS.LRGB.cs = "LRGB"
+	data.zeroCS.XYZ = data:new(1, 1, 3)
+	data.zeroCS.XYZ:set(0, 0, 0, 0)
+	data.zeroCS.XYZ:set(0, 0, 1, 0)
+	data.zeroCS.XYZ:set(0, 0, 2, 0)
+	data.zeroCS.XYZ:toDevice()
+	data.zeroCS.XYZ.cs = "XYZ"
+	data.zeroCS.LAB = data:new(1, 1, 3)
+	data.zeroCS.LAB:set(0, 0, 0, 0)
+	data.zeroCS.LAB:set(0, 0, 1, 0)
+	data.zeroCS.LAB:set(0, 0, 2, 0)
+	data.zeroCS.LAB:toDevice()
+	data.zeroCS.LAB.cs = "LAB"
+	data.zeroCS.LCH = data:new(1, 1, 3)
+	data.zeroCS.LCH:set(0, 0, 0, 0)
+	data.zeroCS.LCH:set(0, 0, 1, 0)
+	data.zeroCS.LCH:set(0, 0, 2, 0)
+	data.zeroCS.LCH:toDevice()
+	data.zeroCS.LCH.cs = "LCH"
+	data.zeroCS.Y = data:new(1, 1, 1)
+	data.zeroCS.Y:set(0, 0, 0, 0)
+	data.zeroCS.Y:toDevice()
+	data.zeroCS.Y.cs = "Y"
+	data.zeroCS.L = data:new(1, 1, 1)
+	data.zeroCS.L:set(0, 0, 0, 0)
+	data.zeroCS.L:toDevice()
+	data.zeroCS.L.cs = "L"
+
+	data.one = data.oneCS.Y
+	data.zero = data.zeroCS.Y
+
+	data.oneCS.ANY = data.one
+	data.zeroCS.ANY = data.zero
 end
 
 function data:new(x, y, z) -- new image data

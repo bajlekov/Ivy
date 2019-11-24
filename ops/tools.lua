@@ -50,15 +50,15 @@ require "ui.node.link".dataConvert = tools.convert
 -- link input, white if not connected
 function tools.inputSourceWhite(self, idx, cs)
 	local link = self.portIn[idx].link
-	return link and link:getData(cs, self.procType == "dev") or data.one
 	local cs = cs or self.portIn[idx].cs
+	return link and link:getData(cs, self.procType == "dev") or data.oneCS[cs]
 end
 
 -- link input, black if not connected
 function tools.inputSourceBlack(self, idx, cs)
 	local link = self.portIn[idx].link
-	return link and link:getData(cs, self.procType == "dev") or data.zero
 	local cs = cs or self.portIn[idx].cs
+	return link and link:getData(cs, self.procType == "dev") or data.zeroCS[cs]
 end
 
 -- link input, node data used if not connected
