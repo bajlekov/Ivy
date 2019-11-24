@@ -47,65 +47,18 @@ require "ui.node.link".dataResize = tools.resize
 require "ui.node.link".dataConvert = tools.convert
 
 
---[[
--- allow optional CS components e.g. "Y__" => "Y", "LRGB" or "L__" => "L", "LAB", "LCH"
-function tools.optCS(cs, link)
-	local linkCS
-	if link and link.data then
-		linkCS = link.data.cs
-	end
-	if cs == "Y__" then
-		if linkCS == "Y" or linkCS == "L" then
-			return "Y"
-		else
-			return "LRGB"
-		end
-	elseif cs == "L__" then
-		if linkCS == "Y" or linkCS == "L" then
-			return "L"
-		elseif linkCS == "LCH" then -- TODO: check already converted ones!!!
-			return "LCH"
-		else
-			return "LAB"
-		end
-	else
-		return cs
-	end
-end
-
--- determine output CS for optional components
-function tools.optCSsuperset(...)
-	local cs = "Y"
-	local var = {...}
-	-- FIXME no mixed LAB, LCH allowed
-	for k, v in ipairs(var) do
-		if cs == "Y" and v.cs == "L" then cs = "L" end
-		if v.cs == "LRGB" then return "LRGB" end
-		if v.cs == "LAB" then error("NYI") return "LAB" end
-		if v.cs == "LCH" then error("NYI") return "LCH" end
-	end
-	return cs
-end
---]]
-
--- Placeholder
-function tools.optCS(cs, link)
-	return cs
-end
-
-
 -- link input, white if not connected
 function tools.inputSourceWhite(self, idx, cs)
 	local link = self.portIn[idx].link
-	local cs = tools.optCS(cs or self.portIn[idx].cs, link)
 	return link and link:getData(cs, self.procType == "dev") or data.one
+	local cs = cs or self.portIn[idx].cs
 end
 
 -- link input, black if not connected
 function tools.inputSourceBlack(self, idx, cs)
 	local link = self.portIn[idx].link
-	local cs = tools.optCS(cs or self.portIn[idx].cs, link)
 	return link and link:getData(cs, self.procType == "dev") or data.zero
+	local cs = cs or self.portIn[idx].cs
 end
 
 -- link input, node data used if not connected
@@ -113,50 +66,46 @@ function tools.inputData(self, inputIdx, dataIdx, cs)
 	dataIdx = dataIdx or inputIdx
 	local data = self.data[dataIdx]
 	local link = self.portIn[inputIdx].link
-	local cs = tools.optCS(cs or self.portIn[inputIdx].cs, link)
+	local cs = cs or self.portIn[inputIdx].cs
 	return link and link:getData(cs, self.procType == "dev") or self.procType == "dev" and data:toDevice() or data
+end
+
+-- param, not overriden by link input
+function tools.plainParam(self, elemIdx)
+	local data = tools.resize(self.data[elemIdx], 1, 1, 1)
+	data.cs = "Y"
+	self.data[elemIdx] = data
+	data:set(0, 0, 0, self.elem[elemIdx].value)
+	return self.procType == "dev" and data:toDevice() or data
 end
 
 -- link input, param value used if not connected
 function tools.inputParam(self, inputIdx, elemIdx, cs)
 	elemIdx = elemIdx or inputIdx
 	local link = self.portIn[inputIdx].link
-	local cs = tools.optCS(cs or self.portIn[inputIdx].cs, link)
-
 	if link then
+		local cs = cs or self.portIn[inputIdx].cs
 		return link:getData(cs, self.procType == "dev")
 	else
-		local data = tools.resize(self.data[elemIdx], 1, 1, 1)
-		data.cs = "Y"
-		self.data[elemIdx] = data
-		data:set(0, 0, 0, self.elem[elemIdx].value) -- attempt to index nil when used on non-param input: use inputSource*
-		return self.procType == "dev" and data:toDevice() or data
+		return tools.plainParam(self, elemIdx)
 	end
-end
-
--- param, not overriden by link input
-function tools.plainParam(self, elemIdx)
-	local data = tools.resize(self.data[elemIdx], 1, 1, 1)
-	self.data[elemIdx] = data
-	data:set(0, 0, 0, self.elem[elemIdx].value)
-	return self.procType == "dev" and data:toDevice() or data
 end
 
 -- link output, must be connected!
 function tools.autoOutput(self, idx, x, y, z)
 	local link = self.portOut[idx].link
-	local cs = self.portOut[idx].cs
 	assert(link, "Attempted processing node ["..self.title.."] with no output ["..idx.."] connected")
 	link:resizeData(x, y, z)
+	local cs = self.portOut[idx].cs
 	return link:setData(cs, self.procType)
 end
 
 -- link output, sinks data if not connected
 function tools.autoOutputSink(self, idx, x, y, z)
 	local link = self.portOut[idx].link
-	local cs = self.portOut[idx].cs
 	if link then
 		link:resizeData(x, y, z)
+		local cs = self.portOut[idx].cs
 		return link:setData(cs, self.procType)
 	else
 		return data.sink
