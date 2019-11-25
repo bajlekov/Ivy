@@ -38,7 +38,7 @@ kernel hueMask(I, C, P, O)
     factor = i*255.0-lowIdx
   end
 
-  var o = lowVal*(1.0 - factor) + highVal*factor
+  var o = mix(lowVal, highVal, factor)
   if P[0]>0.5 then
     o = o * I[x, y, 1]
   end
