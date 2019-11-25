@@ -898,9 +898,9 @@ end
 
 function ops.gamma(x, y)
 	local n = node:new("Gamma")
-	n:addPortIn(0, "LRGB")
-	n:addPortIn(1, "LRGB"):addElem("float", 1, "Gamma", 0, 1, 0.5)
-	n:addPortOut(0, "LRGB")
+	n:addPortIn(0, "XYZ")
+	n:addPortIn(1, "Y"):addElem("float", 1, "Gamma", 0, 1, 0.5)
+	n:addPortOut(0, "XYZ")
 	n.process = gammaProcess
 	n:setPos(x, y)
 	return n
