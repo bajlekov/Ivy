@@ -15,98 +15,86 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ]]
 
--- draw image data to screen
-
-local cs = require "tools.cs"
 local ffi = require "ffi"
+local data = require "data"
 
 local image = {type="image"}
 image.meta = {__index = image}
 
--- create quivalent to float data
+ffi.cdef[[
+	void * malloc ( size_t size );
+	void free ( void * ptr );
+
+	typedef float host_float __attribute__((aligned(32)));
+  typedef int32_t host_int __attribute__((aligned(32)));
+  typedef float cl_float __attribute__((aligned(4)));
+  typedef int32_t cl_int __attribute__((aligned(4)));
+  typedef struct _cl_mem *cl_mem;
+
+  typedef struct {
+    host_float *dataHost;
+    cl_mem dataDev;
+    host_int *strHost;
+    cl_mem strDev;
+    int32_t dirtyHost;
+    int32_t dirtyDev;
+  } ivy_buffer;
+]]
+
+local function ivyImageFree(buffer)
+  print("gc free", buffer[0].dataHost)
+  if buffer[0].dataHost~=NULL then
+    -- imageData cleans up its own memory
+    buffer[0].dataHost = NULL
+  end
+  if buffer[0].strHost~=NULL then
+    ffi.C.free(buffer[0].strHost)
+    buffer[0].strHost = NULL
+  end
+  if buffer[0].dataDev~=NULL then
+    devContext.release_mem_object(buffer[0].dataDev)
+    buffer[0].dataDev = NULL
+  end
+  if buffer[0].strDev~=NULL then
+    devContext.release_mem_object(buffer[0].strDev)
+    buffer[0].strDev = NULL
+  end
+  ffi.C.free(buffer)
+end
 
 function image:new(x, y)
-  x = x or self.x or 1               -- default dimensions or inherit
-	y = y or self.y or 1
+  local i = {
+    x = x or self.x or 1,
+    y = y or self.y or 1,
+  }
 
-  local data = love.image.newImageData(x, y)
-  local img = love.graphics.newImage(data)
-  img:setFilter("linear", "nearest")
+  i.imageData = love.image.newImageData(i.x, i.y)
+  i.image = love.graphics.newImage(i.imageData)
+  i.image:setFilter("linear", "nearest")
+  ffi.fill(i.imageData:getPointer(), i.x*i.y*4, 255)
 
-	local o = {
-		data = ffi.cast("uint8_t*", data:getPointer()),		   -- pointer to data
-		x = x, y = y, z = 3,			       -- set extents
-		sx = 4, sy = x*4, sz = 1,        -- set strides
-    ox = 0, oy = 0, oz = 0,          -- set offsets
-		cs = "SRGB",			               -- default CS or inherit
-    image = img,                    -- reference for image operations
-		imageData = data,								-- reference for picel storage
-    scale = 1,
-    drawOffset = {x=0, y=0}
-	}
-  ffi.fill(o.data, x*y*4, 255)       -- fill white
-	setmetatable(o, image.meta)         -- inherit data methods
-	return o
+  -- regular data buffer
+  i.data = data:new(i.x, i.y, 1)
+	i.data.buffer[0].dataHost = i.imageData:getPointer()
+  ffi.gc(i.data.buffer, ivyImageFree)
+  i.data.cs = "SRGB"
+  i.scale = 1
+  i.drawOffset = {x=0, y=0}
+
+	setmetatable(i, image.meta)
+	return i
 end
 
 function image.meta.__tostring(a)
-	return "Image["..a.x..", "..a.y..", "..a.z.."] ("..a.cs..")"
+	return "Image["..a.x..", "..a.y..", 4]"
 end
-
--- conversion to and from c structures
-ffi.cdef[[
-	typedef struct{
-		uint8_t *data;		// buffer data
-		int x, y, z;	  // dimensions
-		int sx, sy, sz;	// strides
-		int ox, oy, oz; // offsets
-		int cs;					// color space
-	} imageStruct;
-]]
-image.CStruct = ffi.typeof("imageStruct")
-
-function image:toCStruct()
-	-- remember to anchor data allocation!!!
-	return self.CStruct(self.data,
-		self.x, self.y, self.z,
-		self.sx, self.sy, self.sz,
-		self.ox, self.oy, self.oz,
-		0) -- FIXME export color space
-end
-
-function image:fromCStruct()
-	local o = {
-		data = self.data,
-		x = self.x,
-		y = self.y,
-		z = self.z,
-		sx = self.sx,
-		sy = self.sy,
-		sz = self.sz,
-		ox = self.ox,
-		oy = self.oy,
-		oz = self.oz,
-		cs = self.CS[self.cs],
-	}
-	setmetatable(o, self.meta) -- inherit data methods
-	return o
-end
-
 
 function image:idx(x, y, z)
   return (x*self.sx+(self.y-y-1)*self.sy+z*self.sz)
 end
 
---[[
-function image:set(x, y, z, v)
-  if v<-1 then v = -1 elseif v>2 then v = 2 end
-  v = cs.LRGB.SRGB(v)
-  self.data[self:idx(x, y, z)] = v*255
-end
---]]
-
 function image:get(x, y, z)
-  return self.data[self:idx(x, y, z)]
+  return ffi.cast("uint8_t *", self.data)[self:idx(x, y, z)]
 end
 
 function image:refresh()
@@ -118,41 +106,12 @@ function image:draw(x, y)
   love.graphics.draw(self.image, x + self.drawOffset.x, y+self.drawOffset.y, 0, self.scale, self.scale)
 end
 
-function image:toChTable()
-  local o = {
-		data = tonumber(ffi.cast("uintptr_t", self.data)),
-		x = self.x,
-		y = self.y,
-		z = self.z,
-		sx = self.sx,
-		sy = self.sy,
-		sz = self.sz,
-    ox = self.ox,
-    oy = self.oy,
-    oz = self.oz,
-		cs = self.cs,
-		type = self.type,
-	}
-  return o
+function image:toTable()
+  return self.data:toTable()
 end
 
-function image:fromChTable()
-  local o = {
-		data = ffi.cast("uint8_t*", self.data),
-		x = self.x,
-		y = self.y,
-		z = self.z,
-		sx = self.sx,
-		sy = self.sy,
-		sz = self.sz,
-    ox = self.ox,
-    oy = self.oy,
-    oz = self.oz,
-		cs = self.cs,
-		type = self.type,
-	}
-  setmetatable(o, image.meta)
-  return o
+function image:fromTable()
+  return self.data:fromTable()
 end
 
 return image
