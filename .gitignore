@@ -11,4 +11,26 @@ lib/magick/magick\.exe
 
 lib/zenity/zenity\.exe
 
+lib/julia/Windows
+lib/julia/share
+
 ops/ocl/cache
+
+love.dll
+love.exe
+lovec.exe
+lua51.dll
+mpg123.dll
+msvcp120.dll
+msvcr120.dll
+OpenAL32.dll
+SDL2.dll
+
+ivyscript/.vscode/
+ivyscript/target/
+lib/ivyscript/.vscode/
+lib/ivyscript/Cargo.lock
+lib/ivyscript/target/
+lib/ispc/chkstk.dll
+lib/ispc/ispc.exe
+lib/ispc/tasksys.dll
