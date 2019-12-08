@@ -108,33 +108,81 @@ impl<'a> Generator<'a> {
                     VarType::Int => format!("int {}", v),
                     VarType::Float => format!("float {}", v),
                     VarType::Vec => format!("float3 {}", v),
-                    VarType::BoolArray(1, a, _, _, _) => format!("bool {}[{}]", v, a),
-                    VarType::BoolArray(2, a, b, _, _) => format!("bool {}[{}][{}]", v, a, b),
-                    VarType::BoolArray(3, a, b, c, _) => format!("bool {}[{}][{}][{}]", v, a, b, c),
-                    VarType::BoolArray(4, a, b, c, d) => {
+                    VarType::BoolArray(1, false, a, _, _, _) => format!("bool {}[{}]", v, a),
+                    VarType::BoolArray(2, false, a, b, _, _) => format!("bool {}[{}][{}]", v, a, b),
+                    VarType::BoolArray(3, false, a, b, c, _) => {
+                        format!("bool {}[{}][{}][{}]", v, a, b, c)
+                    }
+                    VarType::BoolArray(4, false, a, b, c, d) => {
                         format!("bool {}[{}][{}][{}][{}]", v, a, b, c, d)
                     }
-                    VarType::IntArray(1, a, _, _, _) => format!("int {}[{}]", v, a),
-                    VarType::IntArray(2, a, b, _, _) => format!("int {}[{}][{}]", v, a, b),
-                    VarType::IntArray(3, a, b, c, _) => format!("int {}[{}][{}][{}]", v, a, b, c),
-                    VarType::IntArray(4, a, b, c, d) => {
+                    VarType::IntArray(1, false, a, _, _, _) => format!("int {}[{}]", v, a),
+                    VarType::IntArray(2, false, a, b, _, _) => format!("int {}[{}][{}]", v, a, b),
+                    VarType::IntArray(3, false, a, b, c, _) => {
+                        format!("int {}[{}][{}][{}]", v, a, b, c)
+                    }
+                    VarType::IntArray(4, false, a, b, c, d) => {
                         format!("int {}[{}][{}][{}][{}]", v, a, b, c, d)
                     }
-                    VarType::FloatArray(1, a, _, _, _) => format!("float {}[{}]", v, a),
-                    VarType::FloatArray(2, a, b, _, _) => format!("float {}[{}][{}]", v, a, b),
-                    VarType::FloatArray(3, a, b, c, _) => {
+                    VarType::FloatArray(1, false, a, _, _, _) => format!("float {}[{}]", v, a),
+                    VarType::FloatArray(2, false, a, b, _, _) => {
+                        format!("float {}[{}][{}]", v, a, b)
+                    }
+                    VarType::FloatArray(3, false, a, b, c, _) => {
                         format!("float {}[{}][{}][{}]", v, a, b, c)
                     }
-                    VarType::FloatArray(4, a, b, c, d) => {
+                    VarType::FloatArray(4, false, a, b, c, d) => {
                         format!("float {}[{}][{}][{}][{}]", v, a, b, c, d)
                     }
-                    VarType::VecArray(1, a, _, _, _) => format!("float3 {}[{}]", v, a),
-                    VarType::VecArray(2, a, b, _, _) => format!("float3 {}[{}][{}]", v, a, b),
-                    VarType::VecArray(3, a, b, c, _) => {
+                    VarType::VecArray(1, false, a, _, _, _) => format!("float3 {}[{}]", v, a),
+                    VarType::VecArray(2, false, a, b, _, _) => {
+                        format!("float3 {}[{}][{}]", v, a, b)
+                    }
+                    VarType::VecArray(3, false, a, b, c, _) => {
                         format!("float3 {}[{}][{}][{}]", v, a, b, c)
                     }
-                    VarType::VecArray(4, a, b, c, d) => {
+                    VarType::VecArray(4, false, a, b, c, d) => {
                         format!("float3 {}[{}][{}][{}][{}]", v, a, b, c, d)
+                    }
+                    VarType::BoolArray(1, true, a, _, _, _) => format!("local bool {}[{}]", v, a),
+                    VarType::BoolArray(2, true, a, b, _, _) => {
+                        format!("local bool {}[{}][{}]", v, a, b)
+                    }
+                    VarType::BoolArray(3, true, a, b, c, _) => {
+                        format!("local bool {}[{}][{}][{}]", v, a, b, c)
+                    }
+                    VarType::BoolArray(4, true, a, b, c, d) => {
+                        format!("local bool {}[{}][{}][{}][{}]", v, a, b, c, d)
+                    }
+                    VarType::IntArray(1, true, a, _, _, _) => format!("local int {}[{}]", v, a),
+                    VarType::IntArray(2, true, a, b, _, _) => {
+                        format!("local int {}[{}][{}]", v, a, b)
+                    }
+                    VarType::IntArray(3, true, a, b, c, _) => {
+                        format!("local int {}[{}][{}][{}]", v, a, b, c)
+                    }
+                    VarType::IntArray(4, true, a, b, c, d) => {
+                        format!("local int {}[{}][{}][{}][{}]", v, a, b, c, d)
+                    }
+                    VarType::FloatArray(1, true, a, _, _, _) => format!("local float {}[{}]", v, a),
+                    VarType::FloatArray(2, true, a, b, _, _) => {
+                        format!("local float {}[{}][{}]", v, a, b)
+                    }
+                    VarType::FloatArray(3, true, a, b, c, _) => {
+                        format!("local float {}[{}][{}][{}]", v, a, b, c)
+                    }
+                    VarType::FloatArray(4, true, a, b, c, d) => {
+                        format!("local float {}[{}][{}][{}][{}]", v, a, b, c, d)
+                    }
+                    VarType::VecArray(1, true, a, _, _, _) => format!("local float3 {}[{}]", v, a),
+                    VarType::VecArray(2, true, a, b, _, _) => {
+                        format!("local float3 {}[{}][{}]", v, a, b)
+                    }
+                    VarType::VecArray(3, true, a, b, c, _) => {
+                        format!("local float3 {}[{}][{}][{}]", v, a, b, c)
+                    }
+                    VarType::VecArray(4, true, a, b, c, d) => {
+                        format!("local float3 {}[{}][{}][{}][{}]", v, a, b, c, d)
                     }
                     _ => String::from("/*** Error: Unknown type ***/"),
                 };
@@ -291,7 +339,7 @@ impl<'a> Generator<'a> {
         match stmt {
             Stmt::Var(id, expr) => self.gen_var(id, expr),
             Stmt::Const(id, expr) => format!("const {}", self.gen_var(id, expr)),
-            Stmt::Local(id, expr) => format!("local {}", self.gen_var(id, expr)),
+            //Stmt::Local(id, expr) => format!("local {}", self.gen_var(id, expr)),
             Stmt::Assign(id, expr) => self.gen_assign(id, expr),
             Stmt::Call(id, args) => {
                 let args_str = args
@@ -474,6 +522,11 @@ impl<'a> Generator<'a> {
                 "int_array" => String::new(),
                 "float_array" => String::new(),
                 "vec_array" => String::new(),
+                "local_array" => String::new(),
+                "local_bool_array" => String::new(),
+                "local_int_array" => String::new(),
+                "local_float_array" => String::new(),
+                "local_vec_array" => String::new(),
                 _ => self.gen_expr(&expr),
             },
             Expr::Array(_) => format!(" = {}", self.gen_expr(&expr)),
@@ -489,47 +542,111 @@ impl<'a> Generator<'a> {
             VarType::Float => format!("float {} = {};\n", id, expr_str),
             VarType::Vec => format!("float3 {} = {};\n", id, expr_str),
 
-            VarType::BoolArray(1, a, _, _, _) => format!("bool {} [{}]{};\n", id, a, expr_str),
-            VarType::BoolArray(2, a, b, _, _) => {
+            VarType::BoolArray(1, false, a, _, _, _) => {
+                format!("bool {} [{}]{};\n", id, a, expr_str)
+            }
+            VarType::BoolArray(2, false, a, b, _, _) => {
                 format!("bool {} [{}][{}]{};\n", id, a, b, expr_str)
             }
-            VarType::BoolArray(3, a, b, c, _) => {
+            VarType::BoolArray(3, false, a, b, c, _) => {
                 format!("bool {} [{}][{}][{}]{};\n", id, a, b, c, expr_str)
             }
-            VarType::BoolArray(4, a, b, c, d) => {
+            VarType::BoolArray(4, false, a, b, c, d) => {
                 format!("bool {} [{}][{}][{}][{}]{};\n", id, a, b, c, d, expr_str)
             }
 
-            VarType::IntArray(1, a, _, _, _) => format!("int {} [{}]{};\n", id, a, expr_str),
-            VarType::IntArray(2, a, b, _, _) => format!("int {} [{}][{}]{};\n", id, a, b, expr_str),
-            VarType::IntArray(3, a, b, c, _) => {
+            VarType::IntArray(1, false, a, _, _, _) => format!("int {} [{}]{};\n", id, a, expr_str),
+            VarType::IntArray(2, false, a, b, _, _) => {
+                format!("int {} [{}][{}]{};\n", id, a, b, expr_str)
+            }
+            VarType::IntArray(3, false, a, b, c, _) => {
                 format!("int {} [{}][{}][{}]{};\n", id, a, b, c, expr_str)
             }
-            VarType::IntArray(4, a, b, c, d) => {
+            VarType::IntArray(4, false, a, b, c, d) => {
                 format!("int {} [{}][{}][{}][{}]{};\n", id, a, b, c, d, expr_str)
             }
 
-            VarType::FloatArray(1, a, _, _, _) => format!("float {} [{}]{};\n", id, a, expr_str),
-            VarType::FloatArray(2, a, b, _, _) => {
+            VarType::FloatArray(1, false, a, _, _, _) => {
+                format!("float {} [{}]{};\n", id, a, expr_str)
+            }
+            VarType::FloatArray(2, false, a, b, _, _) => {
                 format!("float {} [{}][{}]{};\n", id, a, b, expr_str)
             }
-            VarType::FloatArray(3, a, b, c, _) => {
+            VarType::FloatArray(3, false, a, b, c, _) => {
                 format!("float {} [{}][{}][{}]{};\n", id, a, b, c, expr_str)
             }
-            VarType::FloatArray(4, a, b, c, d) => {
+            VarType::FloatArray(4, false, a, b, c, d) => {
                 format!("float {} [{}][{}][{}][{}]{};\n", id, a, b, c, d, expr_str)
             }
 
-            VarType::VecArray(1, a, _, _, _) => format!("float3 {} [{}]{};\n", id, a, expr_str),
-            VarType::VecArray(2, a, b, _, _) => {
+            VarType::VecArray(1, false, a, _, _, _) => {
+                format!("float3 {} [{}]{};\n", id, a, expr_str)
+            }
+            VarType::VecArray(2, false, a, b, _, _) => {
                 format!("float3 {} [{}][{}]{};\n", id, a, b, expr_str)
             }
-            VarType::VecArray(3, a, b, c, _) => {
+            VarType::VecArray(3, false, a, b, c, _) => {
                 format!("float3 {} [{}][{}][{}]{};\n", id, a, b, c, expr_str)
             }
-            VarType::VecArray(4, a, b, c, d) => {
+            VarType::VecArray(4, false, a, b, c, d) => {
                 format!("float3 {} [{}][{}][{}][{}]{};\n", id, a, b, c, d, expr_str)
             }
+
+            VarType::BoolArray(1, true, a, _, _, _) => {
+                format!("local bool {} [{}]{};\n", id, a, expr_str)
+            }
+            VarType::BoolArray(2, true, a, b, _, _) => {
+                format!("local bool {} [{}][{}]{};\n", id, a, b, expr_str)
+            }
+            VarType::BoolArray(3, true, a, b, c, _) => {
+                format!("local bool {} [{}][{}][{}]{};\n", id, a, b, c, expr_str)
+            }
+            VarType::BoolArray(4, true, a, b, c, d) => format!(
+                "local bool {} [{}][{}][{}][{}]{};\n",
+                id, a, b, c, d, expr_str
+            ),
+
+            VarType::IntArray(1, true, a, _, _, _) => {
+                format!("local int {} [{}]{};\n", id, a, expr_str)
+            }
+            VarType::IntArray(2, true, a, b, _, _) => {
+                format!("local int {} [{}][{}]{};\n", id, a, b, expr_str)
+            }
+            VarType::IntArray(3, true, a, b, c, _) => {
+                format!("local int {} [{}][{}][{}]{};\n", id, a, b, c, expr_str)
+            }
+            VarType::IntArray(4, true, a, b, c, d) => format!(
+                "local int {} [{}][{}][{}][{}]{};\n",
+                id, a, b, c, d, expr_str
+            ),
+
+            VarType::FloatArray(1, true, a, _, _, _) => {
+                format!("local float {} [{}]{};\n", id, a, expr_str)
+            }
+            VarType::FloatArray(2, true, a, b, _, _) => {
+                format!("local float {} [{}][{}]{};\n", id, a, b, expr_str)
+            }
+            VarType::FloatArray(3, true, a, b, c, _) => {
+                format!("local float {} [{}][{}][{}]{};\n", id, a, b, c, expr_str)
+            }
+            VarType::FloatArray(4, true, a, b, c, d) => format!(
+                "local float {} [{}][{}][{}][{}]{};\n",
+                id, a, b, c, d, expr_str
+            ),
+
+            VarType::VecArray(1, true, a, _, _, _) => {
+                format!("local float3 {} [{}]{};\n", id, a, expr_str)
+            }
+            VarType::VecArray(2, true, a, b, _, _) => {
+                format!("local float3 {} [{}][{}]{};\n", id, a, b, expr_str)
+            }
+            VarType::VecArray(3, true, a, b, c, _) => {
+                format!("local float3 {} [{}][{}][{}]{};\n", id, a, b, c, expr_str)
+            }
+            VarType::VecArray(4, true, a, b, c, d) => format!(
+                "local float3 {} [{}][{}][{}][{}]{};\n",
+                id, a, b, c, d, expr_str
+            ),
 
             _ => String::from("// ERROR!!!\n"),
         }
