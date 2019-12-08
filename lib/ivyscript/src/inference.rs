@@ -86,7 +86,7 @@ impl<'a> Inference<'a> {
                 }
             }
         }
-        
+
         match expr {
             Expr::Literal(Literal::Bool(_)) => B,
             Expr::Literal(Literal::Int(_)) => I,

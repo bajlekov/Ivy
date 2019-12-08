@@ -737,7 +737,7 @@ impl<'a> Generator<'a> {
                         self.gen_expr(&expr.right),
                     )
                 }
-            },
+            }
             BinaryOp::Mul => format!(
                 "{}*{}",
                 self.gen_expr(&expr.left),
