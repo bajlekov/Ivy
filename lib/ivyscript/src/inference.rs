@@ -55,6 +55,38 @@ impl<'a> Inference<'a> {
     }
 
     pub fn var_type(&self, expr: &Expr) -> VarType {
+        // handle Prop::Ptr separately as it needs information about the array/buffer before indexing
+        if let Expr::Index(expr, idx) = expr {
+            if let (Expr::Index(expr, _), Index::Prop(Prop::Ptr)) = (&**expr, &**idx) {
+                if let Expr::Identifier(id) = &**expr {
+                    if let Some(t) = self.scope.get(id) {
+                        if let Some(var_type) = match t {
+                            VarType::IntArray(_, true, ..) => {
+                                Some(VarType::IntArray(1, true, 0, 0, 0, 0))
+                            }
+                            VarType::IntArray(_, false, ..) => {
+                                Some(VarType::IntArray(1, false, 0, 0, 0, 0))
+                            }
+                            VarType::FloatArray(_, true, ..) => {
+                                Some(VarType::FloatArray(1, true, 0, 0, 0, 0))
+                            }
+                            VarType::FloatArray(_, false, ..) => {
+                                Some(VarType::FloatArray(1, false, 0, 0, 0, 0))
+                            }
+                            VarType::Buffer { .. } => {
+                                Some(VarType::FloatArray(1, false, 0, 0, 0, 0))
+                            }
+                            _ => None,
+                        } {
+                            return var_type;
+                        }
+                    } else {
+                        return VarType::Unknown;
+                    }
+                }
+            }
+        }
+        
         match expr {
             Expr::Literal(Literal::Bool(_)) => B,
             Expr::Literal(Literal::Int(_)) => I,
@@ -112,8 +144,7 @@ impl<'a> Inference<'a> {
 
                 (F, Index::Prop(Prop::Int)) => I,
                 (F, Index::Prop(Prop::Idx)) => I,
-                (F, Index::Prop(Prop::Ptr)) => VarType::FloatArray(1, 0, 0, 0, 0),
-                (F, Index::Prop(Prop::IntPtr)) => VarType::IntArray(1, 0, 0, 0, 0),
+                (F, Index::Prop(Prop::IntPtr)) => VarType::IntArray(1, false, 0, 0, 0, 0), // only available for buffers
 
                 (VarType::Buffer { .. }, Index::Array1D(..)) => F,
                 (VarType::Buffer { z: 3, .. }, Index::Array2D(..)) => V,
@@ -422,6 +453,7 @@ impl<'a> Inference<'a> {
             "normalize" => self.geom_1(vars, V),
 
             // memory barrier functions
+            "barrier" => Some(VarType::Unknown),
 
             // atomics "atomic_add(buf, idx1, idx2, idx3, value)" etc.
             "atomic_add" => self.atomic_2(vars),

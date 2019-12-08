@@ -820,12 +820,18 @@ impl<'a> Generator<'a> {
             id = match (id, vars[0]) {
                 ("abs", VarType::Float) => "fabs",
                 ("abs", VarType::Vec) => "fabs",
-                ("atomic_add", VarType::FloatArray(1, ..)) => "_atomic_float_add",
-                ("atomic_sub", VarType::FloatArray(1, ..)) => "_atomic_float_sub",
-                ("atomic_inc", VarType::FloatArray(1, ..)) => "_atomic_float_inc",
-                ("atomic_dec", VarType::FloatArray(1, ..)) => "_atomic_float_dec",
-                ("atomic_min", VarType::FloatArray(1, ..)) => "_atomic_float_min",
-                ("atomic_max", VarType::FloatArray(1, ..)) => "_atomic_float_max",
+                ("atomic_add", VarType::FloatArray(1, false, ..)) => "_atomic_float_add",
+                ("atomic_sub", VarType::FloatArray(1, false, ..)) => "_atomic_float_sub",
+                ("atomic_inc", VarType::FloatArray(1, false, ..)) => "_atomic_float_inc",
+                ("atomic_dec", VarType::FloatArray(1, false, ..)) => "_atomic_float_dec",
+                ("atomic_min", VarType::FloatArray(1, false, ..)) => "_atomic_float_min",
+                ("atomic_max", VarType::FloatArray(1, false, ..)) => "_atomic_float_max",
+                ("atomic_add", VarType::FloatArray(1, true, ..)) => "_atomic_local_float_add",
+                ("atomic_sub", VarType::FloatArray(1, true, ..)) => "_atomic_local_float_sub",
+                ("atomic_inc", VarType::FloatArray(1, true, ..)) => "_atomic_local_float_inc",
+                ("atomic_dec", VarType::FloatArray(1, true, ..)) => "_atomic_local_float_dec",
+                ("atomic_min", VarType::FloatArray(1, true, ..)) => "_atomic_local_float_min",
+                ("atomic_max", VarType::FloatArray(1, true, ..)) => "_atomic_local_float_max",
                 _ => id,
             }
         }
@@ -1177,26 +1183,111 @@ impl<'a> Generator<'a> {
                     if let Expr::Identifier(id) = &**expr {
                         let var = self.inference.borrow().var_type(expr);
                         let idx = &**idx;
-                        let idx = match (var, idx) {
-                            (VarType::Buffer { .. }, Index::Array1D(a)) => {
-                                var.idx_1d(id, &self.gen_expr(a))
+                        match var {
+                            VarType::Buffer { .. } => {
+                                let idx = match (var, idx) {
+                                    (VarType::Buffer { .. }, Index::Array1D(a)) => {
+                                        var.idx_1d(id, &self.gen_expr(a))
+                                    }
+                                    (VarType::Buffer { z: 1, .. }, Index::Array2D(a, b)) => {
+                                        var.idx_3d(id, &self.gen_expr(a), &self.gen_expr(b), "0")
+                                    }
+                                    (VarType::Buffer { .. }, Index::Array3D(a, b, c)) => var
+                                        .idx_3d(
+                                            id,
+                                            &self.gen_expr(a),
+                                            &self.gen_expr(b),
+                                            &self.gen_expr(c),
+                                        ),
+                                    _ => String::from("// ERROR!!!\n"),
+                                };
+                                match prop {
+                                    Prop::Int => format!("(((global int*){})[{}])", id, idx), //only for buffers
+                                    Prop::Idx => idx,
+                                    Prop::Ptr => format!("({} + {})", id, idx),
+                                    Prop::IntPtr => format!("(((global int*){}) + {})", id, idx), // only for buffers
+                                }
                             }
-                            (VarType::Buffer { z: 1, .. }, Index::Array2D(a, b)) => {
-                                var.idx_3d(id, &self.gen_expr(a), &self.gen_expr(b), "0")
+                            VarType::FloatArray(..) => {
+                                if let Prop::Ptr = prop {
+                                    match (var, idx) {
+                                        (VarType::FloatArray(1, ..), Index::Array1D(a)) => {
+                                            format!("({} + {})", id, self.gen_expr(a))
+                                        }
+                                        (VarType::FloatArray(2, ..), Index::Array2D(a, b)) => {
+                                            format!(
+                                                "({}[{}] + {})",
+                                                id,
+                                                self.gen_expr(a),
+                                                self.gen_expr(b)
+                                            )
+                                        }
+                                        (VarType::FloatArray(3, ..), Index::Array3D(a, b, c)) => {
+                                            format!(
+                                                "({}[{}][{}] + {})",
+                                                id,
+                                                self.gen_expr(a),
+                                                self.gen_expr(b),
+                                                self.gen_expr(c)
+                                            )
+                                        }
+                                        (
+                                            VarType::FloatArray(4, ..),
+                                            Index::Array4D(a, b, c, d),
+                                        ) => format!(
+                                            "({}[{}][{}][{}] + {})",
+                                            id,
+                                            self.gen_expr(a),
+                                            self.gen_expr(b),
+                                            self.gen_expr(c),
+                                            self.gen_expr(d)
+                                        ),
+                                        _ => String::from("// ERROR!!!\n"),
+                                    }
+                                } else {
+                                    String::from("// ERROR!!!\n")
+                                }
                             }
-                            (VarType::Buffer { .. }, Index::Array3D(a, b, c)) => var.idx_3d(
-                                id,
-                                &self.gen_expr(a),
-                                &self.gen_expr(b),
-                                &self.gen_expr(c),
-                            ),
+                            VarType::IntArray(..) => {
+                                if let Prop::Ptr = prop {
+                                    match (var, idx) {
+                                        (VarType::IntArray(1, ..), Index::Array1D(a)) => {
+                                            format!("({} + {})", id, self.gen_expr(a))
+                                        }
+                                        (VarType::IntArray(2, ..), Index::Array2D(a, b)) => {
+                                            format!(
+                                                "({}[{}] + {})",
+                                                id,
+                                                self.gen_expr(a),
+                                                self.gen_expr(b)
+                                            )
+                                        }
+                                        (VarType::IntArray(3, ..), Index::Array3D(a, b, c)) => {
+                                            format!(
+                                                "({}[{}][{}] + {})",
+                                                id,
+                                                self.gen_expr(a),
+                                                self.gen_expr(b),
+                                                self.gen_expr(c)
+                                            )
+                                        }
+                                        (VarType::IntArray(4, ..), Index::Array4D(a, b, c, d)) => {
+                                            format!(
+                                                "({}[{}][{}][{}] + {})",
+                                                id,
+                                                self.gen_expr(a),
+                                                self.gen_expr(b),
+                                                self.gen_expr(c),
+                                                self.gen_expr(d)
+                                            )
+                                        }
+                                        _ => String::from("// ERROR!!!\n"),
+                                    }
+                                } else {
+                                    String::from("// ERROR!!!\n")
+                                }
+                            }
                             _ => String::from("// ERROR!!!\n"),
-                        };
-                        match prop {
-                            Prop::Int => format!("(((global int*){})[{}])", id, idx),
-                            Prop::Idx => idx,
-                            Prop::Ptr => format!("({} + {})", id, idx),
-                            Prop::IntPtr => format!("(((global int*){}) + {})", id, idx),
                         }
                     } else {
                         String::from("// ERROR!!!\n")
