@@ -65,10 +65,10 @@ kernel display(I, O, P, H)
   var g = clamp(int(i.g*255), 0, 255)
   var b = clamp(int(i.b*255), 0, 255)
 
+  var lh = local_int_array(256, 4)
   if int(get_local_size(0))==256 then
     const lx = int(get_local_id(0))
 
-    var lh = local_int_array(256, 4)
     lh[lx, 0] = 0;
     lh[lx, 1] = 0;
     lh[lx, 2] = 0;
