@@ -160,10 +160,10 @@ function love.filedropped(file)
 	assert(file, "ERROR: File loading failed")
 
 	originalImage, RAW_SRGBmatrix, RAW_WBmultipliers, RAW_PREmultipliers = require("io."..settings.imageLoader).read(file)
-	originalImage:toDevice(true)
-	if RAW_SRGBmatrix then RAW_SRGBmatrix:toDevice(true) end
-	if RAW_WBmultipliers then RAW_WBmultipliers:toDevice(true) end
-	if RAW_PREmultipliers then RAW_PREmultipliers:toDevice(true) end
+	originalImage:syncDev(true)
+	if RAW_SRGBmatrix then RAW_SRGBmatrix:syncDev(true) end
+	if RAW_WBmultipliers then RAW_WBmultipliers:syncDev(true) end
+	if RAW_PREmultipliers then RAW_PREmultipliers:syncDev(true) end
 
 	love.window.setTitle("Ivy: "..( type(file) == "string" and file or file:getFilename() ))
 	exifData = require("io.exif").read(file)
@@ -245,7 +245,8 @@ function love.filedropped(file)
 		imageOffset:set(0, 0, 12, s_min)
 	end
 
-	imageOffset:toDevice()
+  imageOffset:hostWritten()
+	imageOffset:syncDev(true)
 
 	pipeline.input.imageData = originalImage:new()
 	pipeline.output.image = image.new(pipeline.input.imageData)
@@ -388,7 +389,8 @@ function love.update()
 		previewImage = pipeline.output.image:refresh() -- set to display the new output.image next
 
 		if pipeline.output.elem[1].value then
-			hist = pipeline.output.data.histogram:copy()
+			--hist = pipeline.output.data.histogram:copy()
+      hist = false
 		else
 			hist = false
 		end
@@ -402,18 +404,18 @@ function love.update()
 
 		if loadInputImage then -- load cropped image if not already cached
 			rescaleInputOutput()
-			imageOffset:toDevice()
+			imageOffset:syncDev(true)
 
 			local pool = require "tools.imagePool"
 			pool.resize(originalImage.x, originalImage.y)
-			pool.crop(imageOffset.data[0], imageOffset.data[1], pipeline.input.imageData.x, pipeline.input.imageData.y)
+			pool.crop(imageOffset:get(0, 0, 0), imageOffset:get(0, 0, 1), pipeline.input.imageData.x, pipeline.input.imageData.y)
 
 			--thread.ops.cropCorrectFisheye({originalImage, input.imageData, imageOffset}, "dev")
 
 			if panels.info.elem[15].value or panels.info.elem[16].value then
 				flags:set(0, 0, 0, panels.info.elem[15].value and 1 or 0)
 				flags:set(0, 0, 1, panels.info.elem[16].value and 1 or 0)
-				flags:toDevice()
+				flags:hostWritten()
 				thread.ops.cropCorrect({originalImage, pipeline.input.imageData, imageOffset, flags}, "dev")
 			else
 				thread.ops.crop({originalImage, pipeline.input.imageData, imageOffset}, "dev")
@@ -425,9 +427,11 @@ function love.update()
 				flags:set(0, 0, 4, panels.info.elem[19].value and 1 or 0)
 				flags:set(0, 0, 5, panels.info.elem[20].value and 1 or 0)
 				flags:set(0, 0, 6, panels.info.elem[21].value and 1 or 0)
-				flags:toDevice()
+				flags:hostWritten()
 				thread.ops.RAWtoSRGB({pipeline.input.imageData, RAW_SRGBmatrix, RAW_WBmultipliers, RAW_PREmultipliers, flags}, "dev")
 			end
+
+      flags:syncDev()
 
 			pipeline.input.imageData.__cpuDirty = true
 			pipeline.input.imageData.__gpuDirty = false
@@ -501,7 +505,6 @@ end
 
 
 local style = require("ui.style")
-local alloc = require("data.alloc")
 
 function love.draw()
 	love.graphics.scale(settings.scaleUI, settings.scaleUI)
@@ -513,10 +516,11 @@ function love.draw()
 	panels.status.leftText = string.format(
 		"UI: %.1ffps | Processing: %.1fms (%s) | Memory: CPU %.1fMB, GPU %.1fMB (Temp: CPU %.1fMB, GPU %.1fMB)",
 		love.timer.getFPS(), procTime * 1000, processor,
-		data.stats.data.cpu_max/1024/1024, data.stats.data.gpu_max/1024/1024,
-		data.stats.thread.cpu_max/1024/1024, data.stats.thread.gpu_max/1024/1024)
-	data.stats.clearCPU()
-	data.stats.clearGPU()
+		--data.stats.data.cpu_max/1024/1024, data.stats.data.gpu_max/1024/1024,
+		--data.stats.thread.cpu_max/1024/1024, data.stats.thread.gpu_max/1024/1024)
+    -999, -999, -999, -999)
+	--data.stats.clearCPU()
+	--data.stats.clearGPU()
 
 
 	panels.ui:draw()

@@ -56,9 +56,9 @@ local schedule = {}
 local lastid = false
 function schedule.done()
 	hostSyncCh:push("done")
-	hostSyncCh:push(data.stats.data)
-	data.stats.clearCPU()
-	data.stats.clearGPU()
+	--hostSyncCh:push(data.stats.data)
+	--data.stats.clearCPU()
+	--data.stats.clearGPU()
 	if lastid then
 		messageCh:push{"end", lastid}
 	end

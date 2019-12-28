@@ -99,20 +99,16 @@ end
 
 local function execute()
 	local I, O, P, H = proc:getAllBuffers(4)
-
-  O.dataOCL = proc.context:create_buffer("write_only", O.x * O.y * ffi.sizeof("cl_float"))
-  O.z = 1
-  O.sx = 1
-  O.sy = O.x
-  O.sz = 1
   O:allocDev()
+  H:allocDev()
 
   proc:setWorkgroupSize({256, 1, 1})
   proc:executeKernel("clearHist", {256, 1, 4}, {H})
   proc:executeKernel("display", proc:size2D(O), {I, O, P, H})
 
+  O:syncHost(true)
   O:freeDev(true)
-  H:toHost(true)
+  H:syncHost(true, true)
 end
 
 local function init(d, c, q)

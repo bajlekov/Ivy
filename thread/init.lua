@@ -63,7 +63,7 @@ end
 local keepData = {}
 local function pushImageData(data)
 	table.insert(keepData, data)
-	dataCh:push(data:toChTable())
+	dataCh:push(data:toTable())
 end
 function threadModule.freeData()
 	keepData = {}
@@ -77,7 +77,7 @@ function threadModule.done(OCL)
     error("SCHEDULER ERROR: "..err)
   end
 	if syncCh:pop()=="done" then
-		data.stats.thread = syncCh:demand()
+		--data.stats.thread = syncCh:demand()
 		return true
 	else
 		return false
