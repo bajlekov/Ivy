@@ -1536,6 +1536,7 @@ local function nlmeansProcess(self)
 	local p4 = t.autoTempBuffer(self, 4, 1, 1, 3)
 	p4:set(0, 0, 0, self.elem[7].value)
 	p4:set(0, 0, 1, self.elem[8].value)
+	p4:hostWritten()
 	local kernel = t.autoTempBuffer(self, 5, 1, 1, 15)
 	local sum = 0
 	for i = -7, 7 do
@@ -1543,12 +1544,13 @@ local function nlmeansProcess(self)
 		sum = sum + v
 		kernel:set(0, 0, i+7, v)
 	end
+	kernel:hostWritten()
 	for i = 0, 14 do
 		local v = kernel:get(0, 0, i)
 		v = v / sum
 		kernel:set(0, 0, i, v)
 	end
-	kernel:toDevice()
+	kernel:syncDev(true)
 
 	local x, y, z = data.superSize(i, p1, p2, p3)
 
