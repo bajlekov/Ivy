@@ -54,6 +54,9 @@ end
 function process:setWorkgroupSize(size)
 	self.workgroupSize = size
 end
+function process:clearWorkgroupSize()
+	self.workgroupSize = nil
+end
 
 function process:init(device, context, queue)
 	self.device = device
