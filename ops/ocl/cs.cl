@@ -470,4 +470,81 @@ inline float range(float p, float w, float x) {
 }
 
 
+// counter-based random number generator philox for efficient parallel generation of random numbers
+
+typedef struct {
+    uint a;
+    uint b;
+} _philox_ctr;
+
+// start adapted philox2x32
+// adapted from https://www.thesalmons.org/john/random123/
+/*
+Copyright 2010-2012, D. E. Shaw Research. All rights reserved.
+Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
+Redistributions of source code must retain the above copyright notice, this list of conditions, and the following disclaimer.
+Redistributions in binary form must reproduce the above copyright notice, this list of conditions, and the following disclaimer in the documentation and/or other materials provided with the distribution.
+Neither the name of D. E. Shaw Research nor the names of its contributors may be used to endorse or promote products derived from this software without specific prior written permission.
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+*/
+
+uint _philox_mulhilo(uint a, uint b, uint* hip){
+    ulong product = ((ulong)a)*((ulong)b);
+    *hip = product>>32;
+    return (uint)product;
+}
+
+#define _M2 ((uint)0xd256d193)
+#define _W32 ((uint)0x9E3779B9)
+
+inline _philox_ctr _philox_round(_philox_ctr ctr, uint key) {
+    uint hi;
+    uint lo = _philox_mulhilo(_M2, ctr.a, &hi);
+    _philox_ctr out = {hi^key^ctr.b, lo};
+    return out;
+}
+
+inline uint _philox_bumpkey( uint key) {
+    key += _W32;
+    return key;
+}
+
+_philox_ctr _philox(_philox_ctr ctr, uint key) {
+                              	ctr = _philox_round(ctr, key);
+    key = _philox_bumpkey(key); ctr = _philox_round(ctr, key);
+    key = _philox_bumpkey(key); ctr = _philox_round(ctr, key);
+    key = _philox_bumpkey(key); ctr = _philox_round(ctr, key);
+    key = _philox_bumpkey(key); ctr = _philox_round(ctr, key);
+    key = _philox_bumpkey(key); ctr = _philox_round(ctr, key);
+    key = _philox_bumpkey(key); ctr = _philox_round(ctr, key);
+    key = _philox_bumpkey(key); ctr = _philox_round(ctr, key);
+    key = _philox_bumpkey(key); ctr = _philox_round(ctr, key);
+    key = _philox_bumpkey(key); ctr = _philox_round(ctr, key);
+    return ctr;
+}
+// end adapted philox2x32
+
+
+float runif(uint key, uint x, uint y) {
+	_philox_ctr ctr = {x, y};
+  _philox_ctr res = _philox(ctr, key);
+	return (float)res.a / 4294967296;
+}
+
+// using the Box-Muller transform to obtain normally distributed samples
+// https://en.wikipedia.org/wiki/Box%E2%80%93Muller_transform
+float rnorm(uint key, uint x, uint y) {
+	_philox_ctr ctr = {x, y};
+	_philox_ctr res = _philox(ctr, key);
+
+	float u1 = (float)res.a / 4294967296;
+	float u2 = (float)res.b / 4294967296;
+
+	float r = sqrt(-2.0f*log(u1));
+	float t = M_2PI*u2;
+
+	return r*sin(t);
+}
+
+
 #endif
