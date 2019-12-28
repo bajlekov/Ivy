@@ -108,32 +108,36 @@ impl<'a> Generator<'a> {
                     VarType::Int => format!("int {}", v),
                     VarType::Float => format!("float {}", v),
                     VarType::Vec => format!("float<3> {}", v),
-                    VarType::BoolArray(1, a, _, _, _) => format!("bool {}[{}]", v, a),
-                    VarType::BoolArray(2, a, b, _, _) => format!("bool {}[{}][{}]", v, a, b),
-                    VarType::BoolArray(3, a, b, c, _) => format!("bool {}[{}][{}][{}]", v, a, b, c),
-                    VarType::BoolArray(4, a, b, c, d) => {
+                    VarType::BoolArray(1, _, a, _, _, _) => format!("bool {}[{}]", v, a),
+                    VarType::BoolArray(2, _, a, b, _, _) => format!("bool {}[{}][{}]", v, a, b),
+                    VarType::BoolArray(3, _, a, b, c, _) => {
+                        format!("bool {}[{}][{}][{}]", v, a, b, c)
+                    }
+                    VarType::BoolArray(4, _, a, b, c, d) => {
                         format!("bool {}[{}][{}][{}][{}]", v, a, b, c, d)
                     }
-                    VarType::IntArray(1, a, _, _, _) => format!("int {}[{}]", v, a),
-                    VarType::IntArray(2, a, b, _, _) => format!("int {}[{}][{}]", v, a, b),
-                    VarType::IntArray(3, a, b, c, _) => format!("int {}[{}][{}][{}]", v, a, b, c),
-                    VarType::IntArray(4, a, b, c, d) => {
+                    VarType::IntArray(1, _, a, _, _, _) => format!("int {}[{}]", v, a),
+                    VarType::IntArray(2, _, a, b, _, _) => format!("int {}[{}][{}]", v, a, b),
+                    VarType::IntArray(3, _, a, b, c, _) => {
+                        format!("int {}[{}][{}][{}]", v, a, b, c)
+                    }
+                    VarType::IntArray(4, _, a, b, c, d) => {
                         format!("int {}[{}][{}][{}][{}]", v, a, b, c, d)
                     }
-                    VarType::FloatArray(1, a, _, _, _) => format!("float {}[{}]", v, a),
-                    VarType::FloatArray(2, a, b, _, _) => format!("float {}[{}][{}]", v, a, b),
-                    VarType::FloatArray(3, a, b, c, _) => {
+                    VarType::FloatArray(1, _, a, _, _, _) => format!("float {}[{}]", v, a),
+                    VarType::FloatArray(2, _, a, b, _, _) => format!("float {}[{}][{}]", v, a, b),
+                    VarType::FloatArray(3, _, a, b, c, _) => {
                         format!("float {}[{}][{}][{}]", v, a, b, c)
                     }
-                    VarType::FloatArray(4, a, b, c, d) => {
+                    VarType::FloatArray(4, _, a, b, c, d) => {
                         format!("float {}[{}][{}][{}][{}]", v, a, b, c, d)
                     }
-                    VarType::VecArray(1, a, _, _, _) => format!("float<3> {}[{}]", v, a),
-                    VarType::VecArray(2, a, b, _, _) => format!("float<3> {}[{}][{}]", v, a, b),
-                    VarType::VecArray(3, a, b, c, _) => {
+                    VarType::VecArray(1, _, a, _, _, _) => format!("float<3> {}[{}]", v, a),
+                    VarType::VecArray(2, _, a, b, _, _) => format!("float<3> {}[{}][{}]", v, a, b),
+                    VarType::VecArray(3, _, a, b, c, _) => {
                         format!("float<3> {}[{}][{}][{}]", v, a, b, c)
                     }
-                    VarType::VecArray(4, a, b, c, d) => {
+                    VarType::VecArray(4, _, a, b, c, d) => {
                         format!("float<3> {}[{}][{}][{}][{}]", v, a, b, c, d)
                     }
                     _ => String::from("/*** Error: Unknown type ***/"),
@@ -357,7 +361,7 @@ uniform int _nz = ceil((uniform float)_dim[5]/_dim[8]);
         match stmt {
             Stmt::Var(id, expr) => self.gen_var(id, expr),
             Stmt::Const(id, expr) => format!("const {}", self.gen_var(id, expr)),
-            Stmt::Local(id, expr) => format!("uniform {}", self.gen_var(id, expr)),
+            //Stmt::Local(id, expr) => format!("uniform {}", self.gen_var(id, expr)),
             Stmt::Assign(id, expr) => self.gen_assign(id, expr),
             Stmt::Call(id, args) => {
                 let args_str = args
@@ -559,45 +563,49 @@ uniform int _nz = ceil((uniform float)_dim[5]/_dim[8]);
             VarType::Float => format!("float {} = {};\n", id, expr_str),
             VarType::Vec => format!("float<3> {} = {};\n", id, expr_str),
 
-            VarType::BoolArray(1, a, _, _, _) => format!("bool {} [{}]{};\n", id, a, expr_str),
-            VarType::BoolArray(2, a, b, _, _) => {
+            VarType::BoolArray(1, _, a, _, _, _) => format!("bool {} [{}]{};\n", id, a, expr_str),
+            VarType::BoolArray(2, _, a, b, _, _) => {
                 format!("bool {} [{}][{}]{};\n", id, a, b, expr_str)
             }
-            VarType::BoolArray(3, a, b, c, _) => {
+            VarType::BoolArray(3, _, a, b, c, _) => {
                 format!("bool {} [{}][{}][{}]{};\n", id, a, b, c, expr_str)
             }
-            VarType::BoolArray(4, a, b, c, d) => {
+            VarType::BoolArray(4, _, a, b, c, d) => {
                 format!("bool {} [{}][{}][{}][{}]{};\n", id, a, b, c, d, expr_str)
             }
 
-            VarType::IntArray(1, a, _, _, _) => format!("int {} [{}]{};\n", id, a, expr_str),
-            VarType::IntArray(2, a, b, _, _) => format!("int {} [{}][{}]{};\n", id, a, b, expr_str),
-            VarType::IntArray(3, a, b, c, _) => {
+            VarType::IntArray(1, _, a, _, _, _) => format!("int {} [{}]{};\n", id, a, expr_str),
+            VarType::IntArray(2, _, a, b, _, _) => {
+                format!("int {} [{}][{}]{};\n", id, a, b, expr_str)
+            }
+            VarType::IntArray(3, _, a, b, c, _) => {
                 format!("int {} [{}][{}][{}]{};\n", id, a, b, c, expr_str)
             }
-            VarType::IntArray(4, a, b, c, d) => {
+            VarType::IntArray(4, _, a, b, c, d) => {
                 format!("int {} [{}][{}][{}][{}]{};\n", id, a, b, c, d, expr_str)
             }
 
-            VarType::FloatArray(1, a, _, _, _) => format!("float {} [{}]{};\n", id, a, expr_str),
-            VarType::FloatArray(2, a, b, _, _) => {
+            VarType::FloatArray(1, _, a, _, _, _) => format!("float {} [{}]{};\n", id, a, expr_str),
+            VarType::FloatArray(2, _, a, b, _, _) => {
                 format!("float {} [{}][{}]{};\n", id, a, b, expr_str)
             }
-            VarType::FloatArray(3, a, b, c, _) => {
+            VarType::FloatArray(3, _, a, b, c, _) => {
                 format!("float {} [{}][{}][{}]{};\n", id, a, b, c, expr_str)
             }
-            VarType::FloatArray(4, a, b, c, d) => {
+            VarType::FloatArray(4, _, a, b, c, d) => {
                 format!("float {} [{}][{}][{}][{}]{};\n", id, a, b, c, d, expr_str)
             }
 
-            VarType::VecArray(1, a, _, _, _) => format!("float<3> {} [{}]{};\n", id, a, expr_str),
-            VarType::VecArray(2, a, b, _, _) => {
+            VarType::VecArray(1, _, a, _, _, _) => {
+                format!("float<3> {} [{}]{};\n", id, a, expr_str)
+            }
+            VarType::VecArray(2, _, a, b, _, _) => {
                 format!("float<3> {} [{}][{}]{};\n", id, a, b, expr_str)
             }
-            VarType::VecArray(3, a, b, c, _) => {
+            VarType::VecArray(3, _, a, b, c, _) => {
                 format!("float<3> {} [{}][{}][{}]{};\n", id, a, b, c, expr_str)
             }
-            VarType::VecArray(4, a, b, c, d) => format!(
+            VarType::VecArray(4, _, a, b, c, d) => format!(
                 "float<3> {} [{}][{}][{}][{}]{};\n",
                 id, a, b, c, d, expr_str
             ),
@@ -710,7 +718,7 @@ uniform int _nz = ceil((uniform float)_dim[5]/_dim[8]);
                         self.gen_expr(&expr.right),
                     )
                 }
-            },
+            }
             BinaryOp::Mul => format!(
                 "{}*{}",
                 self.gen_expr(&expr.left),
@@ -836,14 +844,30 @@ uniform int _nz = ceil((uniform float)_dim[5]/_dim[8]);
                                 );
                                 let val = self.gen_expr(val);
                                 if z == 3 {
-                                    let id_x = format!("{}[(varying int)({})]", name, var.idx_3d(name, &a, &b, "0"));
-                                    let id_y = format!("{}[(varying int)({})]", name, var.idx_3d(name, &a, &b, "1"));
-                                    let id_z = format!("{}[(varying int)({})]", name, var.idx_3d(name, &a, &b, "2"));
+                                    let id_x = format!(
+                                        "{}[(varying int)({})]",
+                                        name,
+                                        var.idx_3d(name, &a, &b, "0")
+                                    );
+                                    let id_y = format!(
+                                        "{}[(varying int)({})]",
+                                        name,
+                                        var.idx_3d(name, &a, &b, "1")
+                                    );
+                                    let id_z = format!(
+                                        "{}[(varying int)({})]",
+                                        name,
+                                        var.idx_3d(name, &a, &b, "2")
+                                    );
                                     format!("{} {{ float<3> __v = {}({}); {} = __v.x; {} = __v.y; {} = __v.z; }}\n",
                                         guard, cs, val, id_x, id_y, id_z)
                                 } else if z == 1 {
                                     // match buffer storage size to color space
-                                    let id = format!("{}[(varying int)({})]", name, var.idx_3d(name, &a, &b, "0"));
+                                    let id = format!(
+                                        "{}[(varying int)({})]",
+                                        name,
+                                        var.idx_3d(name, &a, &b, "0")
+                                    );
                                     format!("{} {} = {}({});\n", guard, id, cs, val)
                                 } else {
                                     String::from("// ERROR!!!\n")
@@ -899,7 +923,11 @@ uniform int _nz = ceil((uniform float)_dim[5]/_dim[8]);
                             );
                             let val = self.gen_expr(val);
 
-                            let id = format!("{}[(varying int)({})]", name, var.idx_3d(name, &a, &b, "0"));
+                            let id = format!(
+                                "{}[(varying int)({})]",
+                                name,
+                                var.idx_3d(name, &a, &b, "0")
+                            );
                             format!("{} {} = {};\n", guard, id, val)
                         }
                         VarType::Buffer { z: 3, .. } => {
@@ -911,9 +939,21 @@ uniform int _nz = ceil((uniform float)_dim[5]/_dim[8]);
                             );
                             let val = self.gen_expr(val);
 
-                            let id_x = format!("{}[(varying int)({})]", name, var.idx_3d(name, &a, &b, "0"));
-                            let id_y = format!("{}[(varying int)({})]", name, var.idx_3d(name, &a, &b, "1"));
-                            let id_z = format!("{}[(varying int)({})]", name, var.idx_3d(name, &a, &b, "2"));
+                            let id_x = format!(
+                                "{}[(varying int)({})]",
+                                name,
+                                var.idx_3d(name, &a, &b, "0")
+                            );
+                            let id_y = format!(
+                                "{}[(varying int)({})]",
+                                name,
+                                var.idx_3d(name, &a, &b, "1")
+                            );
+                            let id_z = format!(
+                                "{}[(varying int)({})]",
+                                name,
+                                var.idx_3d(name, &a, &b, "2")
+                            );
                             format!(
                                 "{} {{ float<3> __v = {}; {} = __v.x; {} = __v.y; {} = __v.z; }}\n",
                                 guard, val, id_x, id_y, id_z
@@ -959,7 +999,11 @@ uniform int _nz = ceil((uniform float)_dim[5]/_dim[8]);
                             );
                             let val = self.gen_expr(val);
 
-                            let id = format!("{}[(varying int)({})]", name, var.idx_3d(name, &a, &b, &c));
+                            let id = format!(
+                                "{}[(varying int)({})]",
+                                name,
+                                var.idx_3d(name, &a, &b, &c)
+                            );
                             format!("{} {} = {};\n", guard, id, val)
                         }
                         _ => String::from("// ERROR!!!\n"),

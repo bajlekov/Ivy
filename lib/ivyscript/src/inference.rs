@@ -28,10 +28,10 @@ pub enum VarType {
     Int,
     Float,
     Vec,
-    BoolArray(u8, u64, u64, u64, u64),
-    IntArray(u8, u64, u64, u64, u64),
-    FloatArray(u8, u64, u64, u64, u64),
-    VecArray(u8, u64, u64, u64, u64),
+    BoolArray(u8, bool, u64, u64, u64, u64),
+    IntArray(u8, bool, u64, u64, u64, u64),
+    FloatArray(u8, bool, u64, u64, u64, u64),
+    VecArray(u8, bool, u64, u64, u64, u64),
     Buffer { z: u64, cs: ColorSpace },
     Unknown,
 }
@@ -55,6 +55,38 @@ impl<'a> Inference<'a> {
     }
 
     pub fn var_type(&self, expr: &Expr) -> VarType {
+        // handle Prop::Ptr separately as it needs information about the array/buffer before indexing
+        if let Expr::Index(expr, idx) = expr {
+            if let (Expr::Index(expr, _), Index::Prop(Prop::Ptr)) = (&**expr, &**idx) {
+                if let Expr::Identifier(id) = &**expr {
+                    if let Some(t) = self.scope.get(id) {
+                        if let Some(var_type) = match t {
+                            VarType::IntArray(_, true, ..) => {
+                                Some(VarType::IntArray(1, true, 0, 0, 0, 0))
+                            }
+                            VarType::IntArray(_, false, ..) => {
+                                Some(VarType::IntArray(1, false, 0, 0, 0, 0))
+                            }
+                            VarType::FloatArray(_, true, ..) => {
+                                Some(VarType::FloatArray(1, true, 0, 0, 0, 0))
+                            }
+                            VarType::FloatArray(_, false, ..) => {
+                                Some(VarType::FloatArray(1, false, 0, 0, 0, 0))
+                            }
+                            VarType::Buffer { .. } => {
+                                Some(VarType::FloatArray(1, false, 0, 0, 0, 0))
+                            }
+                            _ => None,
+                        } {
+                            return var_type;
+                        }
+                    } else {
+                        return VarType::Unknown;
+                    }
+                }
+            }
+        }
+
         match expr {
             Expr::Literal(Literal::Bool(_)) => B,
             Expr::Literal(Literal::Int(_)) => I,
@@ -112,8 +144,7 @@ impl<'a> Inference<'a> {
 
                 (F, Index::Prop(Prop::Int)) => I,
                 (F, Index::Prop(Prop::Idx)) => I,
-                (F, Index::Prop(Prop::Ptr)) => VarType::FloatArray(1, 0, 0, 0, 0),
-                (F, Index::Prop(Prop::IntPtr)) => VarType::IntArray(1, 0, 0, 0, 0),
+                (F, Index::Prop(Prop::IntPtr)) => VarType::IntArray(1, false, 0, 0, 0, 0), // only available for buffers
 
                 (VarType::Buffer { .. }, Index::Array1D(..)) => F,
                 (VarType::Buffer { z: 3, .. }, Index::Array2D(..)) => V,
@@ -158,45 +189,45 @@ impl<'a> Inference<'a> {
                 } else {
                     // TODO: assert that all other elements have the same type
                     match self.var_type(&v[0]) {
-                        B => VarType::BoolArray(1, v.len() as u64, 0, 0, 0),
-                        I => VarType::IntArray(1, v.len() as u64, 0, 0, 0),
-                        F => VarType::FloatArray(1, v.len() as u64, 0, 0, 0),
-                        V => VarType::VecArray(1, v.len() as u64, 0, 0, 0),
-                        VarType::BoolArray(1, a, ..) => {
-                            VarType::BoolArray(2, v.len() as u64, a, 0, 0)
+                        B => VarType::BoolArray(1, false, v.len() as u64, 0, 0, 0),
+                        I => VarType::IntArray(1, false, v.len() as u64, 0, 0, 0),
+                        F => VarType::FloatArray(1, false, v.len() as u64, 0, 0, 0),
+                        V => VarType::VecArray(1, false, v.len() as u64, 0, 0, 0),
+                        VarType::BoolArray(1, _, a, ..) => {
+                            VarType::BoolArray(2, false, v.len() as u64, a, 0, 0)
                         }
-                        VarType::BoolArray(2, a, b, ..) => {
-                            VarType::BoolArray(3, v.len() as u64, a, b, 0)
+                        VarType::BoolArray(2, _, a, b, ..) => {
+                            VarType::BoolArray(3, false, v.len() as u64, a, b, 0)
                         }
-                        VarType::BoolArray(3, a, b, c, ..) => {
-                            VarType::BoolArray(4, v.len() as u64, a, b, c)
+                        VarType::BoolArray(3, _, a, b, c, ..) => {
+                            VarType::BoolArray(4, false, v.len() as u64, a, b, c)
                         }
-                        VarType::IntArray(1, a, ..) => {
-                            VarType::IntArray(2, v.len() as u64, a, 0, 0)
+                        VarType::IntArray(1, _, a, ..) => {
+                            VarType::IntArray(2, false, v.len() as u64, a, 0, 0)
                         }
-                        VarType::IntArray(2, a, b, ..) => {
-                            VarType::IntArray(3, v.len() as u64, a, b, 0)
+                        VarType::IntArray(2, _, a, b, ..) => {
+                            VarType::IntArray(3, false, v.len() as u64, a, b, 0)
                         }
-                        VarType::IntArray(3, a, b, c, ..) => {
-                            VarType::IntArray(4, v.len() as u64, a, b, c)
+                        VarType::IntArray(3, _, a, b, c, ..) => {
+                            VarType::IntArray(4, false, v.len() as u64, a, b, c)
                         }
-                        VarType::FloatArray(1, a, ..) => {
-                            VarType::FloatArray(2, v.len() as u64, a, 0, 0)
+                        VarType::FloatArray(1, _, a, ..) => {
+                            VarType::FloatArray(2, false, v.len() as u64, a, 0, 0)
                         }
-                        VarType::FloatArray(2, a, b, ..) => {
-                            VarType::FloatArray(3, v.len() as u64, a, b, 0)
+                        VarType::FloatArray(2, _, a, b, ..) => {
+                            VarType::FloatArray(3, false, v.len() as u64, a, b, 0)
                         }
-                        VarType::FloatArray(3, a, b, c, ..) => {
-                            VarType::FloatArray(4, v.len() as u64, a, b, c)
+                        VarType::FloatArray(3, _, a, b, c, ..) => {
+                            VarType::FloatArray(4, false, v.len() as u64, a, b, c)
                         }
-                        VarType::VecArray(1, a, ..) => {
-                            VarType::VecArray(2, v.len() as u64, a, 0, 0)
+                        VarType::VecArray(1, _, a, ..) => {
+                            VarType::VecArray(2, false, v.len() as u64, a, 0, 0)
                         }
-                        VarType::VecArray(2, a, b, ..) => {
-                            VarType::VecArray(3, v.len() as u64, a, b, 0)
+                        VarType::VecArray(2, _, a, b, ..) => {
+                            VarType::VecArray(3, false, v.len() as u64, a, b, 0)
                         }
-                        VarType::VecArray(3, a, b, c, ..) => {
-                            VarType::VecArray(4, v.len() as u64, a, b, c)
+                        VarType::VecArray(3, _, a, b, c, ..) => {
+                            VarType::VecArray(4, false, v.len() as u64, a, b, c)
                         }
                         _ => VarType::Unknown,
                     }
@@ -422,6 +453,7 @@ impl<'a> Inference<'a> {
             "normalize" => self.geom_1(vars, V),
 
             // memory barrier functions
+            "barrier" => Some(VarType::Unknown),
 
             // atomics "atomic_add(buf, idx1, idx2, idx3, value)" etc.
             "atomic_add" => self.atomic_2(vars),
@@ -509,6 +541,7 @@ impl<'a> Inference<'a> {
             // array constructors
             "array" if vars.len() == 1 && self.is_int_lit(&vars[0]) => Some(VarType::FloatArray(
                 1,
+                false,
                 self.get_int_lit(&vars[0]) as u64,
                 0,
                 0,
@@ -519,6 +552,7 @@ impl<'a> Inference<'a> {
             {
                 Some(VarType::FloatArray(
                     2,
+                    false,
                     self.get_int_lit(&vars[0]) as u64,
                     self.get_int_lit(&vars[1]) as u64,
                     0,
@@ -533,6 +567,7 @@ impl<'a> Inference<'a> {
             {
                 Some(VarType::FloatArray(
                     3,
+                    false,
                     self.get_int_lit(&vars[0]) as u64,
                     self.get_int_lit(&vars[1]) as u64,
                     self.get_int_lit(&vars[2]) as u64,
@@ -548,6 +583,7 @@ impl<'a> Inference<'a> {
             {
                 Some(VarType::FloatArray(
                     4,
+                    false,
                     self.get_int_lit(&vars[0]) as u64,
                     self.get_int_lit(&vars[1]) as u64,
                     self.get_int_lit(&vars[2]) as u64,
@@ -556,13 +592,14 @@ impl<'a> Inference<'a> {
             }
 
             "bool_array" if vars.len() == 1 && self.is_int_lit(&vars[0]) => Some(
-                VarType::BoolArray(1, self.get_int_lit(&vars[0]) as u64, 0, 0, 0),
+                VarType::BoolArray(1, false, self.get_int_lit(&vars[0]) as u64, 0, 0, 0),
             ),
             "bool_array"
                 if vars.len() == 2 && self.is_int_lit(&vars[0]) && self.is_int_lit(&vars[1]) =>
             {
                 Some(VarType::BoolArray(
                     2,
+                    false,
                     self.get_int_lit(&vars[0]) as u64,
                     self.get_int_lit(&vars[1]) as u64,
                     0,
@@ -577,6 +614,7 @@ impl<'a> Inference<'a> {
             {
                 Some(VarType::BoolArray(
                     3,
+                    false,
                     self.get_int_lit(&vars[0]) as u64,
                     self.get_int_lit(&vars[1]) as u64,
                     self.get_int_lit(&vars[2]) as u64,
@@ -592,6 +630,7 @@ impl<'a> Inference<'a> {
             {
                 Some(VarType::BoolArray(
                     4,
+                    false,
                     self.get_int_lit(&vars[0]) as u64,
                     self.get_int_lit(&vars[1]) as u64,
                     self.get_int_lit(&vars[2]) as u64,
@@ -601,6 +640,7 @@ impl<'a> Inference<'a> {
 
             "int_array" if vars.len() == 1 && self.is_int_lit(&vars[0]) => Some(VarType::IntArray(
                 1,
+                false,
                 self.get_int_lit(&vars[0]) as u64,
                 0,
                 0,
@@ -611,6 +651,7 @@ impl<'a> Inference<'a> {
             {
                 Some(VarType::IntArray(
                     2,
+                    false,
                     self.get_int_lit(&vars[0]) as u64,
                     self.get_int_lit(&vars[1]) as u64,
                     0,
@@ -625,6 +666,7 @@ impl<'a> Inference<'a> {
             {
                 Some(VarType::IntArray(
                     3,
+                    false,
                     self.get_int_lit(&vars[0]) as u64,
                     self.get_int_lit(&vars[1]) as u64,
                     self.get_int_lit(&vars[2]) as u64,
@@ -640,6 +682,7 @@ impl<'a> Inference<'a> {
             {
                 Some(VarType::IntArray(
                     4,
+                    false,
                     self.get_int_lit(&vars[0]) as u64,
                     self.get_int_lit(&vars[1]) as u64,
                     self.get_int_lit(&vars[2]) as u64,
@@ -648,13 +691,14 @@ impl<'a> Inference<'a> {
             }
 
             "float_array" if vars.len() == 1 && self.is_int_lit(&vars[0]) => Some(
-                VarType::FloatArray(1, self.get_int_lit(&vars[0]) as u64, 0, 0, 0),
+                VarType::FloatArray(1, false, self.get_int_lit(&vars[0]) as u64, 0, 0, 0),
             ),
             "float_array"
                 if vars.len() == 2 && self.is_int_lit(&vars[0]) && self.is_int_lit(&vars[1]) =>
             {
                 Some(VarType::FloatArray(
                     2,
+                    false,
                     self.get_int_lit(&vars[0]) as u64,
                     self.get_int_lit(&vars[1]) as u64,
                     0,
@@ -669,6 +713,7 @@ impl<'a> Inference<'a> {
             {
                 Some(VarType::FloatArray(
                     3,
+                    false,
                     self.get_int_lit(&vars[0]) as u64,
                     self.get_int_lit(&vars[1]) as u64,
                     self.get_int_lit(&vars[2]) as u64,
@@ -684,6 +729,7 @@ impl<'a> Inference<'a> {
             {
                 Some(VarType::FloatArray(
                     4,
+                    false,
                     self.get_int_lit(&vars[0]) as u64,
                     self.get_int_lit(&vars[1]) as u64,
                     self.get_int_lit(&vars[2]) as u64,
@@ -693,6 +739,7 @@ impl<'a> Inference<'a> {
 
             "vec_array" if vars.len() == 1 && self.is_int_lit(&vars[0]) => Some(VarType::VecArray(
                 1,
+                false,
                 self.get_int_lit(&vars[0]) as u64,
                 0,
                 0,
@@ -703,6 +750,7 @@ impl<'a> Inference<'a> {
             {
                 Some(VarType::VecArray(
                     2,
+                    false,
                     self.get_int_lit(&vars[0]) as u64,
                     self.get_int_lit(&vars[1]) as u64,
                     0,
@@ -717,6 +765,7 @@ impl<'a> Inference<'a> {
             {
                 Some(VarType::VecArray(
                     3,
+                    false,
                     self.get_int_lit(&vars[0]) as u64,
                     self.get_int_lit(&vars[1]) as u64,
                     self.get_int_lit(&vars[2]) as u64,
@@ -732,6 +781,243 @@ impl<'a> Inference<'a> {
             {
                 Some(VarType::VecArray(
                     4,
+                    false,
+                    self.get_int_lit(&vars[0]) as u64,
+                    self.get_int_lit(&vars[1]) as u64,
+                    self.get_int_lit(&vars[2]) as u64,
+                    self.get_int_lit(&vars[3]) as u64,
+                ))
+            }
+
+            // local array constructors
+            "local_array" if vars.len() == 1 && self.is_int_lit(&vars[0]) => Some(
+                VarType::FloatArray(1, true, self.get_int_lit(&vars[0]) as u64, 0, 0, 0),
+            ),
+            "local_array"
+                if vars.len() == 2 && self.is_int_lit(&vars[0]) && self.is_int_lit(&vars[1]) =>
+            {
+                Some(VarType::FloatArray(
+                    2,
+                    true,
+                    self.get_int_lit(&vars[0]) as u64,
+                    self.get_int_lit(&vars[1]) as u64,
+                    0,
+                    0,
+                ))
+            }
+            "local_array"
+                if vars.len() == 3
+                    && self.is_int_lit(&vars[0])
+                    && self.is_int_lit(&vars[1])
+                    && self.is_int_lit(&vars[2]) =>
+            {
+                Some(VarType::FloatArray(
+                    3,
+                    true,
+                    self.get_int_lit(&vars[0]) as u64,
+                    self.get_int_lit(&vars[1]) as u64,
+                    self.get_int_lit(&vars[2]) as u64,
+                    0,
+                ))
+            }
+            "local_array"
+                if vars.len() == 4
+                    && self.is_int_lit(&vars[0])
+                    && self.is_int_lit(&vars[1])
+                    && self.is_int_lit(&vars[2])
+                    && self.is_int_lit(&vars[3]) =>
+            {
+                Some(VarType::FloatArray(
+                    4,
+                    true,
+                    self.get_int_lit(&vars[0]) as u64,
+                    self.get_int_lit(&vars[1]) as u64,
+                    self.get_int_lit(&vars[2]) as u64,
+                    self.get_int_lit(&vars[3]) as u64,
+                ))
+            }
+
+            "local_bool_array" if vars.len() == 1 && self.is_int_lit(&vars[0]) => Some(
+                VarType::BoolArray(1, true, self.get_int_lit(&vars[0]) as u64, 0, 0, 0),
+            ),
+            "local_bool_array"
+                if vars.len() == 2 && self.is_int_lit(&vars[0]) && self.is_int_lit(&vars[1]) =>
+            {
+                Some(VarType::BoolArray(
+                    2,
+                    true,
+                    self.get_int_lit(&vars[0]) as u64,
+                    self.get_int_lit(&vars[1]) as u64,
+                    0,
+                    0,
+                ))
+            }
+            "local_bool_array"
+                if vars.len() == 3
+                    && self.is_int_lit(&vars[0])
+                    && self.is_int_lit(&vars[1])
+                    && self.is_int_lit(&vars[2]) =>
+            {
+                Some(VarType::BoolArray(
+                    3,
+                    true,
+                    self.get_int_lit(&vars[0]) as u64,
+                    self.get_int_lit(&vars[1]) as u64,
+                    self.get_int_lit(&vars[2]) as u64,
+                    0,
+                ))
+            }
+            "local_bool_array"
+                if vars.len() == 4
+                    && self.is_int_lit(&vars[0])
+                    && self.is_int_lit(&vars[1])
+                    && self.is_int_lit(&vars[2])
+                    && self.is_int_lit(&vars[3]) =>
+            {
+                Some(VarType::BoolArray(
+                    4,
+                    true,
+                    self.get_int_lit(&vars[0]) as u64,
+                    self.get_int_lit(&vars[1]) as u64,
+                    self.get_int_lit(&vars[2]) as u64,
+                    self.get_int_lit(&vars[3]) as u64,
+                ))
+            }
+
+            "local_int_array" if vars.len() == 1 && self.is_int_lit(&vars[0]) => Some(
+                VarType::IntArray(1, true, self.get_int_lit(&vars[0]) as u64, 0, 0, 0),
+            ),
+            "local_int_array"
+                if vars.len() == 2 && self.is_int_lit(&vars[0]) && self.is_int_lit(&vars[1]) =>
+            {
+                Some(VarType::IntArray(
+                    2,
+                    true,
+                    self.get_int_lit(&vars[0]) as u64,
+                    self.get_int_lit(&vars[1]) as u64,
+                    0,
+                    0,
+                ))
+            }
+            "local_int_array"
+                if vars.len() == 3
+                    && self.is_int_lit(&vars[0])
+                    && self.is_int_lit(&vars[1])
+                    && self.is_int_lit(&vars[2]) =>
+            {
+                Some(VarType::IntArray(
+                    3,
+                    true,
+                    self.get_int_lit(&vars[0]) as u64,
+                    self.get_int_lit(&vars[1]) as u64,
+                    self.get_int_lit(&vars[2]) as u64,
+                    0,
+                ))
+            }
+            "local_int_array"
+                if vars.len() == 4
+                    && self.is_int_lit(&vars[0])
+                    && self.is_int_lit(&vars[1])
+                    && self.is_int_lit(&vars[2])
+                    && self.is_int_lit(&vars[3]) =>
+            {
+                Some(VarType::IntArray(
+                    4,
+                    true,
+                    self.get_int_lit(&vars[0]) as u64,
+                    self.get_int_lit(&vars[1]) as u64,
+                    self.get_int_lit(&vars[2]) as u64,
+                    self.get_int_lit(&vars[3]) as u64,
+                ))
+            }
+
+            "local_float_array" if vars.len() == 1 && self.is_int_lit(&vars[0]) => Some(
+                VarType::FloatArray(1, true, self.get_int_lit(&vars[0]) as u64, 0, 0, 0),
+            ),
+            "local_float_array"
+                if vars.len() == 2 && self.is_int_lit(&vars[0]) && self.is_int_lit(&vars[1]) =>
+            {
+                Some(VarType::FloatArray(
+                    2,
+                    true,
+                    self.get_int_lit(&vars[0]) as u64,
+                    self.get_int_lit(&vars[1]) as u64,
+                    0,
+                    0,
+                ))
+            }
+            "local_float_array"
+                if vars.len() == 3
+                    && self.is_int_lit(&vars[0])
+                    && self.is_int_lit(&vars[1])
+                    && self.is_int_lit(&vars[2]) =>
+            {
+                Some(VarType::FloatArray(
+                    3,
+                    true,
+                    self.get_int_lit(&vars[0]) as u64,
+                    self.get_int_lit(&vars[1]) as u64,
+                    self.get_int_lit(&vars[2]) as u64,
+                    0,
+                ))
+            }
+            "local_float_array"
+                if vars.len() == 4
+                    && self.is_int_lit(&vars[0])
+                    && self.is_int_lit(&vars[1])
+                    && self.is_int_lit(&vars[2])
+                    && self.is_int_lit(&vars[3]) =>
+            {
+                Some(VarType::FloatArray(
+                    4,
+                    true,
+                    self.get_int_lit(&vars[0]) as u64,
+                    self.get_int_lit(&vars[1]) as u64,
+                    self.get_int_lit(&vars[2]) as u64,
+                    self.get_int_lit(&vars[3]) as u64,
+                ))
+            }
+
+            "local_vec_array" if vars.len() == 1 && self.is_int_lit(&vars[0]) => Some(
+                VarType::VecArray(1, true, self.get_int_lit(&vars[0]) as u64, 0, 0, 0),
+            ),
+            "local_vec_array"
+                if vars.len() == 2 && self.is_int_lit(&vars[0]) && self.is_int_lit(&vars[1]) =>
+            {
+                Some(VarType::VecArray(
+                    2,
+                    true,
+                    self.get_int_lit(&vars[0]) as u64,
+                    self.get_int_lit(&vars[1]) as u64,
+                    0,
+                    0,
+                ))
+            }
+            "local_vec_array"
+                if vars.len() == 3
+                    && self.is_int_lit(&vars[0])
+                    && self.is_int_lit(&vars[1])
+                    && self.is_int_lit(&vars[2]) =>
+            {
+                Some(VarType::VecArray(
+                    3,
+                    true,
+                    self.get_int_lit(&vars[0]) as u64,
+                    self.get_int_lit(&vars[1]) as u64,
+                    self.get_int_lit(&vars[2]) as u64,
+                    0,
+                ))
+            }
+            "local_vec_array"
+                if vars.len() == 4
+                    && self.is_int_lit(&vars[0])
+                    && self.is_int_lit(&vars[1])
+                    && self.is_int_lit(&vars[2])
+                    && self.is_int_lit(&vars[3]) =>
+            {
+                Some(VarType::VecArray(
+                    4,
+                    true,
                     self.get_int_lit(&vars[0]) as u64,
                     self.get_int_lit(&vars[1]) as u64,
                     self.get_int_lit(&vars[2]) as u64,

@@ -65,10 +65,35 @@ kernel display(I, O, P, H)
   var g = clamp(int(i.g*255), 0, 255)
   var b = clamp(int(i.b*255), 0, 255)
 
-  atomic_inc(H[r, 0, 0].intptr)
-  atomic_inc(H[g, 0, 1].intptr)
-  atomic_inc(H[b, 0, 2].intptr)
-  atomic_inc(H[a, 0, 3].intptr)
+  if int(get_local_size(0))==256 then
+    const lx = int(get_local_id(0))
+
+    var lh = local_int_array(256, 4)
+    lh[lx, 0] = 0;
+    lh[lx, 1] = 0;
+    lh[lx, 2] = 0;
+    lh[lx, 3] = 0;
+    barrier(CLK_LOCAL_MEM_FENCE)
+
+    atomic_inc(lh[r, 0].ptr)
+    atomic_inc(lh[g, 1].ptr)
+    atomic_inc(lh[b, 2].ptr)
+    atomic_inc(lh[a, 3].ptr)
+    barrier(CLK_LOCAL_MEM_FENCE)
+
+    atomic_add(H[lx, 0, 0].intptr, lh[lx, 0])
+    atomic_add(H[lx, 0, 1].intptr, lh[lx, 1])
+    atomic_add(H[lx, 0, 2].intptr, lh[lx, 2])
+    atomic_add(H[lx, 0, 3].intptr, lh[lx, 3])
+
+  else
+
+    atomic_inc(H[r, 0, 0].intptr)
+    atomic_inc(H[g, 0, 1].intptr)
+    atomic_inc(H[b, 0, 2].intptr)
+    atomic_inc(H[a, 0, 3].intptr)
+
+  end
 end
 ]]
 
@@ -82,6 +107,7 @@ local function execute()
   O.sz = 1
   O:allocDev()
 
+  proc:setWorkgroupSize({256, 1, 1})
   proc:executeKernel("clearHist", {256, 1, 4}, {H})
   proc:executeKernel("display", proc:size2D(O), {I, O, P, H})
 
