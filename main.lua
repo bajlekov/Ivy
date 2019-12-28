@@ -389,8 +389,7 @@ function love.update()
 		previewImage = pipeline.output.image:refresh() -- set to display the new output.image next
 
 		if pipeline.output.elem[1].value then
-			--hist = pipeline.output.data.histogram:copy()
-      hist = false
+			hist = pipeline.output.data.histogram:syncHost(true, true)
 		else
 			hist = false
 		end
