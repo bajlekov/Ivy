@@ -416,6 +416,8 @@ impl<'a> Inference<'a> {
             "abs" if vars.len() == 1 => Some(self.var_type(&vars[0])),
             // min, max generate same instructions as fmin, fmax on GCN4
             "range" if vars.len() == 3 => Some(VarType::Float),
+            "runif" if vars.len() == 3 => Some(VarType::Float),
+            "rnorm" if vars.len() == 3 => Some(VarType::Float),
 
             // OpenCL math built-in functions (selection)
             // returns F or V
