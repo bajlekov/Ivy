@@ -15,52 +15,34 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ]]
 
-local proc = require "lib.opencl.process".new()
+local proc = require "lib.opencl.process.ivy".new()
 
 local source = [[
-inline void atomic_add_f(volatile global float *addr, float val) {
-	union {
-		unsigned int u32;
-		float        f32;
-	} next, expected, current;
-	current.f32 = *addr;
+kernel set_zero(O)
+	const z = get_global_id(2)
+	O[z] = 0.0
+end
 
-	do {
-		expected.f32 = current.f32;
-		next.f32 = expected.f32 + val;
-		current.u32  = atomic_cmpxchg( (volatile __global unsigned int *)addr, expected.u32, next.u32);
-	} while( current.u32 != expected.u32 );
-}
+kernel sad(A, B, O)
+	const y = get_global_id(1)
+	const z = get_global_id(2)
 
-kernel void set_zero(global float *O) {
-	const int z = get_global_id(2);
-	O[z] = 0.0f;
-}
+	var s = 0.0
+	for x = 0, max(A.x, B.x) - 1 do
+		s = s + abs(A[x, y, z] - B[x, y, z])
+	end
 
-kernel void sad(global float *A, global float *B, global float *O) {
-	const int y = get_global_id(1);
-	const int z = get_global_id(2);
-
-	float s = 0.0f;
-	for (int x = 0; x<$$math.max(A.x, B.x)$$; x++) {
-		s += fabs($A[x, y, z] - $B[x, y, z]);
-	}
-
-	atomic_add_f(O + z, s/($$math.max(A.x, B.x)$$ * $$math.max(A.y, B.y)$$));
-}
+	atomic_add(O[z].ptr, s/(max(A.x, B.x) * max(A.y, B.y)))
+end
 ]]
 
 local function execute()
-	proc:getAllBuffers("A", "B", "O")
-	proc.buffers.A.__write = false
-	proc.buffers.B.__write = false
-	proc.buffers.O.__read = false
-
-	local size = proc:size3Dmax("A", "B")
+	local A, B, O = proc:getAllBuffers(3)
+	local size = proc:size3Dmax(A, B)
 	size[1] = 1
 
-	proc:executeKernel("set_zero", proc:size3D("O"), {"O"})
-	proc:executeKernel("sad", size)
+	proc:executeKernel("set_zero", proc:size3D(O), {O})
+	proc:executeKernel("sad", size, {A, B, O})
 end
 
 local function init(d, c, q)

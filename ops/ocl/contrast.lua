@@ -15,31 +15,38 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ]]
 
-local proc = require "lib.opencl.process".new()
+local proc = require "lib.opencl.process.ivy".new()
 
 local source = [[
-kernel void contrast(global float *I, global float *C, global float *CF, global float *O)
-{
-  const int x = get_global_id(0);
-  const int y = get_global_id(1);
+kernel contrast(I, P, O)
+  const x = get_global_id(0)
+  const y = get_global_id(1)
 
-	float3 i = $I[x, y];
-	float c = $C[x, y, 0] + 1.0f;
+  var i = I[x, y]
+  var p = P[x, y]
 
- 	float o = i.x*2.0f-1.0f;
-	float s = sign(o);
-	o = (1 - c)*pown(fabs(o), 2) + fabs(o)*c;
-	o = (s*o+1.0f)*0.5f;
+  var l = YtoL(i.y)
 
-	float cf = CF[0] > 0.5f ? o/i.x : 1.0f; // preserves saturation when scaling linear values
+  if l<0.0 then
+    l = (1.0-p)*l
+  else
+    if l>1.0 then
+      l = 1.0 + (2.0-p)*(l-1.0)
+    else
+      l = l*2.0-1.0
+  		var s = sign(l)
+  		l = (1.0 - p)*l^2 + abs(l)*p
+  		l = (s*l + 1.0)*0.5
+    end
+  end
 
-  $O[x, y] = (float3)(o, i.y*cf, i.z*cf);
-}
+  O[x, y] = i/i.y * LtoY(l)
+end
 ]]
 
 local function execute()
-	proc:getAllBuffers("I", "C", "CF", "O")
-	proc:executeKernel("contrast", proc:size2D("O"))
+	local I, P, O = proc:getAllBuffers(3)
+	proc:executeKernel("contrast", proc:size3D(O), {I, P, O})
 end
 
 local function init(d, c, q)

@@ -24,6 +24,7 @@ local dataCh = love.thread.getChannel("dataCh_scheduler")
 local syncCh = love.thread.getChannel("syncCh_scheduler")
 
 local ops = {}
+ops.cache = {}
 ops.meta = {}
 setmetatable(ops, ops.meta)
 
@@ -34,47 +35,51 @@ local function demand()
 	return buf
 end
 
-function ops.initDev(device, context, queue)
+function ops.init(device, context, queue)
 	local data = require "data"
 	local image = require "ui.image"
 
+	ops.cache = {}
+
 	local function register(name)
 		local fun = require("ops.ocl."..name)(device, context, queue)
-		ops[name] = function()
+		ops.cache[name] = function()
 			fun(demand, {size, size}, profile)
 		end
 	end
 
 	-- try to auto-register when not available
 	ops.meta.__index = function(t, k)
-		register(k)
-		return ops[k]
+		if not ops.cache[k] then
+			register(k)
+		end
+		return ops.cache[k]
 	end
 
 	local function gen1(name, fn)
 		local fun = require("ops.ocl.gen1")(device, context, queue, name, fn)
-		ops[name] = function()
+		ops.cache[name] = function()
 			fun(demand, {size, size}, profile)
 		end
 	end
 
 	local function gen2(name, fn)
 		local fun = require("ops.ocl.gen2")(device, context, queue, name, fn)
-		ops[name] = function()
+		ops.cache[name] = function()
 			fun(demand, {size, size}, profile)
 		end
 	end
 
 	local function genCS(name, fn)
 		local fun = require("ops.ocl.genCS")(device, context, queue, name, "ops/ocl/cs_kernels.cl")
-		ops[name] = function()
+		ops.cache[name] = function()
 			fun(demand, {size, size}, profile)
 		end
 	end
 
 	local function genBlend(name, fn)
 		local fun = require("ops.ocl.genBlend")(device, context, queue, name)
-		ops[name] = function()
+		ops.cache[name] = function()
 			fun(demand, {size, size}, profile)
 		end
 	end
@@ -97,6 +102,8 @@ function ops.initDev(device, context, queue)
 	gen2("diff", "math_kernels_2.cl")
 	gen2("GT", "math_kernels_2.cl")
 	gen2("LT", "math_kernels_2.cl")
+	gen2("closer", "math_kernels_2.cl")
+	gen2("farther", "math_kernels_2.cl")
 
 	genCS("SRGB")
 	genCS("LRGB")

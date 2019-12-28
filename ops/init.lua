@@ -25,6 +25,7 @@ local t = require "ops.tools"
 local ops = {}
 
 require "ops.adjust"(ops)
+require "ops.clone"(ops)
 require "ops.curves"(ops)
 require "ops.select"(ops)
 require "ops.color"(ops)
@@ -67,14 +68,14 @@ local function temperatureProcess(self)
 	local p = t.autoTempBuffer(self, 1, 1, 1, 3)
 	local o = t.autoOutput(self, 0, i:shape())
 
-	local Li, Mi, Si = cct(self.elem[1].value, self.elem[2].value)
-	local Lo, Mo, So = cct(6500)
+	local Li, Mi, Si = bradford.fwd(cct(self.elem[1].value, self.elem[2].value))
+	local Lo, Mo, So = bradford.fwd(cct(6500))
 	print(Lo/Li, Mo/Mi, So/Si)
 	p:set(0, 0, 0, Lo / Li)
 	p:set(0, 0, 1, Mo / Mi)
 	p:set(0, 0, 2, So / Si)
 	p:toDevice()
-	thread.ops.temperature({i, p, o}, self)
+	thread.ops.whitepoint({i, p, o}, self)
 end
 
 function ops.temperature(x, y)
@@ -188,124 +189,6 @@ function ops.mirrored(x, y)
 	return n
 end
 
-local function cloneProcess(self)
-	self.procType = "dev"
-
-	local i = t.inputSourceBlack(self, 0)
-	local o = t.autoOutputSink(self, 0, i:shape())
-	thread.ops.copy({i, o}, self)
-
-	local spots = self.widget.getSpots()
-	if #spots>0 then
-		local p = t.autoTempBuffer(self, -1, 1, #spots, 6)
-		for k, v in ipairs(spots) do
-			p:set(0, k-1, 0, v.sx)
-			p:set(0, k-1, 1, 1-v.sy)
-			p:set(0, k-1, 2, v.dx)
-			p:set(0, k-1, 3, 1-v.dy)
-			p:set(0, k-1, 4, v.size)
-			p:set(0, k-1, 5, v.falloff)
-		end
-		p:toDevice()
-		thread.ops.spotClone({i, o, p}, self)
-	end
-end
-
-function ops.clone(x, y)
-	local n = node:new("Clone")
-	n:addPortIn(0, "LRGB")
-	n:addPortOut(0, "LRGB")
-	n:addElem("float", 1, "Size", 0, 250, 50)
-	n:addElem("float", 2, "Falloff", 0, 1, 0.5)
-
-	n.widget = require "ui.widget.spotmask"(n.elem[1], n.elem[2])
-	n.widget.toolButton(n, 3, "Manipulate")
-
-	n.refresh = true
-	n.process = cloneProcess
-	n:setPos(x, y)
-	return n
-end
-
-local function cloneSmartProcess(self)
-	self.procType = "dev"
-
-	local i = t.inputSourceBlack(self, 0)
-	local o = t.autoOutputSink(self, 0, i:shape())
-	thread.ops.copy({i, o}, self)
-
-	local spots = self.widget.getSpots()
-	if #spots>0 then
-		local p = t.autoTempBuffer(self, -1, 1, #spots, 6)
-		for k, v in ipairs(spots) do
-			p:set(0, k-1, 0, v.sx)
-			p:set(0, k-1, 1, 1-v.sy)
-			p:set(0, k-1, 2, v.dx)
-			p:set(0, k-1, 3, 1-v.dy)
-			p:set(0, k-1, 4, v.size)
-			p:set(0, k-1, 5, v.falloff)
-		end
-		p:toDevice()
-		thread.ops.spotCloneSmart({o, p}, self)
-	end
-end
-
-function ops.cloneSmart(x, y)
-	local n = node:new("Smart Clone")
-	n:addPortIn(0, "LRGB")
-	n:addPortOut(0, "LRGB")
-	n:addElem("float", 1, "Size", 0, 250, 50)
-	n:addElem("float", 2, "Falloff", 0, 1, 0.5)
-
-	n.widget = require "ui.widget.spotmask"(n.elem[1], n.elem[2])
-	n.widget.toolButton(n, 3, "Manipulate")
-
-	n.refresh = true
-	n.process = cloneSmartProcess
-	n:setPos(x, y)
-	return n
-end
-
-local function cloneTextureProcess(self)
-	self.procType = "dev"
-
-	local i = t.inputSourceBlack(self, 0)
-	local o = t.autoOutputSink(self, 0, i:shape())
-	thread.ops.copy({i, o}, self)
-
-	local spots = self.widget.getSpots()
-	if #spots>0 then
-		local p = t.autoTempBuffer(self, -1, 1, #spots, 6)
-		for k, v in ipairs(spots) do
-			p:set(0, k-1, 0, v.sx)
-			p:set(0, k-1, 1, 1-v.sy)
-			p:set(0, k-1, 2, v.dx)
-			p:set(0, k-1, 3, 1-v.dy)
-			p:set(0, k-1, 4, v.size)
-			p:set(0, k-1, 5, v.falloff)
-		end
-		p:toDevice()
-		thread.ops.spotCloneTexture({o, p}, self)
-	end
-end
-
-function ops.cloneTexture(x, y)
-	local n = node:new("Texture Clone")
-	n:addPortIn(0, "LRGB")
-	n:addPortOut(0, "LRGB")
-	n:addElem("float", 1, "Size", 0, 250, 50)
-	n:addElem("float", 2, "Falloff", 0, 1, 0.5)
-
-	n.widget = require "ui.widget.spotmask"(n.elem[1], n.elem[2])
-	n.widget.toolButton(n, 3, "Manipulate")
-
-	n.refresh = true
-	n.process = cloneTextureProcess
-	n:setPos(x, y)
-	return n
-end
-
-
 local function outputProcess(self)
 	self.procType = "dev"
 	local p1 = t.inputSourceBlack(self, 0)
@@ -400,7 +283,7 @@ ops.tune = function(x, y)
 end
 --]]
 
-local function processAutoWB(self)
+local function processSampleWB(self)
 	self.procType = "dev"
 	local i = t.inputSourceBlack(self, 0)
 	local o = t.autoOutputSink(self, 0, i:shape())
@@ -413,20 +296,20 @@ local function processAutoWB(self)
 	p:toDevice()
 
 	if update or self.elem[2].value then
-		thread.ops.colorSample5x5({i, p, s}, self)
+		thread.ops.whitepointSample({i, p, s}, self)
 	end
 
-	thread.ops.autoWB({i, s, o}, self)
+	thread.ops.whitepoint({i, s, o}, self)
 end
 
-function ops.autoWB(x, y)
+function ops.sampleWB(x, y)
 	local n = node:new("Sample WB")
 	n.data.tweak = require "ui.widget.tweak"()
-	n:addPortIn(0, "LRGB")
-	n:addPortOut(0, "LRGB")
+	n:addPortIn(0, "XYZ")
+	n:addPortOut(0, "XYZ")
 	n.data.tweak.toolButton(n, 1, "Sample WB")
 	n:addElem("bool", 2, "Resample pos.", false)
-	n.process = processAutoWB
+	n.process = processSampleWB
 
 	local s = t.autoTempBuffer(n, -2, 1, 1, 3)
 	s:set(0, 0, 0, 1)
@@ -627,7 +510,7 @@ end
 
 function ops.localLaplacian(x, y)
 	local n = node:new("Detail")
-	n:addPortIn(0, "LAB"):addPortOut(0, "LAB") -- XYZ color matching!
+	n:addPortIn(0, "XYZ"):addPortOut(0, "XYZ")
 	n:addPortIn(1, "Y"):addElem("float", 1, "Detail", -1, 1, 0)
 	n:addPortIn(2, "Y"):addElem("float", 2, "Range", 0, 1, 0.2)
 	n:addElem("bool", 3, "HQ", false)
@@ -894,19 +777,13 @@ local function brightnessProcess(self)
 	b = t.inputParam(self, 1)
 	o = t.autoOutput(self, 0, data.superSize(i, b))
 	thread.ops.brightness({i, b, o}, self)
-
-	if self.elem[2].value then
-		thread.ops.setHue({o, i, o}, self)
-		o.cs = "LCH"
-	end
 end
 
 function ops.brightness(x, y)
 	local n = node:new("Brightness")
-	n:addPortIn(0, "LRGB")
-	n:addPortOut(0, "LRGB")
-	n:addPortIn(1, "Y"):addElem("float", 1, "Brightness", - 1, 1, 0)
-	n:addElem("bool", 2, "Preserve Hue", true)
+	n:addPortIn(0, "XYZ")
+	n:addPortOut(0, "XYZ")
+	n:addPortIn(1, "Y"):addElem("float", 1, "Brightness", 0, 2, 1)
 	n.process = brightnessProcess
 	n:setPos(x, y)
 	return n
@@ -1021,9 +898,9 @@ end
 
 function ops.gamma(x, y)
 	local n = node:new("Gamma")
-	n:addPortIn(0, "LRGB")
-	n:addPortIn(1, "LRGB"):addElem("float", 1, "Gamma", 0, 1, 0.5)
-	n:addPortOut(0, "LRGB")
+	n:addPortIn(0, "XYZ")
+	n:addPortIn(1, "Y"):addElem("float", 1, "Gamma", 0, 1, 0.5)
+	n:addPortOut(0, "XYZ")
 	n.process = gammaProcess
 	n:setPos(x, y)
 	return n
@@ -1114,48 +991,48 @@ local function getChannelNames(cs)
 	end
 end
 
-local function decomposeProcess(self)
+local function splitProcess(self)
 	self.procType = "dev"
-	local p1, p2, p3, p4
-	p1 = t.inputSourceBlack(self, 0)
-	p2 = t.autoOutputSink(self, 1, p1.x, p1.y, 1)
-	p3 = t.autoOutputSink(self, 2, p1.x, p1.y, 1)
-	p4 = t.autoOutputSink(self, 3, p1.x, p1.y, 1)
-	thread.ops.decompose({p1, p2, p3, p4}, self)
+	local i, o1, o2, o3
+	i = t.inputSourceBlack(self, 0)
+	o1 = t.autoOutputSink(self, 1, i.x, i.y, 1)
+	o2 = t.autoOutputSink(self, 2, i.x, i.y, 1)
+	o3 = t.autoOutputSink(self, 3, i.x, i.y, 1)
+	thread.ops.splitCS({i, o1, o2, o3}, self)
 end
 
-local function genDecompose(cs)
+local function genSplit(cs)
 	return function (x, y)
-		local n = node:new("Split")
+		local n = node:new(channelNames[cs][1])
 		n:addPortIn(0, cs)
-		n:addPortOut(1, "Y"):addElem("text", 1, channelNames[cs][1], channelNames[cs][2])
+		n:addPortOut(1, "Y"):addElem("text", 1, "", channelNames[cs][2])
 		n:addPortOut(2, "Y"):addElem("text", 2, "", channelNames[cs][3])
 		n:addPortOut(3, "Y"):addElem("text", 3, "", channelNames[cs][4])
-		n.process = decomposeProcess
+		n.process = splitProcess
 		n.w = 75
 		n:setPos(x, y)
 		return n
 	end
 end
 
-ops.decomposeSRGB = genDecompose("SRGB")
-ops.decomposeLRGB = genDecompose("LRGB")
-ops.decomposeXYZ = genDecompose("XYZ")
-ops.decomposeLAB = genDecompose("LAB")
-ops.decomposeLCH = genDecompose("LCH")
+ops.splitSRGB = genSplit("SRGB")
+ops.splitLRGB = genSplit("LRGB")
+ops.splitXYZ = genSplit("XYZ")
+ops.splitLAB = genSplit("LAB")
+ops.splitLCH = genSplit("LCH")
 
-local function composeProcess(self)
+local function mergeProcess(self)
 	self.procType = "dev"
-	local p1, p2, p3, p4
-	p1 = t.inputParam(self, 1)
-	p2 = t.inputParam(self, 2)
-	p3 = t.inputParam(self, 3)
-	local x, y, z = data.superSize(p1, p2, p3)
-	p4 = t.autoOutput(self, 0, x, y, 3)
-	thread.ops.compose({p1, p2, p3, p4}, self)
+	local i1, i2, i3, o
+	i1 = t.inputParam(self, 1)
+	i2 = t.inputParam(self, 2)
+	i3 = t.inputParam(self, 3)
+	local x, y, z = data.superSize(i1, i2, i3)
+	o = t.autoOutput(self, 0, x, y, 3)
+	thread.ops.mergeCS({i1, i2, i3, o}, self)
 end
 
-local function genCompose(cs)
+local function genMerge(cs)
 	return function(x, y)
 		local n = node:new(channelNames[cs][1])
 		n:addPortOut(0, cs)
@@ -1170,18 +1047,18 @@ local function genCompose(cs)
 			n.elem[3].value = 0
 			n.elem[3].default = 0
 		end
-		n.process = composeProcess
+		n.process = mergeProcess
 		n.w = 75
 		n:setPos(x, y)
 		return n
 	end
 end
 
-ops.composeSRGB = genCompose("SRGB")
-ops.composeLRGB = genCompose("LRGB")
-ops.composeXYZ = genCompose("XYZ")
-ops.composeLAB = genCompose("LAB")
-ops.composeLCH = genCompose("LCH")
+ops.mergeSRGB = genMerge("SRGB")
+ops.mergeLRGB = genMerge("LRGB")
+ops.mergeXYZ = genMerge("XYZ")
+ops.mergeLAB = genMerge("LAB")
+ops.mergeLCH = genMerge("LCH")
 
 
 

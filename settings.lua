@@ -8,7 +8,6 @@ do local _={
   juliaEnable=false,
   linkCache=true,
   linkDebug=false,
-  nativeCoreCount=8,
   nativeProfile=false,
   nodeAutoConnect=true,
   openclBuildParams="-cl-std=CL1.2 -Iops/ocl ",

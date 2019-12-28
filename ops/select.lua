@@ -38,7 +38,7 @@ return function(ops)
 		p:toDevice()
 
 		if update or self.elem[3].value then
-			thread.ops.colorSample5x5({i, p, s}, self)
+			thread.ops.colorSample({i, p, s}, self)
 		end
 		thread.ops.hueSelect({i, r, s, o, m}, self)
 	end
@@ -72,7 +72,7 @@ return function(ops)
 		p:toDevice()
 
 		if update or self.elem[3].value then
-			thread.ops.colorSample5x5({i, p, s}, self)
+			thread.ops.colorSample({i, p, s}, self)
 		end
 		thread.ops.chromaSelect({i, r, s, o, m}, self)
 	end
@@ -106,7 +106,7 @@ return function(ops)
 		p:toDevice()
 
 		if update or self.elem[3].value then
-			thread.ops.colorSample5x5({i, p, s}, self)
+			thread.ops.colorSample({i, p, s}, self)
 		end
 		thread.ops.lightnessSelect({i, r, s, o, m}, self)
 	end
@@ -146,8 +146,8 @@ return function(ops)
 	function ops.distanceSelect(x, y)
 		local n = node:new("Distance Select")
 		n.data.tweak = require "ui.widget.tweak"()
-		n:addPortIn(0, "LCH")
-		n:addPortOut(0, "LCH")
+		n:addPortIn(0, "LAB")
+		n:addPortOut(0, "LAB")
 		n:addPortIn(1, "Y"):addElem("float", 1, "Distance", 0, 1, 0.2)
 		n.data.tweak.toolButton(n, 2, "Select position")
 		n:addPortOut(3, "Y"):addElem("text", 3, "", "Mask")
@@ -174,7 +174,7 @@ return function(ops)
 		p:toDevice()
 
 		if update or self.elem[4].value then
-			thread.ops.colorSample5x5({i, p, s}, self)
+			thread.ops.colorSample({i, p, s}, self)
 		end
 		thread.ops.smartSelect({i, r, d, p, s, o, m}, self)
 	end
@@ -209,7 +209,7 @@ return function(ops)
 		p:toDevice()
 
 		if update or self.elem[3].value then
-			thread.ops.colorSample5x5({i, p, s}, self)
+			thread.ops.colorSample({i, p, s}, self)
 		end
 		thread.ops.colorSelect({i, r, s, o, m}, self)
 		if self.portOut[5].link then

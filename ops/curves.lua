@@ -236,16 +236,14 @@ return function(ops)
 		local i, c, r, o
 		i = t.inputSourceBlack(self, 0)
 		c = self.data.curve:toDevice()
-		r = t.plainParam(self, 1)
 		o = t.autoOutput(self, 0, i:shape())
-		thread.ops.curveGenericMap({i, c, r, o}, self)
+		thread.ops.curveGenericMap({i, c, o}, self)
 	end
 
 	function ops.curveMap(x, y)
 		local n = node:new("Curve Map")
 		n:addPortIn(0, "Y")
 		n:addPortOut(0, "Y")
-		n:addElem("bool", 1, "Input Range [-1, 1]")
 		n.process = curveMapProcess
 		n.data.curve = data:new(256, 1, 1)
 		require "ui.graph".curve(n)
@@ -259,9 +257,8 @@ return function(ops)
 		i = t.inputSourceBlack(self, 0)
 		d = t.inputSourceBlack(self, 1)
 		c = self.data.curve:toDevice()
-		r = t.plainParam(self, 2)
 		o = t.autoOutput(self, 0, i:shape())
-		thread.ops.curveGenericOffset({i, d, c, r, o}, self)
+		thread.ops.curveGenericOffset({i, d, c, o}, self)
 	end
 
 	function ops.curveOffset(x, y)
@@ -269,7 +266,6 @@ return function(ops)
 		n:addPortIn(0, "Y")
 		n:addPortOut(0, "Y")
 		n:addPortIn(1, "Y"):addElem("text", 1, "Offset Driver")
-		n:addElem("bool", 2, "Driver Range [-1, 1]")
 		n.process = curveOffsetProcess
 		n.data.curve = data:new(256, 1, 1)
 		require "ui.graph".curve(n, 0.5, 0.5)
@@ -283,9 +279,8 @@ return function(ops)
 		i = t.inputSourceBlack(self, 0)
 		d = t.inputSourceBlack(self, 1)
 		c = self.data.curve:toDevice()
-		r = t.plainParam(self, 2)
 		o = t.autoOutput(self, 0, i:shape())
-		thread.ops.curveGenericModulate({i, d, c, r, o}, self)
+		thread.ops.curveGenericModulate({i, d, c, o}, self)
 	end
 
 	function ops.curveModulate(x, y)
@@ -293,7 +288,6 @@ return function(ops)
 		n:addPortIn(0, "Y")
 		n:addPortOut(0, "Y")
 		n:addPortIn(1, "Y"):addElem("text", 1, "Modulate Driver")
-		n:addElem("bool", 2, "Driver Range [-1, 1]")
 		n.process = curveModulateProcess
 		n.data.curve = data:new(256, 1, 1)
 		require "ui.graph".curve(n, 0.5, 0.5)
@@ -444,26 +438,21 @@ return function(ops)
 		return n
 	end
 
-	local function curveY__Process(self)
+	local function curveYProcess(self)
 		self.procType = "dev"
 		local i, c, o
 		i = t.inputSourceBlack(self, 0)
 		c = self.data.curve
 		c:toDevice()
 		o = t.autoOutput(self, 0, i:shape())
-		thread.ops.curveY__({i, c, o}, self)
-		if self.elem[1].value then
-			thread.ops.setHue({o, i, o}, self) -- TODO: integrate in main process avoiding memory overhead
-			o.cs = "LCH"
-		end
+		thread.ops.curveY({i, c, o}, self)
 	end
 
-	function ops.curveY__(x, y)
+	function ops.curveY(x, y)
 		local n = node:new("Curve Y")
-		n:addPortIn(0, "LRGB")
-		n:addPortOut(0, "LRGB")
-		n:addElem("bool", 1, "Preserve Hue", true)
-		n.process = curveY__Process
+		n:addPortIn(0, "XYZ")
+		n:addPortOut(0, "XYZ")
+		n.process = curveYProcess
 		n.data.curve = data:new(256, 1, 1)
 		require "ui.graph".curve(n)
 		n:setPos(x, y)

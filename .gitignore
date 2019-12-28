@@ -12,3 +12,6 @@ lib/magick/magick\.exe
 lib/zenity/zenity\.exe
 
 ops/ocl/cache
+
+lib/ivyscript/target
+lib/ivyscript/Cargo.lock

@@ -15,33 +15,26 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ]]
 
-local proc = require "lib.opencl.process".new()
+local proc = require "lib.opencl.process.ivy".new()
 
 local source = [[
-kernel void highlights(global float *I, global float *P, global float *O) {
-	const int x = get_global_id(0);
-	const int y = get_global_id(1);
+kernel highlights(I, P, O)
+	const x = get_global_id(0)
+	const y = get_global_id(1)
 
-	float3 i = $I[x, y];
-	float3 p = $P[x, y];
+	var i = I[x, y]
+	var p = P[x, y]
 
-	float v = $I[x, y]L;
+	var v = clamp(LRGBtoL(i), 0.0, 1.0)
+	v = range(0.5, 0.5, 1-v)
 
-	v = clamp(v, 0.0f, 1.0f);
-	v = -2.0f*pown(v, 3) + 3.0f*pown(v, 2);
-
-	i = i + p*v;
-
-	$O[x, y] = i;
-}
+	O[x, y] = i + p*v
+end
 ]]
 
 local function execute()
-	proc:getAllBuffers("I", "P", "O")
-	proc.buffers.I.__write = false
-	proc.buffers.P.__write = false
-	proc.buffers.O.__read = false
-	proc:executeKernel("highlights", proc:size2D("O"))
+	local I, P, O = proc:getAllBuffers(3)
+	proc:executeKernel("highlights", proc:size2D(O), {I, P, O})
 end
 
 local function init(d, c, q)

@@ -15,17 +15,17 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ]]
 
-local proc = require "lib.opencl.process".new()
+local proc = require "lib.opencl.process.ivy".new()
 
 local function execute()
-	proc:getAllBuffers("I", "L", "G")
-	proc:executeKernel("pyrDown", proc:size3D("G"), {"I", "G"})
-	proc:executeKernel("pyrUpL", proc:size3D("G"))
+	local I, L, G = proc:getAllBuffers(3)
+	proc:executeKernel("pyrDown", proc:size3D(G), {I, G})
+	proc:executeKernel("pyrUpL", proc:size3D(G), {I, G, L})
 end
 
 local function init(d, c, q)
 	proc:init(d, c, q)
-	proc:loadSourceFile("pyr.cl")
+	proc:loadSourceFile("pyr.ivy")
 	return execute
 end
 

@@ -15,50 +15,32 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ]]
 
-local proc = require "lib.opencl.process".new()
+local proc = require "lib.opencl.process.ivy".new()
 
 local source = [[
-float range(float a, float b, float s) {
-  float x = (a-b)*s;
-  x = clamp(x, -1.0f, 1.0f);
-  float x2 = x*x;
-  float x4 = x2*x2;
-  return (1.0f-2.0f*x2+x4);
-}
+kernel smartSelect(I, R, D,  P, S, O, M)
+  const x = get_global_id(0)
+  const y = get_global_id(1)
 
-float range_circular(float a, float b, float s) {
-  return range(a, b, s) + range(a, b-1, s) + range(a, b+1, s);
-}
+  var i = I[x, y]
+	var r = R[x, y]
+	var d = D[x, y]
+  var s = S[0, 0]
 
-kernel void smartSelect(global float *I, float global *R, float global *D,  global float *P, global float *S, global float *O, global float *M)
-{
-  const int x = get_global_id(0);
-  const int y = get_global_id(1);
+  var d1 = sqrt((x-P[0])^2 + (y-P[1])^2) / min(I.x, I.y)*2
+  var d2 = sqrt((i.x-s.x)^2 + (i.y-s.y)^2 + (i.z-s.z)^2)
+  var mask = range(d, d, d1)*range(r, r, d2)
 
-  float xs = P[0];
-  float ys = P[1];
-
-	float r = 1.0f/$R[x, y, 0];
-	float d = 1.0f/$D[x, y, 0]/P[2];
-
-  float3 s = $S[0, 0];
-  float3 i = $I[x, y];
-
-  float d1 = sqrt(pown(x-xs, 2) + pown(y-ys, 2));
-  float d2 = sqrt(pown(i.x-s.x, 2) + pown(i.y-s.y, 2) + pown(i.z-s.z, 2));
-
-  float mask = range(0.0f, d1, d)*range(0.0f, d2, r);
-
-  $O[x, y, 0] = i.x;
-  $O[x, y, 1] = i.y*mask;
-  $O[x, y, 2] = i.z*mask;
-  $M[x, y, 0] = mask;
-}
+  i.y = i.y*mask
+  i.z = i.z*mask
+  O[x, y] = i
+  M[x, y] = mask
+end
 ]]
 
 local function execute()
-  proc:getAllBuffers("I", "R", "D", "P", "S", "O", "M")
-  proc:executeKernel("smartSelect", proc:size2Dmax("O", "M"))
+  local I, R, D, P, S, O, M = proc:getAllBuffers(7)
+  proc:executeKernel("smartSelect", proc:size2Dmax(O, M), {I, R, D, P, S, O, M})
 end
 
 local function init(d, c, q)

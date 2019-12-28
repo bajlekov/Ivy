@@ -1,4 +1,4 @@
-/*
+--[[
   Copyright (C) 2011-2019 G. Bajlekov
 
     Ivy is free software: you can redistribute it and/or modify
@@ -13,11 +13,28 @@
 
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
-*/
+]]
 
-kernel void LCH(global float *in, global float *out) {
-	const int x = get_global_id(0);
-	const int y = get_global_id(1);
-	float3 v = $in[x, y]LCH;
-  $out[x, y] = v;
-}
+local proc = require "lib.opencl.process.ivy".new()
+
+local source = [[
+kernel merge(I1, I2, I3, O)
+  const x = get_global_id(0)
+  const y = get_global_id(1)
+
+  O[x, y] = vec(I1[x, y], I2[x, y], I3[x, y])
+end
+]]
+
+local function execute()
+  local I1, I2, I3, O = proc:getAllBuffers(4)
+  proc:executeKernel("merge", proc:size2D(O), {I1, I2, I3, O})
+end
+
+local function init(d, c, q)
+  proc:init(d, c, q)
+  proc:loadSourceString(source)
+  return execute
+end
+
+return init

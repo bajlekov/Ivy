@@ -16,52 +16,57 @@
 ]]
 
 local ffi = require "ffi"
-local tools = require "lib.opencl.tools"
 
-local proc = require "lib.opencl.process".new()
+local proc = require "lib.opencl.process.ivy".new()
 
 local source = [[
-kernel void display(global float *p1, global uchar *p2, global float *p3) {
-  const int x = get_global_id(0);
-  const int y = get_global_id(1);
+const hi = 1.0001
+const lo = -0.0001
 
-	float3 v = $p1[x, y]SRGB;
-	if ( p3[0]==1 && (v.x>1.0001f || v.y>1.0001f || v.z>1.0001f) ) {
-		v = (float3)(0.0f);
-	}
-	if ( p3[0]==1 && (v.x<-0.0001f || v.y<-0.0001f || v.z<-0.0001f) ) {
-		v = (float3)(1.0f);
-	}
+kernel display(I, O, P)
+  const x = get_global_id(0)
+  const y = get_global_id(1)
 
-	uchar r = (uchar)(clamp(v.x, 0.0f, 1.0f)*255);
-	uchar g = (uchar)(clamp(v.y, 0.0f, 1.0f)*255);
-	uchar b = (uchar)(clamp(v.z, 0.0f, 1.0f)*255);
+  var i = I[x, y].LRGB
+	if P[0]>0.5 and (i.x>hi or i.y>hi or i.z>hi) then
+		i = 0.0
+	end
 
-	const int idx = x*4 + ($p2.y$-y-1)*$p2.x$*4;
-  p2[idx + 0] = r;
-  p2[idx + 1] = g;
-  p2[idx + 2] = b;
-  p2[idx + 3] = 255;
-}
+	if P[0]>0.5 and (i.x<lo or i.y<lo or i.z<lo) then
+		i = 1.0
+	end
+
+  var m = max(max(i.x, i.y), i.z)
+  if P[0]<0.5 and m>1.0 then
+    var Y = LRGBtoY(i)
+    if Y<1.0 then
+      var d = i-Y
+      var f = (1.0-Y)/(m-Y)
+      i = Y + d*f
+    else
+      i = 1.0
+    end
+  end
+
+  i = LRGBtoSRGB(i)
+
+  O[x, O.y-y-1] = RGBA(i, 1.0)
+end
 ]]
 
 local function execute()
-  proc:getAllBuffers("p1", "p2", "p3")
+  local I, O, P = proc:getAllBuffers(3)
 
-  local x = proc.buffers.p2.x
-  local y = proc.buffers.p2.y
+  O.dataOCL = proc.context:create_buffer("write_only", O.x * O.y * ffi.sizeof("cl_float"))
+  O.z = 1
+  O.sx = 1
+  O.sy = O.x
+  O.sz = 1
+  O:allocDev()
 
-	local previewBuffer = proc.context:create_buffer("write_only", x * y * 4 * ffi.sizeof("cl_uchar"))
+  proc:executeKernel("display", proc:size2D(O), {I, O, P})
 
-  proc.buffers.p2.dataOCL = previewBuffer
-  proc:executeKernel("display", proc:size2D("p2"))
-  local event2 = proc.queue:enqueue_read_buffer(proc.buffers.p2.dataOCL, true, proc.buffers.p2.data)
-
-	proc.context.release_mem_object(previewBuffer)
-
-  if proc.profile() then
-    tools.profile("copy", event2, proc.queue)
-  end
+  O:freeDev(true)
 end
 
 local function init(d, c, q)

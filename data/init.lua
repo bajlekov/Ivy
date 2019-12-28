@@ -59,15 +59,94 @@ function data.initDev(c, q)
 		queue = q
 	end
 
-	data.sink = data:new()
-	data.one = data:new()
-	data.one:set(0, 0, 0, 1)
-	data.one:toDevice()
-	data.one.cs = "Y"
-	data.zero = data:new()
-	data.zero:set(0, 0, 0, 0)
-	data.zero:toDevice()
-	data.zero.cs = "Y"
+	data.sink = data:new(1, 1, 3)
+
+	data.oneCS = {}
+	data.zeroCS = {}
+
+	data.oneCS.SRGB = data:new(1, 1, 3)
+	data.oneCS.SRGB:set(0, 0, 0, 1)
+	data.oneCS.SRGB:set(0, 0, 1, 1)
+	data.oneCS.SRGB:set(0, 0, 2, 1)
+	data.oneCS.SRGB:toDevice()
+	data.oneCS.SRGB.cs = "SRGB"
+	data.oneCS.LRGB = data:new(1, 1, 3)
+	data.oneCS.LRGB:set(0, 0, 0, 1)
+	data.oneCS.LRGB:set(0, 0, 1, 1)
+	data.oneCS.LRGB:set(0, 0, 2, 1)
+	data.oneCS.LRGB:toDevice()
+	data.oneCS.LRGB.cs = "LRGB"
+	data.oneCS.XYZ = data:new(1, 1, 3)
+	data.oneCS.XYZ:set(0, 0, 0, 0.95047)
+	data.oneCS.XYZ:set(0, 0, 1, 1)
+	data.oneCS.XYZ:set(0, 0, 2, 1.08883)
+	data.oneCS.XYZ:toDevice()
+	data.oneCS.XYZ.cs = "XYZ"
+	data.oneCS.LAB = data:new(1, 1, 3)
+	data.oneCS.LAB:set(0, 0, 0, 1)
+	data.oneCS.LAB:set(0, 0, 1, 0)
+	data.oneCS.LAB:set(0, 0, 2, 0)
+	data.oneCS.LAB:toDevice()
+	data.oneCS.LAB.cs = "LAB"
+	data.oneCS.LCH = data:new(1, 1, 3)
+	data.oneCS.LCH:set(0, 0, 0, 1)
+	data.oneCS.LCH:set(0, 0, 1, 0)
+	data.oneCS.LCH:set(0, 0, 2, 0)
+	data.oneCS.LCH:toDevice()
+	data.oneCS.LCH.cs = "LCH"
+	data.oneCS.Y = data:new(1, 1, 1)
+	data.oneCS.Y:set(0, 0, 0, 1)
+	data.oneCS.Y:toDevice()
+	data.oneCS.Y.cs = "Y"
+	data.oneCS.L = data:new(1, 1, 1)
+	data.oneCS.L:set(0, 0, 0, 1)
+	data.oneCS.L:toDevice()
+	data.oneCS.L.cs = "L"
+
+	data.zeroCS.SRGB = data:new(1, 1, 3)
+	data.zeroCS.SRGB:set(0, 0, 0, 0)
+	data.zeroCS.SRGB:set(0, 0, 1, 0)
+	data.zeroCS.SRGB:set(0, 0, 2, 0)
+	data.zeroCS.SRGB:toDevice()
+	data.zeroCS.SRGB.cs = "SRGB"
+	data.zeroCS.LRGB = data:new(1, 1, 3)
+	data.zeroCS.LRGB:set(0, 0, 0, 0)
+	data.zeroCS.LRGB:set(0, 0, 1, 0)
+	data.zeroCS.LRGB:set(0, 0, 2, 0)
+	data.zeroCS.LRGB:toDevice()
+	data.zeroCS.LRGB.cs = "LRGB"
+	data.zeroCS.XYZ = data:new(1, 1, 3)
+	data.zeroCS.XYZ:set(0, 0, 0, 0)
+	data.zeroCS.XYZ:set(0, 0, 1, 0)
+	data.zeroCS.XYZ:set(0, 0, 2, 0)
+	data.zeroCS.XYZ:toDevice()
+	data.zeroCS.XYZ.cs = "XYZ"
+	data.zeroCS.LAB = data:new(1, 1, 3)
+	data.zeroCS.LAB:set(0, 0, 0, 0)
+	data.zeroCS.LAB:set(0, 0, 1, 0)
+	data.zeroCS.LAB:set(0, 0, 2, 0)
+	data.zeroCS.LAB:toDevice()
+	data.zeroCS.LAB.cs = "LAB"
+	data.zeroCS.LCH = data:new(1, 1, 3)
+	data.zeroCS.LCH:set(0, 0, 0, 0)
+	data.zeroCS.LCH:set(0, 0, 1, 0)
+	data.zeroCS.LCH:set(0, 0, 2, 0)
+	data.zeroCS.LCH:toDevice()
+	data.zeroCS.LCH.cs = "LCH"
+	data.zeroCS.Y = data:new(1, 1, 1)
+	data.zeroCS.Y:set(0, 0, 0, 0)
+	data.zeroCS.Y:toDevice()
+	data.zeroCS.Y.cs = "Y"
+	data.zeroCS.L = data:new(1, 1, 1)
+	data.zeroCS.L:set(0, 0, 0, 0)
+	data.zeroCS.L:toDevice()
+	data.zeroCS.L.cs = "L"
+
+	data.one = data.oneCS.Y
+	data.zero = data.zeroCS.Y
+
+	data.oneCS.ANY = data.one
+	data.zeroCS.ANY = data.zero
 end
 
 function data:new(x, y, z) -- new image data
@@ -149,6 +228,7 @@ end
 function data.stats.freeCPU(ptr)
 	local n = tonumber(ffi.cast("uintptr_t", ptr))
 	local m = data.stats.memCPU[n]
+	if not m then return end
 	data.stats.memCPU[n] = nil
 	sd.cpu = sd.cpu - m
 	sd.cpu_n = sd.cpu_n - 1
@@ -156,6 +236,7 @@ end
 function data.stats.freeGPU(ptr)
 	local n = tonumber(ffi.cast("uintptr_t", ptr))
 	local m = data.stats.memGPU[n]
+	if not m then return end
 	data.stats.memGPU[n] = nil
 	sd.gpu = sd.gpu - m
 	sd.gpu_n = sd.gpu_n - 1
@@ -187,6 +268,9 @@ function data:allocHost()
 	if not self.data or self.data==NULL then
 		self.data = alloc.float32(self.x * self.y * self.z)
 		data.stats.allocCPU(self)
+
+		self.str = ffi.new("int32_t[6]", self.x, self.y, self.z, self.sx, self.sy, self.sz)
+
 		self.data_u32 = ffi.cast("uint32_t*", self.data)
 		self.data_i32 = ffi.cast("int32_t*", self.data)
 		self.__cpuDirty = true
@@ -205,8 +289,33 @@ function data:allocDev(transfer)
 	self.dataOCL = context:create_buffer(self.x * self.y * self.z * ffi.sizeof("cl_float")) -- allocate OCL data
 	data.stats.allocGPU(self)
 
+	self.strOCL = context:create_buffer(6 * ffi.sizeof("cl_int"))
+	queue:enqueue_write_buffer(self.strOCL, true, ffi.new("int32_t[6]", self.x, self.y, self.z, self.sx, self.sy, self.sz))
+
 	if transfer then self:toDevice(true) end
 	return self
+end
+
+function data:updateStr()
+	if self.dataOCL and self.dataOCL~=NULL then
+		if not self.strOCL or self.strOCL==NULL then
+			self.strOCL = context:create_buffer(6 * ffi.sizeof("cl_int"))
+		end
+		queue:enqueue_write_buffer(self.strOCL, true, ffi.new("int32_t[6]", self.x, self.y, self.z, self.sx, self.sy, self.sz))
+	end
+
+	if self.data and self.data~=NULL then
+		if not self.str or self.str==NULL then
+			self.str = ffi.new("int32_t[6]", self.x, self.y, self.z, self.sx, self.sy, self.sz)
+		else
+			self.str[0] = self.x
+			self.str[1] = self.y
+			self.str[2] = self.z
+			self.str[3] = self.sx
+			self.str[4] = self.sy
+			self.str[5] = self.sz
+		end
+	end
 end
 
 function data:freeDev(transfer)
@@ -310,7 +419,9 @@ end
 function data:toChTable()
 	local o = {
 		data = tonumber(ffi.cast("uintptr_t", self.data)),
+		str = tonumber(ffi.cast("uintptr_t", self.str)),
 		dataOCL = tonumber(ffi.cast("uintptr_t", self.dataOCL)),
+		strOCL = tonumber(ffi.cast("uintptr_t", self.strOCL)),
 		x = self.x,
 		y = self.y,
 		z = self.z,
@@ -329,7 +440,9 @@ end
 function data:fromChTable()
 	local o = {
 		data = ffi.cast("float*", self.data),
+		str = ffi.cast("int*", self.str),
 		dataOCL = ffi.cast("cl_mem", self.dataOCL),
+		strOCL = ffi.cast("cl_mem", self.strOCL),
 		x = self.x,
 		y = self.y,
 		z = self.z,

@@ -15,38 +15,40 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ]]
 
-local proc = require "lib.opencl.process".new()
+local proc = require "lib.opencl.process.ivy".new()
 
 local source = [[
-#include "range.cl"
+function range_circular(p, w, x)
+  return range(p, w, abs(x)) + range(p, w, abs(x-1.0))
+end
 
-kernel void hueAdjust(global float *P, global float *S, global float *R, global float *C) {
-	const int z = get_global_id(2);
+kernel hueAdjust(P, S, R, C)
+	const z = get_global_id(2)
 
-  float p = -P[3]/1000.0f;
-	float a = S[2];
-	float b = z/255.0f;
+	var p = -P[3]/1000.0
+	var a = S[2]
+	var b = z/255.0
 
-	float f = range(a-b, R[0], 1.0f);
+	var w = R[0]*0.5
+	var f = range_circular(w, w, abs(a-b))
 
-	float i = C[z];
+	var i = C[z]
+	var o = 0.0
+	if P[4]==1 then
+		p = clamp(abs(p)*5.0, -1.0, 1.0)
+		o = (1.0 - f*p)*i + f*p*0.5
+	else
+		o = i + f*p
+	end
 
-	float o;
-	if (P[4]==1) {
-		p = clamp(fabs(p)*5.0f, -1.0f, 1.0f);
-		o = (1.0f-f*p)*i + f*p*0.5f; // clear
-	} else {
-		o = i + f*p;
-	}
-
-	C[z] = clamp(o, 0.0f, 1.0f);
-}
+	C[z] = clamp(o, 0.0, 1.0)
+end
 ]]
 
 local function execute()
-	proc:getAllBuffers("P", "S", "R", "C")
-	proc:executeKernel("hueAdjust", {1, 1, 256})
-	proc.buffers.C:toHost(true)
+	local P, S, R, C = proc:getAllBuffers(4)
+	proc:executeKernel("hueAdjust", {1, 1, 256}, {P, S, R, C})
+	C:toHost(true)
 end
 
 local function init(d, c, q)

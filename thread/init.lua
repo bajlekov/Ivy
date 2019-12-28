@@ -33,7 +33,7 @@ local thread
 local syncCh
 local dataCh
 
-function threadModule.init(platform, devNum, workers)
+function threadModule.init(platform, devNum)
   if platform then
     local cl = require "lib.opencl"
     platform = cl.get_platforms()[platform]
@@ -56,8 +56,7 @@ function threadModule.init(platform, devNum, workers)
   thread:start(
     tonumber(ffi.cast("uintptr_t", device)),
     tonumber(ffi.cast("uintptr_t", context)),
-    tonumber(ffi.cast("uintptr_t", queue)),
-    workers or 4
+    tonumber(ffi.cast("uintptr_t", queue))
   )
 end
 
@@ -96,12 +95,9 @@ do
       nodeID = node.id
     elseif node then -- legacy scheduler passing instead of node structure. Still used outside of node processing!!!
       scheduler = node
-    else -- TODO: default to "par" scheduler should not be used!!!
-			error("no scheduler specified!")
-      scheduler = "par"
     end
 
-    assert(scheduler=="dev" or scheduler=="par" or scheduler=="host", "Invalid scheduler \""..scheduler.."\"")
+    assert(scheduler=="dev" or scheduler=="host", "Invalid scheduler \""..scheduler.."\"")
 
     dataCh:push(scheduler)
     dataCh:push(nodeID)

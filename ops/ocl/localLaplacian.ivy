@@ -1,0 +1,81 @@
+--  Copyright (C) 2011-2019 G. Bajlekov
+--
+--  Ivy is free software: you can redistribute it and/or modify
+--  it under the terms of the GNU General Public License as published by
+--  the Free Software Foundation, either version 3 of the License, or
+--  (at your option) any later version.
+--
+--  Ivy is distributed in the hope that it will be useful,
+--  but WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+--  GNU General Public License for more details.
+--
+--  You should have received a copy of the GNU General Public License
+--  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+-- L (L)
+kernel zero_LL(L)
+  const x = get_global_id(0)
+  const y = get_global_id(1)
+
+  L[x, y] = 0.0
+end
+
+-- I (XYZ) -> O (XYZ)
+kernel post_LL(I, O)
+  const x = get_global_id(0)
+  const y = get_global_id(1)
+
+  var i = I[x, y]
+  var o_y = O[x, y, 1]
+  O[x, y] = (i*o_y/i.y)
+end
+
+-- I (XYZ | Y), D (Y), R (Y) -> O (XYZ | Y)
+kernel transform(I, D, R, O, m) -- midpoint
+  const x = get_global_id(0)
+  const y = get_global_id(1)
+
+  var iz = 0
+  if I.z==3 then iz = 1 end
+
+  var oz = 0
+  if O.z==3 then oz = 1 end
+
+  var i = clamp(YtoL(I[x, y, iz]), 0.0, 1.0) -- works only in range [0, 1]
+  var d = D[x, y] + 1.0
+  var r = R[x, y]
+
+  var o = clamp(abs(i - m)/r*0.5, 0.0, 1.0)
+  var f = 2.0*o^3 - 3.0*o^2 + 1.0
+  O[x, y, oz] = LtoY( f*(i-m)*d + (1.0-f)*(i-m) + m )
+end
+
+-- G (XYZ | Y), T(L) -> O (L)
+kernel apply_LL(G, T, O, l, lvl) -- current lvl, total # of levels
+  const x = get_global_id(0)
+  const y = get_global_id(1)
+
+  var z = 0
+  if G.z==3 then z = 1 end
+
+  var g = YtoL(G[x, y, z])
+  var t = T[x, y]
+  var o = O[x, y]
+
+  var v = g*lvl
+  var vl = int(floor(v))
+  var vh = vl + 1
+  var vf = vh - v
+  vh = min(vh, lvl)
+
+  if l==vl then
+    o = o + vf*t
+  end
+
+  if l==vh then
+    o = o + (1.0-vf)*t
+  end
+
+  O[x, y] = o
+end

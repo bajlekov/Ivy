@@ -46,7 +46,6 @@ local args = {...}
 local device = ffi.cast("cl_device_id", args[1])
 local context = ffi.cast("cl_context", args[2])
 local queue = ffi.cast("cl_command_queue", args[3])
-local threadMax = args[4]
 
 local data = require "data"
 data.initDev(context, queue)
@@ -79,138 +78,30 @@ end
 
 
 -- OCL execution
-local opsDev = require "thread.workerDev"
-opsDev.initDev(device, context, queue)
+local worker = require "thread.worker"
+worker.init(device, context, queue)
 
 function schedule.dev()
 	startID()
 	local op = hostDataCh:demand()
-	assert(type(op) == "string", "Invalid OCL op of type ["..type(op).."]")
+	assert(type(op) == "string", "Invalid operation of type ["..type(op).."]")
 
-	if opsDev[op] then
+	if worker[op] then
 		if settings.openclProfile then
 			debug.tic()
 		end
 
-		opsDev[op]()
+		worker[op]()
 		queue:finish()
 
 		if settings.openclProfile then
-			debug.toc("OCL scheduler step")
+			debug.toc("scheduler step")
 		end
 
 	else
-		error("OCL WORKER ERROR: op ["..op.."] not an OpenCL function!\nHint: Check if function is correctly registered in workerOCL.lua!")
+		error("WORKER ERROR: operation ["..op.."] does not have a processing function!\nHint: Check if function is correctly registered in worker.lua!")
 	end
 end
-
-
--- single native thread
---[[
-local opsHost = require "thread.workerHost"
-
-function schedule.host()
-	startID()
-	local op = hostDataCh:demand()
-	assert(type(op) == "string", "Invalid Native op of type ["..type(op).."]")
-	if opsHost[op] then
-		opsHost[op]()
-	else
-		error("NATIVE WORKER ERROR: op ["..op.."] not an native function!\nHint: Check if function is correctly registered in workerNative.lua!")
-	end
-end
---]]
-
-
--- parallel native worker channels
-local thread = {}
-local dataCh = {}
-local syncCh = {}
-
-for i = 0, threadMax - 1 do
-	thread[i] = love.thread.newThread("thread/workerPar.lua")
-	dataCh[i] = love.thread.getChannel("dataCh_worker"..i)
-	syncCh[i] = love.thread.getChannel("syncCh_worker"..i)
-	dataCh[i]:clear()
-	syncCh[i]:clear()
-
-	thread[i]:start(i, threadMax)
-end
-local lockCh = love.thread.getChannel("lockCh")
-lockCh:push(1)
-
-local profile = settings.nativeProfile
-local profileOp
-
-function schedule.par()
-	startID()
-	local done = false
-	if profile then
-		while hostDataCh:getCount() == 0 do end
-		profileOp = hostDataCh:peek()
-		debug.tic()
-	end
-
-	while not done do
-		local com = hostDataCh:demand()
-		for i = 0, threadMax - 1 do
-			dataCh[i]:push(com)
-		end
-		done = com == "execute"
-	end
-
-	-- TODO: use checks with time-out starting with Love 0.11
-	local workerSync = false
-	local workerStep = false
-	local workerDone = false
-	local done
-	while not done do
-		for i = 0, threadMax - 1 do
-			local err = thread[i]:getError()
-			if err then
-				error("WORKER ERROR: "..err)
-			end
-
-			if syncCh[i]:peek() == "done" then workerDone = true end
-			if syncCh[i]:peek() == "step" then workerStep = true end
-			if syncCh[i]:peek() == "sync" then workerSync = true end
-		end
-
-		if workerSync then
-			for i = 0, threadMax - 1 do
-				assert(syncCh[i]:demand() == "sync", "ERROR: not all workers have reached the synchronisation point")
-			end
-			for i = 0, threadMax - 1 do
-				syncCh[i]:supply("resume")
-			end
-			workerSync = false
-		end
-
-		if workerStep then
-			for i = 0, threadMax - 1 do
-				assert(syncCh[i]:demand() == "step", "ERROR: not all workers have completed the step")
-			end
-			done = true
-		end
-
-		if workerDone then
-			for i = 0, threadMax - 1 do
-				assert(syncCh[i]:demand() == "done", "ERROR: not all workers have completed the sequence")
-			end
-			done = true
-			hostSyncCh:push("done")
-			hostSyncCh:push(data.stats.data)
-			data.stats.clearCPU()
-			data.stats.clearGPU()
-		end
-
-		if not done then love.timer.sleep(0.001) end
-	end
-	if profile then
-		debug.toc(profileOp)
-	end
-end
-
 
 -- sync memory to device
 function schedule.SyncDevice()
@@ -240,13 +131,12 @@ end
 
 -- reload OCL kernels
 function schedule.reloadDev()
-	opsDev.initDev(device, context, queue)
+	worker.init(device, context, queue)
 end
 
 local t1 = 0
 local t2 = 0
 local timer = require "love.timer"
-
 
 -- run process
 while true do

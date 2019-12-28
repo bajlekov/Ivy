@@ -111,7 +111,7 @@ end
 
 local data = require "data"
 local thread = require "thread"
-thread.init(oclPlatform, oclDevice, settings.nativeCoreCount)
+thread.init(oclPlatform, oclDevice)
 data.initDev(thread.getContext(), thread.getQueue())
 
 local image = require "ui.image"
@@ -188,7 +188,7 @@ function love.filedropped(file)
 	}
 
 	panels.info.elem[6].right = exifData.ExposureProgram and programModes[tonumber(exifData.ExposureProgram)] or "-"
-	panels.info.elem[7].right = (exifData.ExposureCompensation or " -").." EV"
+	panels.info.elem[7].right = (("%+0.1f"):format(exifData.ExposureCompensation) or " -").." EV"
 
 	local shutter = tonumber(exifData.ShutterSpeed)
 	if shutter then
@@ -331,12 +331,12 @@ function love.update()
 			--node.list[currentID].state = "error"
 		elseif code == "start" and id then
 			local node = node.list[id]
-			if node.state == "waiting" then node.state = "processing" end
+			if node and node.state == "waiting" then node.state = "processing" end
 			currentID = id
 			processComplete = processComplete + 1
 		elseif code == "end" and id then
 			local node = node.list[id]
-			if node.state == "processing" then
+			if node and node.state == "processing" then
 				node.state = "ready"
 			end
 

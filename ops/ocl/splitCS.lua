@@ -1,4 +1,4 @@
-/*
+--[[
   Copyright (C) 2011-2019 G. Bajlekov
 
     Ivy is free software: you can redistribute it and/or modify
@@ -13,11 +13,30 @@
 
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
-*/
+]]
 
-kernel void Y(global float *in, global float *out) {
-	const int x = get_global_id(0);
-	const int y = get_global_id(1);
-	float v = $in[x, y]Y;
-	$out[x, y, 0] = v;
-}
+local proc = require "lib.opencl.process.ivy".new()
+
+local source = [[
+kernel split(I, O1, O2, O3)
+  const x = get_global_id(0)
+  const y = get_global_id(1)
+
+  O1[x, y] = I[x, y, 0]
+  O2[x, y] = I[x, y, 1]
+  O3[x, y] = I[x, y, 2]
+end
+]]
+
+local function execute()
+  local I, O1, O2, O3 = proc:getAllBuffers(4)
+  proc:executeKernel("split", proc:size2D(I), {I, O1, O2, O3})
+end
+
+local function init(d, c, q)
+  proc:init(d, c, q)
+  proc:loadSourceString(source)
+  return execute
+end
+
+return init

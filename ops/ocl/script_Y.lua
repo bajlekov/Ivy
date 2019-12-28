@@ -15,22 +15,35 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ]]
 
-local proc = require "lib.opencl.process".new()
+local proc = require "lib.opencl.process.ivy".new()
 
 local function getSource(y)
   local source = [[
-  kernel void script(global float *I, global float *O)
-  {
-    const int _x = get_global_id(0);
-    const int _y = get_global_id(1);
+  kernel script(I, O)
+    const internal_x = get_global_id(0)
+    const internal_y = get_global_id(1)
 
-    float i = $I[_x, _y];
+    var internal_i = vec(0.0)
+    var i = 0.0
+    if O.z==3 then
+      internal_i = I[internal_x, internal_y].XYZ
+      i = internal_i.y
+    else
+      i = I[internal_x, internal_y].Y
+    end
 
-    float x = (float)(_x)/$$O.x$$;
-    float y = (float)(_y)/$$O.y$$;
+    var x = float(internal_x)/O.x
+    var y = float(internal_y)/O.y
 
-    $O[_x, _y, 0] = ]]..y..[[;
-  }
+    var o = ]]..y..[[
+
+    if O.z==3 then
+      O[internal_x, internal_y].XYZ = internal_i*(o/i)
+    else
+      O[internal_x, internal_y].Y = o
+    end
+
+  end
   ]]
 
   return source
@@ -40,10 +53,7 @@ local dataCh = love.thread.getChannel("dataCh_scheduler")
 local scriptY = "i"
 
 local function execute()
-	proc:getAllBuffers("I", "O")
-	proc.buffers.I.__write = false
-	proc.buffers.O.__read = false
-
+	local I, O = proc:getAllBuffers(2)
   local _y = dataCh:demand()
 
   if not(_y==scriptY) then
@@ -52,7 +62,7 @@ local function execute()
     proc:loadSourceString(getSource(scriptY))
   end
 
-	proc:executeKernel("script", proc:size2D("O"))
+	proc:executeKernel("script", proc:size2D(O), {I, O})
 end
 
 local function init(d, c, q)

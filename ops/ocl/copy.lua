@@ -15,21 +15,21 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ]]
 
-local proc = require "lib.opencl.process".new()
+local proc = require "lib.opencl.process.ivy".new()
 
 local source = [[
-kernel void copy(global float *I, global float *O) {
-	const int x = get_global_id(0);
-	const int y = get_global_id(1);
-	const int z = get_global_id(2);
+kernel copy(I, O)
+	const x = get_global_id(0)
+	const y = get_global_id(1)
+	const z = get_global_id(2)
 
-	$O[x, y, z] = $I[x, y, z];
-}
+	O[x, y, z] = I[x, y, z]
+end
 ]]
 
 local function execute()
-	proc:getAllBuffers("I", "O")
-	proc:executeKernel("copy", proc:size3D("O"))
+	local I, O = proc:getAllBuffers(2)
+	proc:executeKernel("copy", proc:size3D(O), {I, O})
 end
 
 local function init(d, c, q)

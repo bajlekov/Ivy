@@ -15,27 +15,24 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ]]
 
-local proc = require "lib.opencl.process".new()
+local proc = require "lib.opencl.process.ivy".new()
 
 local source = [[
-kernel void exposure(global float *p1, global float *p2, global float *p3)
-{
-  const int x = get_global_id(0);
-  const int y = get_global_id(1);
-	const int z = get_global_id(2);
+kernel exposure(I, E, O)
+  const x = get_global_id(0)
+  const y = get_global_id(1)
+  const z = get_global_id(2)
 
-  float i = $p1[x, y, z];
-  float e = powr(2.0f, $p2[x, y, 0]);
+  var i = I[x, y, z]
+  var e = 2^E[x, y, z]
 
-  float o = i*e;
-
-  $p3[x, y, z] = o;
-}
+  O[x, y, z] = i*e
+end
 ]]
 
 local function execute()
-	proc:getAllBuffers("p1", "p2", "p3")
-	proc:executeKernel("exposure", proc:size3D("p3"))
+	local I, E, O = proc:getAllBuffers(3)
+  proc:executeKernel("exposure", proc:size3D(O), {I, E, O})
 end
 
 local function init(d, c, q)

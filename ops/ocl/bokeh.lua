@@ -15,78 +15,85 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ]]
 
-local proc = require "lib.opencl.process".new()
+local proc = require "lib.opencl.process.ivy".new()
 
 local source = [[
-kernel void sat(global float *I, global float *T) { // summed area table
-  //const int x = get_global_id(0);
-	const int y = get_global_id(1);
-	const int z = get_global_id(2);
+kernel sat(I, T) -- summed area table
+  -- const x = get_global_id(0)
+	const y = get_global_id(1)
+	const z = get_global_id(2)
 
-	float acc = 0.0f;
+	var acc = 0.0
 
-	for (int x = 0; x<$I.x$; x++) {
-		acc += $I[x, y, z];
-		$T[x, y, z] = acc;
-	}
-}
+	for x = 0, I.x do
+		acc = acc + I[x, y, z]
+		T[x, y, z] = acc
+	end
+end
 
-kernel void bokeh(global float *I, global float *T, global float *R, global float *O, global float *H) {
-	const int x = get_global_id(0);
-	const int y = get_global_id(1);
-	const int z = get_global_id(2);
+kernel bokeh(I, T, R, O, H)
+	const x = get_global_id(0)
+	const y = get_global_id(1)
+	const z = get_global_id(2)
 
-	int r = clamp((int)round($R[x, y, 0]*$$math.min(O.x, O.y)/32$$), 0, 256);
+	var r = clamp(int(round(R[x, y, 0]*min(O.x, O.y)/32.0)), 0, 256)
 
-	if (r==0) {
-		$O[x, y, z] = $I[x, y, z];
-	} else {
-		float acc = 0.0f;
-		float n = 0.0f;
-		for (int j = -r; j<=r; j++) {
-			if ((y+j)>=0 && (y+j)<$O.y$) {
+	if r==0 then
+		O[x, y, z] = I[x, y, z]
+	else
+		var acc = 0.0
+		var n = 0.0
 
-				int rr; // blur width
-				if (H[0]>0.5f) {
-					// hexagonal bokeh (height = sqrt(3)/2)
-					float h = $$math.sqrt(3)/2$$;
-					rr = (float)abs(j)/r > h ? 0 : ceil( r*(1.0f - abs(j)/(h*r*2.0f)) );
-				} else {
-					// circular bokeh
-					rr = ceil(r*sqrt(1.0f-(pown((abs(j)+0.5f)/r, 2))));
-				}
+		for j = -r, r do
+			if (y+j)>=0 and (y+j)<O.y then
 
-				if (rr>0) {
-					int xmin = max(x-rr, 0)-1;
-					int xmax = min(x+rr, $$O.x-1$$);
-					if (xmin==-1) {
-						acc += $T[xmax, y+j, z];
-						n += xmax + 1;
-					} else {
-						acc += $T[xmax, y+j, z] - $T[xmin, y+j, z];
-						n += xmax-xmin;
-					}
-				}
-			}
-		}
-		$O[x, y, z] = acc/n;
-	}
-}
+				var rr = 0 -- blur width
+
+        if H[0]>0.5 then
+					-- hexagonal bokeh (height = sqrt(3)/2)
+					var h = sqrt(3.0)/2.0
+          if float(abs(j))/r > h then
+					  rr = 0
+					else
+					  rr = ceil( r*(1.0 - abs(j)/(h*r*2.0)) )
+					end
+				else
+					-- circular bokeh
+					rr = ceil( r*sqrt(1.0 - ((abs(j)+0.5)/r)^2) )
+				end
+
+				if rr>0 then
+					var xmin = max(x-rr, 0)-1
+					var xmax = min(x+rr, O.x-1)
+					if xmin==-1 then
+						acc = acc + T[xmax, y+j, z]
+						n = n + xmax + 1
+					else
+						acc = acc + T[xmax, y+j, z] - T[xmin, y+j, z]
+						n = n + xmax - xmin
+					end
+				end
+			end
+		end
+
+		O[x, y, z] = acc/n
+	end
+end
 ]]
 
 local function execute()
-	proc:getAllBuffers("I", "R", "O", "H")
+	local I, R, O, H = proc:getAllBuffers(4)
 
-	proc.buffers.T = proc.buffers.I:new()
-	local x, y, z = proc.buffers.I:shape()
+	local T = I:new()
+	local x, y, z = I:shape()
 
 	proc:setWorkgroupSize({1, 256, 1})
-	proc:executeKernel("sat", {1, y, z}, {"I", "T"})
+	proc:executeKernel("sat", {1, y, z}, {I, T})
 	proc:setWorkgroupSize()
-	proc:executeKernel("bokeh", proc:size3D("O"), {"I", "T", "R", "O", "H"})
+	proc:executeKernel("bokeh", proc:size3D(O), {I, T, R, O, H})
 
-	proc.buffers.T:free()
-	proc.buffers.T = nil
+	T:free()
+	T = nil
 end
 
 local function init(d, c, q)

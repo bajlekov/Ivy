@@ -15,22 +15,17 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ]]
 
-local proc = require "lib.opencl.process".new()
+local proc = require "lib.opencl.process.ivy".new()
 
 local source = [[
-kernel void colorSample(global float *I, global float *P, global float *S) {
-  const int x = P[0];
-  const int y = P[1];
-
-  float3 s = $I[x, y];
-
-  $S[0, 0] = s;
-}
+kernel colorSample(I, P, S)
+  S[0, 0] = I[ P[0], P[1] ]
+end
 ]]
 
 local function execute()
-	proc:getAllBuffers("I", "P", "S")
-	proc:executeKernel("colorSample", {1, 1})
+	local I, P, S = proc:getAllBuffers(3)
+	proc:executeKernel("colorSample", {1, 1}, {I, P, S})
 end
 
 local function init(d, c, q)

@@ -15,29 +15,42 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ]]
 
-local proc = require "lib.opencl.process".new()
-
 local source = [[
-#include "cs.cl"
+kernel saturation(I, P, O)
+  const x = get_global_id(0)
+  const y = get_global_id(1)
 
-kernel void saturation(global float *p1, global float *p2, global float *p3)
-{
-  const int x = get_global_id(0);
-  const int y = get_global_id(1);
+  var i = I[x, y]
+  var p = P[x, y]
 
-  float3 i = $p1[x, y];
-  float v = $p2[x, y, 0];
+  var iy = YtoXYZ(i.y)
 
-  float3 Y = YtoXYZ(i.y);
-  float3 o = Y + (i-Y)*v;
-
-  $p3[x, y] = o;
-}
+  O[x, y] = iy + (i-iy)*p
+end
 ]]
 
-local function execute()
-	proc:getAllBuffers("p1", "p2", "p3")
-	proc:executeKernel("saturation", proc:size2D("p3"))
+local target = "OCL"
+local proc
+local execute
+
+if target=="ISPC" then
+
+  proc = require "lib.opencl.process.ivy_ispc".new()
+  function execute()
+  	local I, P, O = proc:getAllBuffers(3)
+    I:toHost(true)
+  	proc:executeKernel("saturation", proc:size2D(O), {I, P, O})
+    O:toDevice(true)
+  end
+
+else
+
+  proc = require "lib.opencl.process.ivy".new()
+  function execute()
+  	local I, P, O = proc:getAllBuffers(3)
+  	proc:executeKernel("saturation", proc:size2D(O), {I, P, O})
+  end
+
 end
 
 local function init(d, c, q)

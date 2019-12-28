@@ -1,0 +1,147 @@
+--  Copyright (C) 2011-2019 G. Bajlekov
+--
+--  Ivy is free software: you can redistribute it and/or modify
+--  it under the terms of the GNU General Public License as published by
+--  the Free Software Foundation, either version 3 of the License, or
+--  (at your option) any later version.
+--
+--  Ivy is distributed in the hope that it will be useful,
+--  but WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+--  GNU General Public License for more details.
+--
+--  You should have received a copy of the GNU General Public License
+--  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+const k = {0.0625, 0.25, 0.375, 0.25, 0.0625}
+
+const kk = {
+  {0.00390625, 0.015625, 0.0234375, 0.015625, 0.00390625},
+  {0.015625  , 0.0625  , 0.09375  , 0.0625  , 0.015625  },
+  {0.0234375 , 0.09375 , 0.140625 , 0.09375 , 0.0234375 },
+  {0.015625  , 0.0625  , 0.09375  , 0.0625  , 0.015625  },
+  {0.00390625, 0.015625, 0.0234375, 0.015625, 0.00390625}
+}
+
+-- I -> G
+kernel pyrDown(I, G)
+  const x = get_global_id(0)
+  const y = get_global_id(1)
+  const z = get_global_id(2)
+
+	var h = array(5, 5)
+	for i = 0, 4 do
+		for j = 0, 4 do
+			h[i, j] = I[x*2+i-2, y*2+j-2, z]
+    end
+  end
+
+	var v = array(5)
+	for i = 0, 4 do
+		v[i] = 0
+	end
+	for i = 0, 4 do
+		for j = 0, 4 do
+			v[i] = v[i] + h[i, j]*k[j]
+		end
+  end
+
+	var g = 0.0
+	for i = 0, 4 do
+		g = g + v[i]*k[i]
+	end
+
+	G[x, y, z] = g
+end
+
+-- G -> O
+kernel pyrUp(G, O)
+  const x = get_global_id(0)
+  const y = get_global_id(1)
+  const z = get_global_id(2)
+
+  var g = array(3, 3)
+  for i = 0, 2 do
+    for j = 0, 2 do
+      g[i, j] = G[x+i-1, y+j-1, z]
+    end
+  end
+
+  O[x*2, y*2, z] = ( g[0, 0]*kk[0, 0] + g[0, 1]*kk[0, 2] + g[0, 2]*kk[0, 4] +
+                     g[1, 0]*kk[2, 0] + g[1, 1]*kk[2, 2] + g[1, 2]*kk[2, 4] +
+                     g[2, 0]*kk[4, 0] + g[2, 1]*kk[4, 2] + g[2, 2]*kk[4, 4] ) * 4.0
+
+  O[x*2 + 1, y*2 + 1, z] = ( g[1, 1]*kk[1, 1] + g[1, 2]*kk[1, 3] +
+                             g[2, 1]*kk[3, 1] + g[2, 2]*kk[3, 3] ) * 4.0
+
+  O[x*2 + 1, y*2, z] = ( g[1, 0]*kk[1, 0] + g[1, 1]*kk[1, 2] + g[1, 2]*kk[1, 4] +
+                         g[2, 0]*kk[3, 0] + g[2, 1]*kk[3, 2] + g[2, 2]*kk[3, 4] ) * 4.0
+
+  O[x*2, y*2 + 1, z] = ( g[0, 1]*kk[0, 1] + g[0, 2]*kk[0, 3] +
+                         g[1, 1]*kk[2, 1] + g[1, 2]*kk[2, 3] +
+                         g[2, 1]*kk[4, 1] + g[2, 2]*kk[4, 3] ) * 4.0
+end
+
+-- (L, G, f) -> O
+kernel pyrUpG(L, G, O, f)
+  const x = get_global_id(0)
+  const y = get_global_id(1)
+  const z = get_global_id(2)
+
+  var g = array(3, 3)
+  for i = 0, 2 do
+    for j = 0, 2 do
+      g[i, j] = G[x+i-1, y+j-1, z]
+    end
+  end
+
+  O[x*2, y*2, z] = ( g[0, 0]*kk[0, 0] + g[0, 1]*kk[0, 2] + g[0, 2]*kk[0, 4] +
+                     g[1, 0]*kk[2, 0] + g[1, 1]*kk[2, 2] + g[1, 2]*kk[2, 4] +
+                     g[2, 0]*kk[4, 0] + g[2, 1]*kk[4, 2] + g[2, 2]*kk[4, 4] ) *
+                     4.0 - L[x*2, y*2, z] * f[x*2, y*2, z]
+
+  O[x*2 + 1, y*2 + 1, z] = ( g[1, 1]*kk[1, 1] + g[1, 2]*kk[1, 3] +
+                             g[2, 1]*kk[3, 1] + g[2, 2]*kk[3, 3] ) *
+                             4.0 - L[x*2 + 1, y*2 + 1, z] * f[x*2 + 1, y*2 + 1, z]
+
+  O[x*2 + 1, y*2, z] = ( g[1, 0]*kk[1, 0] + g[1, 1]*kk[1, 2] + g[1, 2]*kk[1, 4] +
+                         g[2, 0]*kk[3, 0] + g[2, 1]*kk[3, 2] + g[2, 2]*kk[3, 4] ) *
+                         4.0 - L[x*2 + 1, y*2, z] * f[x*2 + 1, y*2, z]
+
+  O[x*2, y*2 + 1, z] = ( g[0, 1]*kk[0, 1] + g[0, 2]*kk[0, 3] +
+                         g[1, 1]*kk[2, 1] + g[1, 2]*kk[2, 3] +
+                         g[2, 1]*kk[4, 1] + g[2, 2]*kk[4, 3] ) *
+                         4.0 - L[x*2, y*2 + 1, z] * f[x*2, y*2 + 1, z]
+end
+
+-- (I, G) -> L
+kernel pyrUpL(I, G, L)
+  const x = get_global_id(0)
+  const y = get_global_id(1)
+  const z = get_global_id(2)
+
+  var g = array(3, 3)
+  for i = 0, 2 do
+    for j = 0, 2 do
+      g[i, j] = G[x+i-1, y+j-1, z]
+    end
+  end
+
+  L[x*2, y*2, z] = ( g[0, 0]*kk[0, 0] + g[0, 1]*kk[0, 2] + g[0, 2]*kk[0, 4] +
+                     g[1, 0]*kk[2, 0] + g[1, 1]*kk[2, 2] + g[1, 2]*kk[2, 4] +
+                     g[2, 0]*kk[4, 0] + g[2, 1]*kk[4, 2] + g[2, 2]*kk[4, 4] ) *
+                     4.0 - I[x*2, y*2, z]
+
+  L[x*2 + 1, y*2 + 1, z] = ( g[1, 1]*kk[1, 1] + g[1, 2]*kk[1, 3] +
+                             g[2, 1]*kk[3, 1] + g[2, 2]*kk[3, 3] ) *
+                             4.0 - I[x*2 + 1, y*2 + 1, z]
+
+  L[x*2 + 1, y*2, z] = ( g[1, 0]*kk[1, 0] + g[1, 1]*kk[1, 2] + g[1, 2]*kk[1, 4] +
+                         g[2, 0]*kk[3, 0] + g[2, 1]*kk[3, 2] + g[2, 2]*kk[3, 4] ) *
+                         4.0 - I[x*2 + 1, y*2, z]
+
+  L[x*2, y*2 + 1, z] = ( g[0, 1]*kk[0, 1] + g[0, 2]*kk[0, 3] +
+                         g[1, 1]*kk[2, 1] + g[1, 2]*kk[2, 3] +
+                         g[2, 1]*kk[4, 1] + g[2, 2]*kk[4, 3] ) *
+                         4.0 - I[x*2, y*2 + 1, z]
+end

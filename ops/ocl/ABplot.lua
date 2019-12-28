@@ -16,103 +16,80 @@
 ]]
 
 local ffi = require "ffi"
-local tools = require "lib.opencl.tools"
 local data = require "data"
 
-local proc = require "lib.opencl.process".new()
+local proc = require "lib.opencl.process.ivy".new()
 
 local source = [[
-//#include "cs.cl"
+kernel clearPlot(C)
+  const x = get_global_id(0)
+	const y = get_global_id(1)
 
-kernel void clearPlot(global uint *C) {
-  const int x = get_global_id(0);
-	const int y = get_global_id(1);
+  C[x, y].int = 0
+end
 
-  C[0*$C.sz$ + y*$C.sy$ + x*$C.sx$] = 0;
-}
+kernel plot(I, C, clip)
+  const x = get_global_id(0)
+  const y = get_global_id(1)
 
-kernel void plot(global float *I, global uint *C, global float *clip) {
-  const int x = get_global_id(0);
-  const int y = get_global_id(1);
+	var i = vec(0)
+	if clip[0]>0.5 then
+		i = I[x, y].LRGB
+		i = clamp(i, 0.0, 1.0)
+		i = LRGBtoLAB(i)
+	else
+		i = I[x, y].LAB
+	end
 
-	float3 i;
-	if (clip[0]>0.5f) {
-		i = $I[x, y]LRGB;
-		i = clamp(i, 0.0f, 1.0f);
-		i = LRGBtoLAB(i);
-	} else {
-		i = $I[x, y]LAB;
-	}
+	if abs(i.y)<1.0 and abs(i.z)<1.0 then
+		var a = int( i.y*C.x*0.5 + 73) -- tuned offset to match display
+		var b = int(-i.z*C.y*0.5 + 71) -- tuned offset to match display
+		atomic_inc(C[a, b].intptr)
+	end
+end
 
-	if (fabs(i.y)<1.0f && fabs(i.z)<1.0f) {
-		uint a = i.y * $C.x$ * 0.5f + 73.0f; // tuned offset to match display
-		uint b = -i.z * $C.y$ * 0.5f + 71.0f; // tuned offset to match display
-		atomic_inc(C + 0*$C.sz$ + b*$C.sy$ + a*$C.sx$);
-	}
-}
+kernel scalePlot(C, S, W, I)
+	const x = get_global_id(0)
+	const y = get_global_id(1)
 
-kernel void scalePlot(global uint *C, global float *S, global uchar *W, global float *I) {
-	const int x = get_global_id(0);
-	const int y = get_global_id(1);
+	var s = S[0]
+	var c = C[x, y].int
 
-	const int idx = x*4 + ($W.y$-y-1)*$W.x$*4;
+	if c>0.0 then
+		s = s*2048*5/(I.x*I.y)
+		var v = clamp(c*s, 0.0, 255.0)
 
-	float s = S[0];
-	float c = $C[x, y, 0];
+		var a = (x - 73.0)*2.0/C.x
+		var b = -(y - 71.0)*2.0/C.x
 
-	if (c>0.0f) {
-		s = s * $$2048*5/(I.x*I.y)$$; // add I to arguments to force recompile on change
-		float v = clamp(c*s, 0.0f, 255.0f);
+		var srgb = LABtoSRGB(vec(1.0 - 0.5*sqrt(a^2 + b^2), a, b))
+		srgb = srgb*clamp(s*c, 0.0, 1.0)
 
-		float a = (x - 73.0f) *2.0f / $C.x$;
-		float b = -(y - 71.0f) *2.0f / $C.x$;
-
-		float3 srgb = LABtoSRGB((float3)(1.0f-0.5f*sqrt(a*a + b*b), a, b));
-		srgb = srgb * clamp(s * c, 0.0f, 1.0f);
-
-		W[idx + 0] = (uchar)round(clamp(srgb.x*255.0f, 0.0f, 255.0f));
-		W[idx + 1] = (uchar)round(clamp(srgb.y*255.0f, 0.0f, 255.0f));
-		W[idx + 2] = (uchar)round(clamp(srgb.z*255.0f, 0.0f, 255.0f));
-		W[idx + 3] = 255;
-	} else {
-		W[idx + 0] = 0;
-		W[idx + 1] = 0;
-		W[idx + 2] = 0;
-		W[idx + 3] = 255;
-	}
-}
-
+    W[x, y] = RGBA(srgb, 1.0)
+	else
+    W[x, y] = RGBA(vec(0.0), 1.0)
+	end
+end
 ]]
 
 local function execute()
-	proc:getAllBuffers("I", "W", "S", "clip")
+	local I, W, S, clip = proc:getAllBuffers(4)
 
-	local x = proc.buffers.W.x
-	local y = proc.buffers.W.y
+	W.dataOCL = proc.context:create_buffer("write_only", W.x * W.y * ffi.sizeof("cl_float"))
+  W.z = 1
+  W.sx = 1
+  W.sy = W.x
+  W.sz = 1
+  W:updateStr()
 
-	-- allocate openCL buffer to image
-	proc.buffers.W.dataOCL = proc.context:create_buffer("write_only", x * y * 4 * ffi.sizeof("cl_uchar"))
+	local C = data:new(W.x, W.y, 1)
 
-	-- allocate temporary count buffer
-	proc.buffers.C = data:new(x, y, 1)
+	proc:executeKernel("clearPlot", proc:size2D(C), {C})
+	proc:executeKernel("plot", proc:size2D(I), {I, C, clip})
+	proc:executeKernel("scalePlot", proc:size2D(C), {C, S, W, I})
 
-	proc:executeKernel("clearPlot", proc:size2D("C"), {"C"})
-	proc:executeKernel("plot", proc:size2D("I"), {"I", "C", "clip"})
-	proc:executeKernel("scalePlot", proc:size2D("C"), {"C", "S", "W", "I"})
-
-	local event3 = proc.queue:enqueue_read_buffer(proc.buffers.W.dataOCL, true, proc.buffers.W.data)
-
-	if proc.profile() then
-		tools.profile("copyPlot", event3, proc.queue)
-	end
-
-	-- remove image openCL buffer
-	proc.context.release_mem_object(proc.buffers.W.dataOCL)
-	proc.buffers.W.dataOCL = nil
-
-	-- free temporary count buffer
-	proc.buffers.C:free()
-	proc.buffers.C = nil
+  W:freeDev(true)
+  C:free()
 end
 
 local function init(d, c, q)
