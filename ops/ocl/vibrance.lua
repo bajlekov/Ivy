@@ -29,13 +29,11 @@ kernel vibrance(I, V, O)
 
   var d = i-Y
   var m3 = vec(0.0)
-  if d.x<0.0 then m3.x = -Y/d.x else m3.x = (1.0-Y)/d.x end
-  if d.y<0.0 then m3.y = -Y/d.y else m3.y = (1.0-Y)/d.y end
-  if d.z<0.0 then m3.z = -Y/d.z else m3.z = (1.0-Y)/d.z end
-
-  var m = 1.0/max(min(m3.x, min(m3.y, m3.z)), 0.0001)
-  m = clamp(m, 0.0001, 1.0)
-
+  if d.x<0.0 then m3.x = -d.x/Y else m3.x = d.x/(1.0-Y) end
+  if d.y<0.0 then m3.y = -d.y/Y else m3.y = d.y/(1.0-Y) end
+  if d.z<0.0 then m3.z = -d.z/Y else m3.z = d.z/(1.0-Y) end
+  
+  var m = clamp(max(m3.x, max(m3.y, m3.z)), 0.0001, 1.0) -- greatest multiplier without clipping
   var mv = (1.0 - v)*m^2 + v*m
 
   O[x, y] = Y + mv/m*d
