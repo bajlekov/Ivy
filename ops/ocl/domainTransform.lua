@@ -114,8 +114,11 @@ local function execute()
 		-- vertical pass optimizes the slower initial copy from I to O better (memory locality?)
 		-- read from input buffer in first pass of first iteration
 		-- in-place transform for all subsequent passes
+    proc:setWorkgroupSize({16, 1, 1}) -- dynamically optimize these?
 		proc:executeKernel("vertical", {x, 1}, {i==1 and I or O, dVdy, O, S, h})
+    proc:setWorkgroupSize({1, 16, 1})
 		proc:executeKernel("horizontal", {1, y}, {O, dHdx, O, S, h})
+    proc:clearWorkgroupSize()
 	end
 	dHdx:free()
 	dVdy:free()
