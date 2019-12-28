@@ -382,7 +382,7 @@ inline void _atomic_float_add(volatile global float *addr, float val) {
 	do {
 		expected.f32 = current.f32;
 		next.f32 = expected.f32 + val;
-		current.u32  = atomic_cmpxchg( (volatile __global unsigned int *)addr, expected.u32, next.u32);
+		current.u32  = atomic_cmpxchg( (volatile global unsigned int *)addr, expected.u32, next.u32);
 	} while( current.u32 != expected.u32 );
 }
 
@@ -396,7 +396,7 @@ inline void _atomic_float_sub(volatile global float *addr, float val) {
 	do {
 		expected.f32 = current.f32;
 		next.f32 = expected.f32 - val;
-		current.u32  = atomic_cmpxchg( (volatile __global unsigned int *)addr, expected.u32, next.u32);
+		current.u32  = atomic_cmpxchg( (volatile global unsigned int *)addr, expected.u32, next.u32);
 	} while( current.u32 != expected.u32 );
 }
 
@@ -410,7 +410,7 @@ inline void _atomic_float_inc(volatile global float *addr) {
 	do {
 		expected.f32 = current.f32;
 		next.f32 = expected.f32 + 1.0f;
-		current.u32  = atomic_cmpxchg( (volatile __global unsigned int *)addr, expected.u32, next.u32);
+		current.u32  = atomic_cmpxchg( (volatile global unsigned int *)addr, expected.u32, next.u32);
 	} while( current.u32 != expected.u32 );
 }
 
@@ -424,7 +424,7 @@ inline void _atomic_float_dec(volatile global float *addr) {
 	do {
 		expected.f32 = current.f32;
 		next.f32 = expected.f32 - 1.0f;
-		current.u32  = atomic_cmpxchg( (volatile __global unsigned int *)addr, expected.u32, next.u32);
+		current.u32  = atomic_cmpxchg( (volatile global unsigned int *)addr, expected.u32, next.u32);
 	} while( current.u32 != expected.u32 );
 }
 
@@ -441,7 +441,7 @@ inline void _atomic_float_min(volatile global float *addr, float val) {
 	do {
 		if (current.f32 <= val) return;
 		expected.f32 = current.f32;
-		current.u32  = atomic_cmpxchg( (volatile __global unsigned int *)addr, expected.u32, next.u32);
+		current.u32  = atomic_cmpxchg( (volatile global unsigned int *)addr, expected.u32, next.u32);
 	} while( current.u32 != expected.u32 );
 }
 
@@ -457,8 +457,105 @@ inline void _atomic_float_max(volatile global float *addr, float val) {
 	do {
 		if (current.f32 >= val) return;
 		expected.f32 = current.f32;
-		current.u32  = atomic_cmpxchg( (volatile __global unsigned int *)addr, expected.u32, next.u32);
+		current.u32  = atomic_cmpxchg( (volatile global unsigned int *)addr, expected.u32, next.u32);
 	} while( current.u32 != expected.u32 );
+}
+
+inline void _atomic_local_float_add(volatile local float *addr, float val) {
+	union {
+		unsigned int u32;
+		float        f32;
+	} next, expected, current;
+	current.f32 = *addr;
+
+	do {
+		expected.f32 = current.f32;
+		next.f32 = expected.f32 + val;
+		current.u32  = atomic_cmpxchg( (volatile local unsigned int *)addr, expected.u32, next.u32);
+	} while( current.u32 != expected.u32 );
+}
+
+inline void _atomic_local_float_sub(volatile local float *addr, float val) {
+	union {
+		unsigned int u32;
+		float        f32;
+	} next, expected, current;
+	current.f32 = *addr;
+
+	do {
+		expected.f32 = current.f32;
+		next.f32 = expected.f32 - val;
+		current.u32  = atomic_cmpxchg( (volatile local unsigned int *)addr, expected.u32, next.u32);
+	} while( current.u32 != expected.u32 );
+}
+
+inline void _atomic_local_float_inc(volatile local float *addr) {
+	union {
+		unsigned int u32;
+		float        f32;
+	} next, expected, current;
+	current.f32 = *addr;
+
+	do {
+		expected.f32 = current.f32;
+		next.f32 = expected.f32 + 1.0f;
+		current.u32  = atomic_cmpxchg( (volatile local unsigned int *)addr, expected.u32, next.u32);
+	} while( current.u32 != expected.u32 );
+}
+
+inline void _atomic_local_float_dec(volatile local float *addr) {
+	union {
+		unsigned int u32;
+		float        f32;
+	} next, expected, current;
+	current.f32 = *addr;
+
+	do {
+		expected.f32 = current.f32;
+		next.f32 = expected.f32 - 1.0f;
+		current.u32  = atomic_cmpxchg( (volatile local unsigned int *)addr, expected.u32, next.u32);
+	} while( current.u32 != expected.u32 );
+}
+
+
+inline void _atomic_local_float_min(volatile local float *addr, float val) {
+	union {
+		unsigned int u32;
+		float        f32;
+	} next, expected, current;
+
+	current.f32 = *addr;
+	next.f32 = val;
+
+	do {
+		if (current.f32 <= val) return;
+		expected.f32 = current.f32;
+		current.u32  = atomic_cmpxchg( (volatile local unsigned int *)addr, expected.u32, next.u32);
+	} while( current.u32 != expected.u32 );
+}
+
+inline void _atomic_local_float_max(volatile local float *addr, float val) {
+	union {
+		unsigned int u32;
+		float        f32;
+	} next, expected, current;
+
+	current.f32 = *addr;
+	next.f32 = val;
+
+	do {
+		if (current.f32 >= val) return;
+		expected.f32 = current.f32;
+		current.u32  = atomic_cmpxchg( (volatile local unsigned int *)addr, expected.u32, next.u32);
+	} while( current.u32 != expected.u32 );
+}
+
+inline void local_barrier() {
+	barrier(CLK_LOCAL_MEM_FENCE);
+}
+
+inline void global_barrier() {
+	barrier(CLK_GLOBAL_MEM_FENCE);
 }
 
 
