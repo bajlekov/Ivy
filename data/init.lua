@@ -450,6 +450,26 @@ function data:get(x, y, z)
 	return self.buffer[0].dataHost[x*self.sx + y*self.sy + z*self.sz]
 end
 
+local i32 = ffi.typeof("int32_t*")
+function data:get_i32(x, y, z)
+  assert(self.buffer[0].dataHost~=NULL, "Host data not allocated for read")
+  assert(self.buffer[0].dirtyHost==0, "Host data not synchronised")
+	x = clamp(x, 0, self.x-1)
+	y = clamp(y, 0, self.y-1)
+	z = clamp(z, 0, self.z-1)
+	return ffi.cast(i32, self.buffer[0].dataHost)[x*self.sx + y*self.sy + z*self.sz]
+end
+
+local u32 = ffi.typeof("uint32_t*")
+function data:get_u32(x, y, z)
+  assert(self.buffer[0].dataHost~=NULL, "Host data not allocated for read")
+  assert(self.buffer[0].dirtyHost==0, "Host data not synchronised")
+	x = clamp(x, 0, self.x-1)
+	y = clamp(y, 0, self.y-1)
+	z = clamp(z, 0, self.z-1)
+	return ffi.cast(u32, self.buffer[0].dataHost)[x*self.sx + y*self.sy + z*self.sz]
+end
+
 function data:set(x, y, z, v)
   if self.buffer[0].dataHost==NULL then
     self:allocHost()
