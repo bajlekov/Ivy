@@ -94,7 +94,7 @@ do
 		print("vendor  : " .. platform:get_info("vendor"))
 		print("version : " .. platform:get_info("version"))
 		print()
-		local devices = platform:get_devices()
+		local devices = platform:get_devices() or {}
 		for j, device in ipairs(devices) do
 			print("\tplatform: " .. i)
 			print("\tdevice  : " .. j)
