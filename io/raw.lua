@@ -90,6 +90,7 @@ function raw.read(name)
 			buffer:set(x, h-y-1, 2, b)
 		end
 	end
+	buffer:hostWritten()
 
 	local P = ffi.new("float[3]") -- pre-multiply coefficients
 	local mm = math.min(mr, mg, mb)
@@ -129,6 +130,9 @@ function raw.read(name)
 			SRGBmatrix:set(i, j, 0, M[i][j])
 		end
 	end
+	WBmultipliers:hostWritten()
+	PREmultipliers:hostWritten()
+	SRGBmatrix:hostWritten()
 
 	libraw.libraw_dcraw_clear_mem(img)
 	libraw.libraw_close(rawData)
