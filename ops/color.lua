@@ -75,7 +75,8 @@ return function(ops)
 		p:set(0, 0, 0, r + m)
 		p:set(0, 0, 1, g + m)
 		p:set(0, 0, 2, b + m)
-		p:toDevice()
+		p:hostWritten()
+		p:syncDev()
 
 		thread.ops.color_lift({i, p, o}, self)
 	end
@@ -107,7 +108,8 @@ return function(ops)
 		p:set(0, 0, 0, r + m)
 		p:set(0, 0, 1, g + m)
 		p:set(0, 0, 2, b + m)
-		p:toDevice()
+		p:hostWritten()
+		p:syncDev()
 
 		thread.ops.color_gain({i, p, o}, self)
 	end
@@ -138,7 +140,8 @@ return function(ops)
 		p:set(0, 0, 0, r + m)
 		p:set(0, 0, 1, g + m)
 		p:set(0, 0, 2, b + m)
-		p:toDevice()
+		p:hostWritten()
+		p:syncDev()
 
 		thread.ops.color_gamma({i, p, o}, self)
 	end
@@ -170,7 +173,8 @@ return function(ops)
 		p:set(0, 0, 0, r + m)
 		p:set(0, 0, 1, g + m)
 		p:set(0, 0, 2, b + m)
-		p:toDevice()
+		p:hostWritten()
+		p:syncDev()
 
 		thread.ops.color_offset({i, p, o}, self)
 	end
@@ -203,7 +207,8 @@ return function(ops)
 		p:set(0, 0, 0, r + m)
 		p:set(0, 0, 1, g + m)
 		p:set(0, 0, 2, b + m)
-		p:toDevice()
+		p:hostWritten()
+		p:syncDev()
 
 		thread.ops.color_shadows({i, p, o}, self)
 	end
@@ -235,7 +240,8 @@ return function(ops)
 		p:set(0, 0, 0, r + m)
 		p:set(0, 0, 1, g + m)
 		p:set(0, 0, 2, b + m)
-		p:toDevice()
+		p:hostWritten()
+		p:syncDev()
 
 		thread.ops.color_midtones({i, p, o}, self)
 	end
@@ -267,7 +273,8 @@ return function(ops)
 		p:set(0, 0, 0, r + m)
 		p:set(0, 0, 1, g + m)
 		p:set(0, 0, 2, b + m)
-		p:toDevice()
+		p:hostWritten()
+		p:syncDev()
 
 		thread.ops.color_highlights({i, p, o}, self)
 	end
