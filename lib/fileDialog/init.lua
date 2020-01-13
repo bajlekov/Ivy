@@ -19,7 +19,13 @@ local ffi = require "ffi"
 
 local fileDialog = {}
 
-local tfd = ffi.load("lib/fileDialog/Windows/tfd.dll")
+local tfd
+local libraw
+if ffi.os=="Windows" then
+	tfd = ffi.load("lib/fileDialog/Windows/tfd.dll")
+elseif ffi.os=="Linux" then
+	tfd = ffi.load("lib/fileDialog/Linux/libtfd.so")
+end
 
 ffi.cdef[[
 	int tinyfd_winUtf8;
@@ -43,7 +49,9 @@ ffi.cdef[[
 			/* returns NULL on cancel */
 ]]
 
-tfd.tinyfd_winUtf8 = 1
+if ffi.os=="Windows" then
+	tfd.tinyfd_winUtf8 = 1
+end
 
 function fileDialog.fileOpen(title, path, filter, description)
 	if type(filter)=="string" then filter = {filter} end
