@@ -32,8 +32,6 @@ function data.initDev(c, q)
 		devQueue = q
 	end
 
-  local test = data:new():allocHost()
-  test = nil
   collectgarbage("collect")
 
   data.sink = data:new(1, 1, 3):allocHost()
