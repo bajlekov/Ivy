@@ -223,11 +223,11 @@ function data:allocHost(transfer)
 		self.buffer[0].strHost[3] = self.sx
 		self.buffer[0].strHost[4] = self.sy
 		self.buffer[0].strHost[5] = self.sz
-    if transfer then
-      self:syncHost(true)
-    else
-      self.buffer[0].dirtyHost = 1
-    end
+    self.buffer[0].dirtyHost = 1
+  end
+  if transfer then
+    assert(self.buffer[0].dirtyDev==0)
+    self:syncHost()
   end
   self:unlock()
   return self
@@ -238,6 +238,7 @@ function data:allocDev(transfer)
   assert(devContext, "No OpenCL device detected")
 	self:lock()
   if self.buffer[0].dataDev==NULL then
+    assert(self.buffer[0].strDev==NULL)
     self.buffer[0].dataDev = ffi.gc(devContext:create_buffer(ffi.sizeof("cl_float") * self.x * self.y * self.z + ffi.alignof("cl_float")), nil)
     self.buffer[0].strDev = ffi.gc(devContext:create_buffer(ffi.sizeof("cl_int") * 6  + ffi.alignof("cl_int")), nil)
     strDev[0] = self.x
@@ -247,18 +248,21 @@ function data:allocDev(transfer)
     strDev[4] = self.sy
     strDev[5] = self.sz
     devQueue:enqueue_write_buffer(self.buffer[0].strDev, true, strDev)
-    if transfer then
-      self:syncDev(true)
-    else
-      self.buffer[0].dirtyDev = 1
-    end
+    self.buffer[0].dirtyDev = 1
+  end
+  if transfer then
+    assert(self.buffer[0].dirtyHost==0)
+    self:syncDev()
   end
   self:unlock()
   return self
 end
 
-function data:freeHost()
+function data:freeHost(transfer)
   self:lock()
+  if transfer then
+    self:allocDev(true)
+  end
   if self.buffer[0].dataHost~=NULL then
     assert(self.buffer[0].strHost~=NULL)
     ffi.C.free(self.buffer[0].dataHost)
@@ -270,9 +274,12 @@ function data:freeHost()
   return self
 end
 
-function data:freeDev()
+function data:freeDev(transfer)
   assert(devContext, "No OpenCL device detected")
   self:lock()
+  if transfer then
+    self:allocHost(true)
+  end
 	if self.buffer[0].dataDev~=NULL then
     assert(self.buffer[0].strDev~=NULL)
     devContext.release_mem_object(self.buffer[0].dataDev)
@@ -305,11 +312,12 @@ function data:sync(blocking)
   return self
 end
 
-function data:syncHost(force, blocking)
+function data:syncHost(blocking)
   self:lock()
   assert(self.buffer[0].dataDev~=NULL)
+  assert(self.buffer[0].dirtyDev==0)
   self:allocHost()
-  if self.buffer[0].dirtyHost==1 or force then
+  if self.buffer[0].dirtyHost==1 then
 	  devQueue:enqueue_read_buffer(self.buffer[0].dataDev, blocking and 1 or 0, self.buffer[0].dataHost)
     self.buffer[0].dirtyHost = 0
   end
@@ -317,11 +325,23 @@ function data:syncHost(force, blocking)
   return self
 end
 
-function data:syncDev(force, blocking)
+function data:forceSyncHost(blocking)
+  self:lock()
+  assert(self.buffer[0].dataDev~=NULL)
+  assert(self.buffer[0].dirtyDev==0)
+  self:allocHost()
+  devQueue:enqueue_read_buffer(self.buffer[0].dataDev, blocking and 1 or 0, self.buffer[0].dataHost)
+  self.buffer[0].dirtyHost = 0
+  self:unlock()
+  return self
+end
+
+function data:syncDev(blocking)
   self:lock()
   assert(self.buffer[0].dataHost~=NULL)
+  assert(self.buffer[0].dirtyHost==0)
   self:allocDev()
-  if self.buffer[0].dirtyDev==1 or force then
+  if self.buffer[0].dirtyDev==1 then
     devQueue:enqueue_write_buffer(self.buffer[0].dataDev, blocking and 1 or 0, self.buffer[0].dataHost)
     self.buffer[0].dirtyDev = 0
   end
@@ -329,15 +349,14 @@ function data:syncDev(force, blocking)
   return self
 end
 
-function data:___toHost()
-	self:syncHost()
-  self:freeDev()
-  return self
-end
-
-function data:___toDev()
-	self:syncDev()
-  self:freeHost()
+function data:forceSyncDev(blocking)
+  self:lock()
+  assert(self.buffer[0].dataHost~=NULL)
+  assert(self.buffer[0].dirtyHost==0)
+  self:allocDev()
+  devQueue:enqueue_write_buffer(self.buffer[0].dataDev, blocking and 1 or 0, self.buffer[0].dataHost)
+  self.buffer[0].dirtyDev = 0
+  self:unlock()
   return self
 end
 
