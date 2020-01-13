@@ -226,7 +226,6 @@ function data:allocHost(transfer)
     self.buffer[0].dirtyHost = 1
   end
   if transfer then
-    assert(self.buffer[0].dirtyDev==0)
     self:syncHost()
   end
   self:unlock()
@@ -251,7 +250,6 @@ function data:allocDev(transfer)
     self.buffer[0].dirtyDev = 1
   end
   if transfer then
-    assert(self.buffer[0].dirtyHost==0)
     self:syncDev()
   end
   self:unlock()
@@ -314,10 +312,10 @@ end
 
 function data:syncHost(blocking)
   self:lock()
-  assert(self.buffer[0].dataDev~=NULL)
-  assert(self.buffer[0].dirtyDev==0)
   self:allocHost()
   if self.buffer[0].dirtyHost==1 then
+    assert(self.buffer[0].dataDev~=NULL)
+    assert(self.buffer[0].dirtyDev==0)
 	  devQueue:enqueue_read_buffer(self.buffer[0].dataDev, blocking and 1 or 0, self.buffer[0].dataHost)
     self.buffer[0].dirtyHost = 0
   end
@@ -338,10 +336,10 @@ end
 
 function data:syncDev(blocking)
   self:lock()
-  assert(self.buffer[0].dataHost~=NULL)
-  assert(self.buffer[0].dirtyHost==0)
   self:allocDev()
   if self.buffer[0].dirtyDev==1 then
+    assert(self.buffer[0].dataHost~=NULL)
+    assert(self.buffer[0].dirtyHost==0)
     devQueue:enqueue_write_buffer(self.buffer[0].dataDev, blocking and 1 or 0, self.buffer[0].dataHost)
     self.buffer[0].dirtyDev = 0
   end
