@@ -62,7 +62,8 @@ function format.rgba8(image)
 			data:set(i, j, 2, math.max(b, 0))
 		end
 	end
-
+	data:hostWritten()
+	
 	return data
 end
 

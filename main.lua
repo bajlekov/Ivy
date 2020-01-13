@@ -160,10 +160,10 @@ function love.filedropped(file)
 	assert(file, "ERROR: File loading failed")
 
 	originalImage, RAW_SRGBmatrix, RAW_WBmultipliers, RAW_PREmultipliers = require("io."..settings.imageLoader).read(file)
-	originalImage:syncDev(true)
-	if RAW_SRGBmatrix then RAW_SRGBmatrix:syncDev(true) end
-	if RAW_WBmultipliers then RAW_WBmultipliers:syncDev(true) end
-	if RAW_PREmultipliers then RAW_PREmultipliers:syncDev(true) end
+	originalImage:syncDev()
+	if RAW_SRGBmatrix then RAW_SRGBmatrix:syncDev() end
+	if RAW_WBmultipliers then RAW_WBmultipliers:syncDev() end
+	if RAW_PREmultipliers then RAW_PREmultipliers:syncDev() end
 
 	love.window.setTitle("Ivy: "..( type(file) == "string" and file or file:getFilename() ))
 	exifData = require("io.exif").read(file)
@@ -244,9 +244,8 @@ function love.filedropped(file)
 
 		imageOffset:set(0, 0, 12, s_min)
 	end
-
   imageOffset:hostWritten()
-	imageOffset:syncDev(true)
+	imageOffset:syncDev()
 
 	pipeline.input.imageData = originalImage:new()
 	pipeline.output.image = image.new(pipeline.input.imageData)
@@ -403,7 +402,7 @@ function love.update()
 
 		if loadInputImage then -- load cropped image if not already cached
 			rescaleInputOutput()
-			imageOffset:syncDev(true)
+			imageOffset:syncHost()
 
 			local pool = require "tools.imagePool"
 			pool.resize(originalImage.x, originalImage.y)

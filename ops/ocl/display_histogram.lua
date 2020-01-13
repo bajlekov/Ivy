@@ -105,10 +105,12 @@ local function execute()
   proc:setWorkgroupSize({256, 1, 1})
   proc:executeKernel("clearHist", {256, 1, 4}, {H})
   proc:executeKernel("display", proc:size2D(O), {I, O, P, H})
-
+  O:devWritten()
   O:syncHost(true)
-  O:freeDev(true)
-  H:syncHost(true, true)
+  O:freeDev()
+
+  H:devWritten()
+  H:syncHost(true)
 end
 
 local function init(d, c, q)

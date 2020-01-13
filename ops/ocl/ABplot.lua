@@ -88,7 +88,7 @@ local function execute()
 	proc:executeKernel("plot", proc:size2D(I), {I, C, clip})
 	proc:executeKernel("scalePlot", proc:size2D(C), {C, S, W, I})
 
-  W:freeDev(true)
+  W:freeDev()
   C:free()
 end
 

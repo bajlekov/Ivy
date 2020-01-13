@@ -240,10 +240,8 @@ local function execute()
 
 	local S = data:new(1, 1, 1) -- DT filter param
 	local R = data:new(1, 1, 1) -- DT filter param
-	S:set(0, 0, 0, 50)
-	R:set(0, 0, 0, 0.5)
-	S:syncDev(true)
-	R:syncDev(true)
+	S:set(0, 0, 0, 50):hostWritten():syncDev()
+	R:set(0, 0, 0, 0.5):hostWritten():syncDev()
 
 	local dHdx = data:new(x, y, 1)
 	local dVdy = data:new(x, y, 1)

@@ -66,7 +66,9 @@ local function execute()
 
   proc:executeKernel("display", proc:size2D(O), {I, O, P})
 
-  O:freeDev(true)
+  O:devWritten()
+  O:syncHost(true)
+  O:freeDev()
 end
 
 local function init(d, c, q)
