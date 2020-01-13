@@ -188,7 +188,7 @@ function love.filedropped(file)
 	}
 
 	panels.info.elem[6].right = exifData.ExposureProgram and programModes[tonumber(exifData.ExposureProgram)] or "-"
-	panels.info.elem[7].right = (("%+0.1f"):format(exifData.ExposureCompensation) or " -").." EV"
+	panels.info.elem[7].right = (exifData.ExposureCompensation and ("%+0.1f"):format(exifData.ExposureCompensation) or " -").." EV"
 
 	local shutter = tonumber(exifData.ShutterSpeed)
 	if shutter then
