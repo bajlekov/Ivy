@@ -61,7 +61,7 @@ end
 
 
 local cct = require "tools.cct"
-
+local bradford = require "tools.bradford"
 local function temperatureProcess(self)
 	self.procType = "dev"
 	local i = t.inputSourceBlack(self, 0)
@@ -74,7 +74,8 @@ local function temperatureProcess(self)
 	p:set(0, 0, 0, Lo / Li)
 	p:set(0, 0, 1, Mo / Mi)
 	p:set(0, 0, 2, So / Si)
-	p:toDevice()
+	p:hostWritten()
+	p:syncDev()
 	thread.ops.whitepoint({i, p, o}, self)
 end
 
