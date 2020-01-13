@@ -109,8 +109,10 @@ local function execute()
   O:syncHost(true)
   O:freeDev()
 
+  H:lock()
   H:devWritten()
   H:syncHost(true)
+  H:unlock()
 end
 
 local function init(d, c, q)

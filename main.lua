@@ -532,7 +532,8 @@ function love.draw()
 
 	-- draw histogram
 	local scale = 0
-	if hist then
+  if hist then
+    hist:lock()
 		local histPanel = panels.hist.panel
 		local mr = panels.hist.r.value and 1 or 0
 		local mg = panels.hist.g.value and 1 or 0
@@ -628,7 +629,8 @@ function love.draw()
 			love.graphics.line(lc)
 		end
 
-	end
+    hist:unlock()
+  end
 
 	require "ui.widget".drawCursor()
 
