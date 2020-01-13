@@ -27,12 +27,19 @@ ffi.cdef[[
   void SDL_DestroyMutex(SDL_mutex * mutex);
 ]]
 
+local SDL
+if ffi.os=="Windows" then
+  SDL = ffi.load("SDL2")
+elseif ffi.os=="Linux" then
+  SDL = ffi.C
+end
+
 local mutex = {}
 mutex.meta = {__index = mutex}
 
 function mutex:new(ptr)
   local m = {
-    mutex = ptr and ffi.cast("SDL_mutex *", ptr) or  ffi.gc(ffi.C.SDL_CreateMutex(), ffi.C.SDL_DestroyMutex)
+    mutex = ptr and ffi.cast("SDL_mutex *", ptr) or  ffi.gc(SDL.SDL_CreateMutex(), SDL.SDL_DestroyMutex)
   }
 
   setmetatable(m, self.meta)
@@ -40,11 +47,11 @@ function mutex:new(ptr)
 end
 
 function mutex:lock()
-  assert(ffi.C.SDL_LockMutex(self.mutex)==0)
+  assert(SDL.SDL_LockMutex(self.mutex)==0)
 end
 
 function mutex:unlock()
-  assert(ffi.C.SDL_UnlockMutex(self.mutex)==0)
+  assert(SDL.SDL_UnlockMutex(self.mutex)==0)
 end
 
 function mutex:ptr()
