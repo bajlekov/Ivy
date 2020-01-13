@@ -402,7 +402,7 @@ function love.update()
 
 		if loadInputImage then -- load cropped image if not already cached
 			rescaleInputOutput()
-			imageOffset:syncHost()
+			imageOffset:syncDev()
 
 			local pool = require "tools.imagePool"
 			pool.resize(originalImage.x, originalImage.y)
@@ -669,6 +669,7 @@ function widget.imagePan(dx, dy)
 		oy = oy + dy / displayScale
 		imageOffset:set(0, 0, 0, ox)
 		imageOffset:set(0, 0, 1, oy)
+    imageOffset:hostWritten()
 		loadInputImage = true
 	end
 end
@@ -904,6 +905,7 @@ function love.keypressed(key)
 		displayScale = false
 		imageOffset:set(0, 0, 0, 0)
 		imageOffset:set(0, 0, 1, 0)
+    imageOffset:hostWritten()
 	end
 
 	if key == "f11" then
