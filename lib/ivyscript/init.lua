@@ -43,7 +43,12 @@ ffi.cdef([[
     char *translator_get_id(translator_t *, const char *);
 ]])
 
-local lib = ffi.load "lib/ivyscript/target/release/ivyscript.dll"
+local lib
+if ffi.os=="Windows" then
+	lib = ffi.load "lib/ivyscript/target/release/ivyscript.dll"
+elseif ffi.os=="Linux" then
+	lib = ffi.load "lib/ivyscript/target/release/libivyscript.so"
+end
 
 local targetList = {
   OCL = lib.translator_new_ocl,

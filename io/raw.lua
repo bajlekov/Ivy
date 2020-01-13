@@ -21,10 +21,20 @@ local fs = require "lib.fs"
 
 local raw = {}
 
-local libraw = ffi.load("lib/libraw/Windows/libraw.dll")
+local libraw
+if ffi.os=="Windows" then
+	libraw = ffi.load("lib/libraw/Windows/libraw.dll")
+elseif ffi.os=="Linux" then
+	libraw = ffi.load("raw")
+end
 
 do
-	local f = io.open("lib/libraw/Windows/libraw.h", "r")
+	local f
+	if ffi.os=="Windows" then
+		f = io.open("lib/libraw/Windows/libraw.h", "r")
+	elseif ffi.os=="Linux" then
+		f = io.open("lib/libraw/Linux/libraw.h", "r")
+	end
 	ffi.cdef(f:read("*all"))
 	f:close()
 end

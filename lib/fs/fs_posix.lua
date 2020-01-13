@@ -38,7 +38,7 @@ local cbuf = mkbuf'char'
 
 local function parse_perms(s)
 	if type(s) == 'string' then
-		local unixperms = require'unixperms'
+		local unixperms = require'lib.fs.unixperms'
 		return unixperms.parse(s)
 	else --pass-through
 		return s, false
