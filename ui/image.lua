@@ -90,11 +90,11 @@ function image.meta.__tostring(a)
 end
 
 function image:idx(x, y, z)
-  return (x*self.sx+(self.y-y-1)*self.sy+z*self.sz)
+  return (x*4 + (self.y-y-1)*self.x*4 + z)
 end
 
 function image:get(x, y, z)
-  return ffi.cast("uint8_t *", self.data)[self:idx(x, y, z)]
+  return ffi.cast("uint8_t *", self.data.buffer[0].dataHost)[self:idx(x, y, z)]
 end
 
 function image:refresh()
