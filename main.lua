@@ -157,7 +157,6 @@ local processReady = true
 
 function love.filedropped(file)
 	require "ui.notice".blocking("Loading image: "..(type(file) == "string" and file or file:getFilename()), true)
-	collectgarbage("collect")
 	assert(file, "ERROR: File loading failed")
 
 	originalImage, RAW_SRGBmatrix, RAW_WBmultipliers, RAW_PREmultipliers = require("io."..settings.imageLoader).read(file)

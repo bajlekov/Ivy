@@ -76,8 +76,6 @@ function stb.read(fileName)
 
 	local status, image = pcall(love.graphics.newImage, fileName) --FIXME: use newImageData directly!
 
-	print(fileName)
-
 	if status then
 		return format[image:getFormat()](image)
 	else -- try raw file reading

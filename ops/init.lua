@@ -70,7 +70,6 @@ local function temperatureProcess(self)
 
 	local Li, Mi, Si = bradford.fwd(cct(self.elem[1].value, self.elem[2].value))
 	local Lo, Mo, So = bradford.fwd(cct(6500))
-	print(Lo/Li, Mo/Mi, So/Si)
 	p:set(0, 0, 0, Lo / Li)
 	p:set(0, 0, 1, Mo / Mi)
 	p:set(0, 0, 2, So / Si)

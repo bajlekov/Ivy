@@ -53,7 +53,6 @@ ffi.cdef[[
 ]]
 
 local function ivyImageFree(buffer)
-  print("gc free", buffer[0].dataHost)
   if buffer[0].dataHost~=NULL then
     -- imageData cleans up its own memory
     buffer[0].dataHost = NULL

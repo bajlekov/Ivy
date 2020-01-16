@@ -126,8 +126,6 @@ end
 global("__chkstk", ffi.load("lib/ispc/chkstk.dll"))
 global("__tasksys", ffi.load("lib/ispc/tasksys.dll"))
 
-collectgarbage("collect")
-
 ffi.cdef([[
     void ivyjit_init();
     void* ivyjit_new();

@@ -108,7 +108,6 @@ local function execute()
 	do
 		local x, y, z = proc.buffers.I:shape()
 		proc.buffers.T = proc.buffers.I:new(x, y, 1)
-		print(proc.buffers.T)
 	end
 
 	proc.buffers.O = I -- first iteration

@@ -32,8 +32,6 @@ function data.initDev(c, q)
 		devQueue = q
 	end
 
-  collectgarbage("collect")
-
   data.sink = data:new(1, 1, 3):allocHost()
   data.sink:hostWritten()
   data.sink:syncDev()
@@ -159,9 +157,6 @@ ffi.cdef[[
     int32_t dirtyDev;
   } ivy_buffer;
 ]]
-
-print(ffi.alignof("host_float"))
-print(ffi.alignof("cl_float"))
 
 local function ivyBufferFree(buffer)
   if buffer[0].dataHost~=NULL then

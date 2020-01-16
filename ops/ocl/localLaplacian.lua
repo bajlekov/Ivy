@@ -48,10 +48,8 @@ local function execute()
 
 	-- generate gaussian pyramid
 	proc:executeKernel("pyrDown", proc:size2D(G[1]), {I, G[1]})
-	--proc:executeKernel("pyrUpL", proc:size2D(G[1]), {I, G[1], L[1]})
 	for i = 2, 8 do
 		proc:executeKernel("pyrDown", proc:size2D(G[i]), {G[i-1], G[i]})
-		--proc:executeKernel("pyrUpL", proc:size2D(G[i]), {G[i-1], G[i], L[i]})
 	end
 
 	local lvl = hq:get(0, 0, 0)<0.5 and 15 or 127
