@@ -293,7 +293,8 @@ local function processSampleWB(self)
 	local s = t.autoTempBuffer(self, -2, 1, 1, 3) -- [r, g, b]
 	p:set(0, 0, 0, ox)
 	p:set(0, 0, 1, oy)
-	p:toDevice()
+	p:hostWritten()
+	p:syncDev()
 
 	if update or self.elem[2].value then
 		thread.ops.whitepointSample({i, p, s}, self)
@@ -315,7 +316,29 @@ function ops.sampleWB(x, y)
 	s:set(0, 0, 0, 1)
 	s:set(0, 0, 1, 1)
 	s:set(0, 0, 2, 1)
-	s:toDevice()
+	s:hostWritten()
+	s:syncDev()
+
+	n:setPos(x, y)
+	return n
+end
+
+local function processSetWP(self)
+	self.procType = "dev"
+	local i = t.inputSourceBlack(self, 0)
+	local w = t.inputSourceWhite(self, 1)
+	local o = t.autoOutputSink(self, 0, i:shape())
+
+	thread.ops.whitepoint({i, w, o}, self)
+end
+
+function ops.setWP(x, y)
+	local n = node:new("Set White")
+	n.data.tweak = require "ui.widget.tweak"()
+	n:addPortIn(0, "XYZ")
+	n:addPortOut(0, "XYZ")
+	n:addPortIn(1, "XYZ"):addElem("text", 1, "White point")
+	n.process = processSetWP
 
 	n:setPos(x, y)
 	return n
