@@ -69,10 +69,10 @@ kernel display(I, O, P, H)
   if int(get_local_size(0))==256 then
     const lx = int(get_local_id(0))
 
-    lh[lx, 0] = 0;
-    lh[lx, 1] = 0;
-    lh[lx, 2] = 0;
-    lh[lx, 3] = 0;
+    lh[lx, 0] = 0
+    lh[lx, 1] = 0
+    lh[lx, 2] = 0
+    lh[lx, 3] = 0
     barrier(CLK_LOCAL_MEM_FENCE)
 
     atomic_inc(lh[r, 0].ptr)
@@ -109,10 +109,9 @@ local function execute()
   O:syncHost(true)
   O:freeDev()
 
-  H:lock()
   H:devWritten()
   H:syncHost(true)
-  H:unlock()
+  H:freeDev()
 end
 
 local function init(d, c, q)
