@@ -802,13 +802,13 @@ function love.keypressed(key)
 		print("Scale: 200%")
 	elseif key == "3" then
 		displayScale = 4
-		print("Scale: 300%")
+		print("Scale: 400%")
 	elseif key == "4" then
 		displayScale = 8
-		print("Scale: 400%")
+		print("Scale: 800%")
 	elseif key == "5" then
 		displayScale = 16
-		print("Scale: 500%")
+		print("Scale: 1600%")
 	end
 
 	if key == "r" then
