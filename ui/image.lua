@@ -21,6 +21,17 @@ local data = require "data"
 local image = {type="image"}
 image.meta = {__index = image}
 
+local devContext, devQueue
+function image.initDev(c, q)
+  if c == NULL then
+		devContext = nil
+		devQueue = nil
+	else
+		devContext = c
+		devQueue = q
+	end
+end
+
 ffi.cdef[[
 	void * malloc ( size_t size );
 	void free ( void * ptr );

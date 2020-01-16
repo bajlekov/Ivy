@@ -110,11 +110,12 @@ do
 end
 
 local data = require "data"
+local image = require "ui.image"
 local thread = require "thread"
 thread.init(oclPlatform, oclDevice)
 data.initDev(thread.getContext(), thread.getQueue())
+image.initDev(thread.getContext(), thread.getQueue())
 
-local image = require "ui.image"
 local panels = require "ui.panels"
 local overlay = require "ui.overlay"
 local node = require "ui.node"
