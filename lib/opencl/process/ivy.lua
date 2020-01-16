@@ -106,7 +106,7 @@ do
 	function process:getBuffers(n)
 		local buffers = {}
 		for i = 1, n do
-			table.insert(buffers, self:getBuffer(v))
+			table.insert(buffers, self:getBuffer())
 		end
 		return unpack(buffers)
 	end
@@ -115,7 +115,7 @@ do
 	function process:getAllBuffers(n)
 		local buffers = {}
 		for i = 1, n do
-			table.insert(buffers, self:getBuffer(v))
+			table.insert(buffers, self:getBuffer())
 		end
 		self:buffersReady()
 		return unpack(buffers)
@@ -172,7 +172,7 @@ local function setArgs(kernel, buffers)
 			assert(type(v.buffer[0].dataDev)=="cdata")
 			assert(type(v.buffer[0].strDev)=="cdata")
 			v:allocDev()
-			if oclDebug then print("["..(k-1).."]", v.buffer[0].dataDev, tostring(b)) end
+			if oclDebug then print("["..(k-1).."]", v.buffer[0].dataDev, tostring(v)) end
 			kernel:set_arg(n, v.buffer[0].dataDev)
 			n = n + 1
 			kernel:set_arg(n, v.buffer[0].strDev)
