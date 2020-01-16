@@ -542,6 +542,7 @@ function ops.histogram(x, y)
 
 	n.process = histogramProcess
 	n.data.histogram = data:new(256, 1, 4):allocHost()
+	n.data.histogram:hostWritten()
 	n.compute = true
 	require "ui.graph".histogram(n)
 	n:setPos(x, y)
