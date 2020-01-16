@@ -165,6 +165,7 @@ overlayStats:addElem("addNode", 2, "Minimum", {ops, "stat", "minimum"})
 overlayStats:addElem("addNode", 3, "Mean", {ops, "stat", "mean"})
 overlayStats:addElem("addNode", 4, "SSD", {ops, "stat", "SSD"})
 overlayStats:addElem("addNode", 5, "SAD", {ops, "stat", "SAD"})
+overlayStats:addElem("addNode", 6, "Random", {ops, "random"})
 
 
 

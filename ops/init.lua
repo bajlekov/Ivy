@@ -37,6 +37,7 @@ t.register(ops, "bilateral")
 t.register(ops, "domainTransform")
 t.register(ops, "split_lr")
 t.register(ops, "split_ud")
+t.register(ops, "random")
 
 t.imageShapeSet(1, 1, 1)
 
