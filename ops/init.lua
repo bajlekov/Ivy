@@ -623,14 +623,14 @@ local function previewProcess(self)
 	local i = t.inputSourceBlack(self, 0)
 	local w, h = i:shape()
 
-	h = h==1 and 2 or math.floor(h / w * 150)
+	h = h==1 and 2 or math.max(math.floor(h / w * 150), 50)
 	if self.data.preview.y ~= h then
+		require "thread".keepData(self.data.preview)
 		self.data.preview = require "ui.image":new(150, h)
 		self.graph.h = h
 	end
 
-	local p = self.data.preview -- pre-allocated
-	thread.ops.preview({i, p}, self)
+	thread.ops.preview({i, self.data.preview}, self)
 end
 
 function ops.preview(x, y)
@@ -639,7 +639,7 @@ function ops.preview(x, y)
 	n.process = previewProcess
 	require "ui.graph".preview(n)
 	local w, h = t.imageShape()
-	h = math.floor(h / w * 150)
+	h = h==1 and 2 or math.max(math.floor(h / w * 150), 50)
 	n.data.preview = require "ui.image":new(150, h)
 	n.graph.h = h
 	n.compute = true
