@@ -215,8 +215,8 @@ function data:allocHost(transfer)
   self:lock()
   if self.buffer[0].dataHost==NULL then
     assert(self.buffer[0].strHost==NULL)
-    self.buffer[0].dataHost = ffi.cast("host_float *", ffi.C.malloc(ffi.sizeof("host_float") * self.x * self.y * self.z + ffi.alignof("host_float")))
-    self.buffer[0].strHost = ffi.cast("host_int *", ffi.C.malloc(ffi.sizeof("host_int") * 6 + ffi.alignof("host_int")))
+    self.buffer[0].dataHost = ffi.cast("host_float *", ffi.C.malloc(ffi.sizeof("host_float") * self.x * self.y * self.z))
+    self.buffer[0].strHost = ffi.cast("host_int *", ffi.C.malloc(ffi.sizeof("host_int") * 6))
 		self.buffer[0].strHost[0] = self.x
 		self.buffer[0].strHost[1] = self.y
 		self.buffer[0].strHost[2] = self.z
@@ -238,8 +238,8 @@ function data:allocDev(transfer)
 	self:lock()
   if self.buffer[0].dataDev==NULL then
     assert(self.buffer[0].strDev==NULL)
-    self.buffer[0].dataDev = ffi.gc(devContext:create_buffer(ffi.sizeof("cl_float") * self.x * self.y * self.z + ffi.alignof("cl_float")), nil)
-    self.buffer[0].strDev = ffi.gc(devContext:create_buffer(ffi.sizeof("cl_int") * 6  + ffi.alignof("cl_int")), nil)
+    self.buffer[0].dataDev = ffi.gc(devContext:create_buffer(ffi.sizeof("cl_float") * self.x * self.y * self.z), nil)
+    self.buffer[0].strDev = ffi.gc(devContext:create_buffer(ffi.sizeof("cl_int") * 6), nil)
     strDev[0] = self.x
     strDev[1] = self.y
     strDev[2] = self.z
