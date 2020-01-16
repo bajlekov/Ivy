@@ -572,6 +572,7 @@ function love.draw()
 			lc[(i - 1) * 2 + 1] = x + w / 255 * i
 			lc[(i - 1) * 2 + 2] = y + h * l
 		end
+    hist:unlock()
 
 		local x = histPanel.x + 1
 		local y = histPanel.y + histPanel.h
@@ -628,8 +629,6 @@ function love.draw()
 			love.graphics.setColor(style.gray9)
 			love.graphics.line(lc)
 		end
-
-    hist:unlock()
   end
 
 	require "ui.widget".drawCursor()
