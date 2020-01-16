@@ -65,6 +65,9 @@ local function pushImageData(data)
 	table.insert(keepData, data)
 	dataCh:push(data:toTable())
 end
+function threadModule.keepData(data)
+  table.insert(keepData, data)
+end
 function threadModule.freeData()
 	keepData = {}
 	collectgarbage("collect")
