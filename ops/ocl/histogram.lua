@@ -85,8 +85,10 @@ local function execute()
     H:allocDev()
 		proc:executeKernel("clearHist", {256, 1, 4}, {H})
 		proc:executeKernel("histogram", {x, y}, {I, H})
+    H:lock()
     H:devWritten()
     H:syncHost(true)
+    H:unlock()
     H:freeDev()
 	end
 end
