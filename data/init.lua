@@ -306,6 +306,7 @@ function data:sync(blocking)
 end
 
 function data:syncHost(blocking)
+  if blocking==nil then blocking = true end
   self:lock()
   self:allocHost()
   if self.buffer[0].dirtyHost==1 then
@@ -319,6 +320,7 @@ function data:syncHost(blocking)
 end
 
 function data:forceSyncHost(blocking)
+  if blocking==nil then blocking = true end
   self:lock()
   assert(self.buffer[0].dataDev~=NULL)
   assert(self.buffer[0].dirtyDev==0)
