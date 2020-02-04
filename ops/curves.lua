@@ -43,7 +43,7 @@ return function(ops)
 		self.procType = "dev"
 		local i, c, o
 		i = t.inputSourceBlack(self, 0)
-		c = self.data.curve:toDevice()
+		c = self.data.curve:hostWritten():syncDev()
 		o = t.autoOutput(self, 0, i:shape())
 		thread.ops.curveLL({i, c, o}, self)
 	end
@@ -64,7 +64,7 @@ return function(ops)
 		self.procType = "dev"
 		local i, c, o
 		i = t.inputSourceBlack(self, 0)
-		c = self.data.curve:toDevice()
+		c = self.data.curve:hostWritten():syncDev()
 		o = t.autoOutput(self, 0, i:shape())
 		thread.ops.curveLC({i, c, o}, self)
 	end
@@ -85,7 +85,7 @@ return function(ops)
 		self.procType = "dev"
 		local i, c, o
 		i = t.inputSourceBlack(self, 0)
-		c = self.data.curve:toDevice()
+		c = self.data.curve:hostWritten():syncDev()
 		o = t.autoOutput(self, 0, i:shape())
 		thread.ops.curveLH({i, c, o}, self)
 	end
@@ -107,7 +107,7 @@ return function(ops)
 		self.procType = "dev"
 		local i, c, o
 		i = t.inputSourceBlack(self, 0)
-		c = self.data.curve:toDevice()
+		c = self.data.curve:hostWritten():syncDev()
 		o = t.autoOutput(self, 0, i:shape())
 		thread.ops.curveCL({i, c, o}, self)
 	end
@@ -128,7 +128,7 @@ return function(ops)
 		self.procType = "dev"
 		local i, c, o
 		i = t.inputSourceBlack(self, 0)
-		c = self.data.curve:toDevice()
+		c = self.data.curve:hostWritten():syncDev()
 		o = t.autoOutput(self, 0, i:shape())
 		thread.ops.curveCC({i, c, o}, self)
 	end
@@ -149,7 +149,7 @@ return function(ops)
 		self.procType = "dev"
 		local i, c, o
 		i = t.inputSourceBlack(self, 0)
-		c = self.data.curve:toDevice()
+		c = self.data.curve:hostWritten():syncDev()
 		o = t.autoOutput(self, 0, i:shape())
 		thread.ops.curveCH({i, c, o}, self)
 	end
@@ -171,7 +171,7 @@ return function(ops)
 		self.procType = "dev"
 		local i, c, o
 		i = t.inputSourceBlack(self, 0)
-		c = self.data.curve:toDevice()
+		c = self.data.curve:hostWritten():syncDev()
 		o = t.autoOutput(self, 0, i:shape())
 		thread.ops.curveHL({i, c, o}, self)
 	end
@@ -192,7 +192,7 @@ return function(ops)
 		self.procType = "dev"
 		local i, c, o
 		i = t.inputSourceBlack(self, 0)
-		c = self.data.curve:toDevice()
+		c = self.data.curve:hostWritten():syncDev()
 		o = t.autoOutput(self, 0, i:shape())
 		thread.ops.curveHC({i, c, o}, self)
 	end
@@ -213,7 +213,7 @@ return function(ops)
 		self.procType = "dev"
 		local i, c, o
 		i = t.inputSourceBlack(self, 0)
-		c = self.data.curve:toDevice()
+		c = self.data.curve:hostWritten():syncDev()
 		o = t.autoOutput(self, 0, i:shape())
 		thread.ops.curveHH({i, c, o}, self)
 	end
@@ -235,7 +235,7 @@ return function(ops)
 		self.procType = "dev"
 		local i, c, r, o
 		i = t.inputSourceBlack(self, 0)
-		c = self.data.curve:toDevice()
+		c = self.data.curve:hostWritten():syncDev()
 		o = t.autoOutput(self, 0, i:shape())
 		thread.ops.curveGenericMap({i, c, o}, self)
 	end
@@ -256,7 +256,7 @@ return function(ops)
 		local i, d, c, r, o
 		i = t.inputSourceBlack(self, 0)
 		d = t.inputSourceBlack(self, 1)
-		c = self.data.curve:toDevice()
+		c = self.data.curve:hostWritten():syncDev()
 		o = t.autoOutput(self, 0, i:shape())
 		thread.ops.curveGenericOffset({i, d, c, o}, self)
 	end
@@ -278,7 +278,7 @@ return function(ops)
 		local i, d, c, r, o
 		i = t.inputSourceBlack(self, 0)
 		d = t.inputSourceBlack(self, 1)
-		c = self.data.curve:toDevice()
+		c = self.data.curve:hostWritten():syncDev()
 		o = t.autoOutput(self, 0, i:shape())
 		thread.ops.curveGenericModulate({i, d, c, o}, self)
 	end
@@ -302,7 +302,7 @@ return function(ops)
 		local i, c, p, o
 		i = t.inputSourceBlack(self, 0)
 		p = t.plainParam(self, 1)
-		c = self.data.curve:toDevice()
+		c = self.data.curve:hostWritten():syncDev()
 		local x, y, z = i:shape()
 		o = t.autoOutput(self, 0, x, y, 1)
 		thread.ops.hueMask({i, c, p, o}, self)
@@ -325,7 +325,7 @@ return function(ops)
 		self.procType = "dev"
 		local i, c, o
 		i = t.inputSourceBlack(self, 0)
-		c = self.data.curve:toDevice()
+		c = self.data.curve:hostWritten():syncDev()
 		local x, y, z = i:shape()
 		o = t.autoOutput(self, 0, x, y, 1)
 		thread.ops.lightnessMask({i, c, o}, self)
@@ -348,7 +348,7 @@ return function(ops)
 		self.procType = "dev"
 		local i, c, o
 		i = t.inputSourceBlack(self, 0)
-		c = self.data.curve:toDevice()
+		c = self.data.curve:hostWritten():syncDev()
 		local x, y, z = i:shape()
 		o = t.autoOutput(self, 0, x, y, 1)
 		thread.ops.chromaMask({i, c, o}, self)
@@ -371,7 +371,7 @@ return function(ops)
 		self.procType = "dev"
 		local i, c, o
 		i = t.inputSourceBlack(self, 0)
-		c = self.data.curve:toDevice()
+		c = self.data.curve:hostWritten():syncDev()
 		local x, y, z = i:shape()
 		o = t.autoOutput(self, 0, x, y, 1)
 		thread.ops.blueYellowMask({i, c, o}, self)
@@ -394,7 +394,7 @@ return function(ops)
 		self.procType = "dev"
 		local i, c, o
 		i = t.inputSourceBlack(self, 0)
-		c = self.data.curve:toDevice()
+		c = self.data.curve:hostWritten():syncDev()
 		local x, y, z = i:shape()
 		o = t.autoOutput(self, 0, x, y, 1)
 		thread.ops.greenRedMask({i, c, o}, self)
@@ -421,7 +421,7 @@ return function(ops)
 		i = t.inputSourceBlack(self, 0)
 		c = self.data.curve
 		a = t.plainParam(self, 1)
-		c:toDevice()
+		c:hostWritten():syncDev()
 		o = t.autoOutput(self, 0, i:shape())
 		thread.ops.curveL__({i, c, a, o}, self)
 	end
@@ -443,7 +443,7 @@ return function(ops)
 		local i, c, o
 		i = t.inputSourceBlack(self, 0)
 		c = self.data.curve
-		c:toDevice()
+		c:hostWritten():syncDev()
 		o = t.autoOutput(self, 0, i:shape())
 		thread.ops.curveY({i, c, o}, self)
 	end
@@ -464,7 +464,7 @@ return function(ops)
 		local i, c, o
 		i = t.inputSourceBlack(self, 0)
 		c = self.data.curve
-		c:toDevice()
+		c:hostWritten():syncDev()
 		o = t.autoOutput(self, 0, i:shape())
 		thread.ops.curveRGB({i, c, o}, self)
 	end

@@ -44,7 +44,9 @@ end
 local function execute()
 	local P, S, R, C = proc:getAllBuffers(4)
 	proc:executeKernel("lightnessAdjust", {1, 1, 256}, {P, S, R, C})
-	C:toHost(true)
+	C:lock()
+	C:devWritten():syncHost()
+	C:unlock()
 end
 
 local function init(d, c, q)
