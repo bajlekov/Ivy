@@ -153,6 +153,7 @@ overlayColor:addElem("addNode", 5, "Shadows", {ops, "color_shadows"})
 overlayColor:addElem("addNode", 6, "Midtones", {ops, "color_midtones"})
 overlayColor:addElem("addNode", 7, "Highlights", {ops, "color_highlights"})
 overlayColor:addElem("menu", 8, "Looks", overlayCLUT)
+overlayColor:addElem("addNode", 9, "Color Transfer", {ops, "colorTransfer"})
 
 local overlayMath = Overlay:new("Math:")
 overlayMath:addElem("addNode", 2, "Value", {ops, "math", "value"})
