@@ -25,6 +25,8 @@ ffi.cdef[[
   int SDL_LockMutex(SDL_mutex * mutex);
   int SDL_UnlockMutex(SDL_mutex * mutex);
   void SDL_DestroyMutex(SDL_mutex * mutex);
+
+  const char* SDL_GetError(void);
 ]]
 
 local SDL
@@ -47,11 +49,11 @@ function mutex:new(ptr)
 end
 
 function mutex:lock()
-  assert(SDL.SDL_LockMutex(self.mutex)==0)
+  assert(SDL.SDL_LockMutex(self.mutex)==0, ffi.string(SDL.SDL_GetError()))
 end
 
 function mutex:unlock()
-  assert(SDL.SDL_UnlockMutex(self.mutex)==0)
+  assert(SDL.SDL_UnlockMutex(self.mutex)==0, ffi.string(SDL.SDL_GetError()))
 end
 
 function mutex:ptr()
