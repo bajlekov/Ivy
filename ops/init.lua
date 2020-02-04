@@ -380,7 +380,8 @@ do
 				p:set(0, 0, 8, self.elem[8].value)
 				p:set(0, 0, 9, alt and ox or cx)
 				p:set(0, 0, 10, alt and oy or cy)
-				p:toDevice(true)
+				p:hostWritten()
+				p:syncDev()
 
 				thread.ops.paintSmart({link.data, i, p}, self)
 			end
@@ -392,7 +393,7 @@ do
 
 		do
 			local sx, sy = t.imageShape()
-			local mask = data:new(sx, sy, 1):toDevice()
+			local mask = data:new(sx, sy, 1)
 			pool.resize(sx, sy)
 			n.mask = pool.add(mask)
 		end
