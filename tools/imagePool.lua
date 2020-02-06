@@ -47,6 +47,7 @@ function pool.resize(x, y) -- resize full image
 
 		for k, image in pairs(pool.images) do
 			local new = data:new(x, y, image.full.z)
+			thread.ops.copy({data.zero, new}, "dev")
 			thread.ops.paste({image.full, new, offset}, "dev")
 			image.full = new
 		end
