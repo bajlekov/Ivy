@@ -22,15 +22,21 @@ kernel levels_RGB(I, Ibp, Iwp, G, Obp, Owp, O)
   const x = get_global_id(0)
   const y = get_global_id(1)
 
+  var ibp = YtoL(Ibp[x, y])
+  var iwp = YtoL(Iwp[x, y])
+
+  var obp = YtoL(Obp[x, y])
+  var owp = YtoL(Owp[x, y])
+
 	var v = I[x, y]
-  v = v - Ibp[x, y]
-  v = v / (Iwp[x, y] - Ibp[x, y])
+  v = v - ibp
+  v = v / (iwp - ibp)
 
   v = max(v, 0.0) -- gamma function not defined for negative input
   v = v^(log(G[x, y])/log(0.5))
 
-  v = v * (Owp[x, y] - Obp[x, y])
-  v = v + Obp[x, y]
+  v = v * (owp - obp)
+  v = v + obp
 
   O[x, y] = v
 end
