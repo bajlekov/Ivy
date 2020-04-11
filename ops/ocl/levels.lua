@@ -22,11 +22,11 @@ kernel levels_RGB(I, Ibp, Iwp, G, Obp, Owp, O)
   const x = get_global_id(0)
   const y = get_global_id(1)
 
-  var ibp = YtoL(Ibp[x, y])
-  var iwp = YtoL(Iwp[x, y])
+  var ibp = LtoY(Ibp[x, y])
+  var iwp = LtoY(Iwp[x, y])
 
-  var obp = YtoL(Obp[x, y])
-  var owp = YtoL(Owp[x, y])
+  var obp = LtoY(Obp[x, y])
+  var owp = LtoY(Owp[x, y])
 
 	var v = I[x, y]
   v = v - ibp
