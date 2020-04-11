@@ -414,44 +414,22 @@ return function(ops)
 
 
 
-
-	local function curveL__Process(self)
-		self.procType = "dev"
-		local i, c, a, o
-		i = t.inputSourceBlack(self, 0)
-		c = self.data.curve
-		a = t.plainParam(self, 1)
-		c:hostWritten():syncDev()
-		o = t.autoOutput(self, 0, i:shape())
-		thread.ops.curveL__({i, c, a, o}, self)
-	end
-
-	function ops.curveL__(x, y)
-		local n = node:new("Curve L")
-		n:addPortIn(0, "LAB")
-		n:addPortOut(0, "LAB")
-		n:addElem("bool", 1, "Preserve Saturation", true)
-		n.process = curveL__Process
-		n.data.curve = data:new(256, 1, 1)
-		require "ui.graph".curve(n)
-		n:setPos(x, y)
-		return n
-	end
-
 	local function curveYProcess(self)
 		self.procType = "dev"
-		local i, c, o
+		local i, c, l, o
 		i = t.inputSourceBlack(self, 0)
 		c = self.data.curve
 		c:hostWritten():syncDev()
+		l = t.plainParam(self, 1)
 		o = t.autoOutput(self, 0, i:shape())
-		thread.ops.curveY({i, c, o}, self)
+		thread.ops.curveY({i, c, l, o}, self)
 	end
 
 	function ops.curveY(x, y)
 		local n = node:new("Curve Y")
 		n:addPortIn(0, "XYZ")
 		n:addPortOut(0, "XYZ")
+		n:addElem("bool", 1, "Perceptual", true)
 		n.process = curveYProcess
 		n.data.curve = data:new(256, 1, 1)
 		require "ui.graph".curve(n)

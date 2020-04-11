@@ -18,12 +18,15 @@
 local proc = require "lib.opencl.process.ivy".new()
 
 local source = [[
-kernel curveY(I, C, O)
+kernel curveY(I, C, L, O)
   const x = get_global_id(0)
   const y = get_global_id(1)
 
   var i = I[x, y]
-  var j = YtoL(clamp(i.y, 0.0, 1.0))
+  var j = clamp(i.y, 0.0, 1.0)
+  if L[0]>0.5 then
+    j = YtoL(j)
+  end
 
   var lowIdx = clamp(int(floor(j*255)), 0, 255)
 	var highIdx = clamp(int(ceil(j*255)), 0, 255)
@@ -38,15 +41,19 @@ kernel curveY(I, C, O)
     factor = j*255.0-lowIdx
   end
 
-  i = i * LtoY(mix(lowVal, highVal, factor)) / i.y
+  if L[0]>0.5 then
+    i = i * LtoY(mix(lowVal, highVal, factor)) / i.y
+  else
+    i = i * mix(lowVal, highVal, factor) / i.y
+  end
 
   O[x, y] = i
 end
 ]]
 
 local function execute()
-  local I, C, O = proc:getAllBuffers(3)
-	proc:executeKernel("curveY", proc:size2D(O), {I, C, O})
+  local I, C, L, O = proc:getAllBuffers(4)
+	proc:executeKernel("curveY", proc:size2D(O), {I, C, L, O})
 end
 
 local function init(d, c, q)
