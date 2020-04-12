@@ -948,7 +948,7 @@ local function genClut(lut)
 		local n = node:new(lut)
 
 		require "ui.notice".blocking("Loading look: "..lut)
-		n.data.lut = require("io.native").read("looks/"..lut..".png"):toDevice(true)
+		n.data.lut = require("io.native").read("looks/"..lut..".png"):hostWritten():syncDev()
 
 		n:addPortIn(0, "LRGB"):addPortOut(0, "LRGB")
 		n:addPortIn(1, "Y"):addElem("float", 1, "Mix", 0, 2, 1)
