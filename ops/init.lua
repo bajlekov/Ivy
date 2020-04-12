@@ -394,6 +394,7 @@ do
 		do
 			local sx, sy = t.imageShape()
 			local mask = data:new(sx, sy, 1)
+			thread.ops.copy({data.zero, mask}, "dev")
 			pool.resize(sx, sy)
 			n.mask = pool.add(mask)
 		end
