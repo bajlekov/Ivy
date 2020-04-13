@@ -1665,7 +1665,7 @@ local function processValue(self)
 	local o = t.autoOutput(self, 0, 1, 1, 1)
 	local v = tonumber(self.elem[1].value)
 	o:set(0, 0, 0, v)
-	o:toDevice()
+	o:hostWritten():syncDev()
 end
 
 ops.math.value = function(x, y)
