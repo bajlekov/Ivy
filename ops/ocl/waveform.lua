@@ -56,8 +56,7 @@ kernel scaleWaveform(C, S, W, L, I)
   const x = get_global_id(0)
 	const y = get_global_id(1)
 
-	var s = S[0]
-	s = s*4096/(I.x*I.y)
+	var s = S[0]*4096/(I.x*I.y)
 
 	if L[0]>0.5 then
 		W[x, W.y-1-y] = RGBA(C[x, y, 0].int*s, 1.0)
@@ -70,11 +69,8 @@ end
 local function execute()
 	local I, W, S, L = proc:getAllBuffers(4)
 
-	local x = W.x
-	local y = W.y
-
 	-- allocate temporary count buffer
-	local C = data:new(x, y, 4)
+	local C = data:new(W.x, W.y, 3)
   W:allocDev()
   C:allocDev()
 
