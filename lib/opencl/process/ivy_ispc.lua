@@ -83,7 +83,7 @@ do
 	function process:getBuffer()
 		local buf = dataCh:demand()
 		assert(type(buf) == "table", buf)
-		return data.fromChTable(buf)
+		return data:fromTable(buf)
 	end
 
 	function process:buffersReady()
@@ -197,9 +197,9 @@ local function args(buffers)
 	local args = {}
 	for k, v in ipairs(buffers) do
 		if type(v)=="table" then
-			assert(type(v.data)=="cdata")
-			table.insert(args, v.data)
-			table.insert(args, v.str)
+			assert(type(v.buffer[0].dataHost)=="cdata")
+			table.insert(args, v.buffer[0].dataHost)
+			table.insert(args, v.buffer[0].strHost)
 		else
 			assert(type(v)=="cdata")
 			assert(ffi.istype(v, i32) or ffi.istype(v, f32))
