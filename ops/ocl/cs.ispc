@@ -521,18 +521,20 @@ inline float<3> clamp(float<3> v, float l, float h) {
 }
 
 inline float pown(float a, int b) {
-  if (b<0) return 1.0/pown(a, -b);
-  else if (b==0) return 1;
-  else if (b==1) return a;
-  else if (b==2) return a*a;
-  else if (b==3) return a*a*a;
-  else if (b==4) return a*a*a*a;
-  else if (a>0) return pow(a, b);
-  else {
-    float p = a;
-    for (int i = 1; i<b; i++) p*= a;
-    return p;
-  }
+  if (a>=0)
+    return pow(a, b);
+
+  if (b<0)
+    return 1.0/pown(a, -b);
+
+  if (b % 2 == 0)
+    return pow(abs(a), b);
+  else
+    return pow(a, b);
+}
+
+inline float<3> pown(float<3> a, int b) {
+  return vec(pown(a.x, b), pown(a.y, b), pown(a.z, b));
 }
 
 #endif
