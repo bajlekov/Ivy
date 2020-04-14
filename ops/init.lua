@@ -541,6 +541,29 @@ function ops.localLaplacian(x, y)
 	return n
 end
 
+local function watershedProcess(self)
+	self.procType = "dev"
+	local i = t.inputSourceWhite(self, 0)
+	local x, y = i:shape()
+	local m1 = t.inputSourceBlack(self, 1)
+	local m2 = t.inputSourceBlack(self, 2)
+	local o = t.autoOutput(self, 0, x, y, 1)
+	local hq = t.plainParam(self, 3)
+
+	thread.ops.watershed({i, m1, m2, o, hq}, self)
+end
+
+function ops.watershed(x, y)
+	local n = node:new("Watershed")
+	n:addPortIn(0, "LAB"):addPortOut(0, "Y")
+	n:addPortIn(1, "Y"):addElem("text", 1, "Mask A")
+	n:addPortIn(2, "Y"):addElem("text", 2, "Mask B")
+	n:addElem("bool", 3, "HQ", false)
+	n.process = watershedProcess
+	n:setPos(x, y)
+	return n
+end
+
 
 
 local function histogramProcess(self)
@@ -1658,7 +1681,7 @@ local function processValue(self)
 	local o = t.autoOutput(self, 0, 1, 1, 1)
 	local v = tonumber(self.elem[1].value)
 	o:set(0, 0, 0, v)
-	o:hostWritten():syncDev()
+	o:syncDev()
 end
 
 ops.math.value = function(x, y)
