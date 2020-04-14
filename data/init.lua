@@ -43,45 +43,38 @@ function data.initDev(c, q)
   data.oneCS.SRGB:set(0, 0, 0, 1)
   data.oneCS.SRGB:set(0, 0, 1, 1)
   data.oneCS.SRGB:set(0, 0, 2, 1)
-  data.oneCS.SRGB:hostWritten()
   data.oneCS.SRGB:syncDev()
   data.oneCS.SRGB.cs = "SRGB"
   data.oneCS.LRGB = data:new(1, 1, 3)
   data.oneCS.LRGB:set(0, 0, 0, 1)
   data.oneCS.LRGB:set(0, 0, 1, 1)
   data.oneCS.LRGB:set(0, 0, 2, 1)
-  data.oneCS.LRGB:hostWritten()
   data.oneCS.LRGB:syncDev()
   data.oneCS.LRGB.cs = "LRGB"
   data.oneCS.XYZ = data:new(1, 1, 3)
   data.oneCS.XYZ:set(0, 0, 0, 0.95047)
   data.oneCS.XYZ:set(0, 0, 1, 1)
   data.oneCS.XYZ:set(0, 0, 2, 1.08883)
-  data.oneCS.XYZ:hostWritten()
   data.oneCS.XYZ:syncDev()
   data.oneCS.XYZ.cs = "XYZ"
   data.oneCS.LAB = data:new(1, 1, 3)
   data.oneCS.LAB:set(0, 0, 0, 1)
   data.oneCS.LAB:set(0, 0, 1, 0)
   data.oneCS.LAB:set(0, 0, 2, 0)
-  data.oneCS.LAB:hostWritten()
   data.oneCS.LAB:syncDev()
   data.oneCS.LAB.cs = "LAB"
   data.oneCS.LCH = data:new(1, 1, 3)
   data.oneCS.LCH:set(0, 0, 0, 1)
   data.oneCS.LCH:set(0, 0, 1, 0)
   data.oneCS.LCH:set(0, 0, 2, 0)
-  data.oneCS.LCH:hostWritten()
   data.oneCS.LCH:syncDev()
   data.oneCS.LCH.cs = "LCH"
   data.oneCS.Y = data:new(1, 1, 1)
   data.oneCS.Y:set(0, 0, 0, 1)
-  data.oneCS.Y:hostWritten()
   data.oneCS.Y:syncDev()
   data.oneCS.Y.cs = "Y"
   data.oneCS.L = data:new(1, 1, 1)
   data.oneCS.L:set(0, 0, 0, 1)
-  data.oneCS.L:hostWritten()
   data.oneCS.L:syncDev()
   data.oneCS.L.cs = "L"
 
@@ -89,45 +82,38 @@ function data.initDev(c, q)
   data.zeroCS.SRGB:set(0, 0, 0, 0)
   data.zeroCS.SRGB:set(0, 0, 1, 0)
   data.zeroCS.SRGB:set(0, 0, 2, 0)
-  data.zeroCS.SRGB:hostWritten()
   data.zeroCS.SRGB:syncDev()
   data.zeroCS.SRGB.cs = "SRGB"
   data.zeroCS.LRGB = data:new(1, 1, 3)
   data.zeroCS.LRGB:set(0, 0, 0, 0)
   data.zeroCS.LRGB:set(0, 0, 1, 0)
   data.zeroCS.LRGB:set(0, 0, 2, 0)
-  data.zeroCS.LRGB:hostWritten()
   data.zeroCS.LRGB:syncDev()
   data.zeroCS.LRGB.cs = "LRGB"
   data.zeroCS.XYZ = data:new(1, 1, 3)
   data.zeroCS.XYZ:set(0, 0, 0, 0)
   data.zeroCS.XYZ:set(0, 0, 1, 0)
   data.zeroCS.XYZ:set(0, 0, 2, 0)
-  data.zeroCS.XYZ:hostWritten()
   data.zeroCS.XYZ:syncDev()
   data.zeroCS.XYZ.cs = "XYZ"
   data.zeroCS.LAB = data:new(1, 1, 3)
   data.zeroCS.LAB:set(0, 0, 0, 0)
   data.zeroCS.LAB:set(0, 0, 1, 0)
   data.zeroCS.LAB:set(0, 0, 2, 0)
-  data.zeroCS.LAB:hostWritten()
   data.zeroCS.LAB:syncDev()
   data.zeroCS.LAB.cs = "LAB"
   data.zeroCS.LCH = data:new(1, 1, 3)
   data.zeroCS.LCH:set(0, 0, 0, 0)
   data.zeroCS.LCH:set(0, 0, 1, 0)
   data.zeroCS.LCH:set(0, 0, 2, 0)
-  data.zeroCS.LCH:hostWritten()
   data.zeroCS.LCH:syncDev()
   data.zeroCS.LCH.cs = "LCH"
   data.zeroCS.Y = data:new(1, 1, 1)
   data.zeroCS.Y:set(0, 0, 0, 0)
-  data.zeroCS.Y:hostWritten()
   data.zeroCS.Y:syncDev()
   data.zeroCS.Y.cs = "Y"
   data.zeroCS.L = data:new(1, 1, 1)
   data.zeroCS.L:set(0, 0, 0, 0)
-  data.zeroCS.L:hostWritten()
   data.zeroCS.L:syncDev()
   data.zeroCS.L.cs = "L"
 
@@ -490,6 +476,7 @@ function data:set(x, y, z, v)
     return
   end
 	self.buffer[0].dataHost[x*self.sx + y*self.sy + z*self.sz] = v
+  self:hostWritten()
 end
 
 

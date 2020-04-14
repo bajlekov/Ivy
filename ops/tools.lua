@@ -76,7 +76,6 @@ function tools.plainParam(self, elemIdx)
 	data.cs = "Y"
 	self.data[elemIdx] = data
 	data:set(0, 0, 0, self.elem[elemIdx].value)
-	data:hostWritten()
 	return self.procType == "dev" and data:syncDev() or data
 end
 

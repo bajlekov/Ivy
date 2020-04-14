@@ -64,7 +64,6 @@ return function(ops)
 			if update then
 				p:set(0, 0, 0, ox)
 				p:set(0, 0, 1, oy)
-				p:hostWritten()
 				p:syncDev()
 				thread.ops.colorSample({i, p, s}, self)
 			end
@@ -76,7 +75,6 @@ return function(ops)
 				p:set(0, 0, 2, dx)
 				p:set(0, 0, 3, dy)
 				p:set(0, 0, 4, (ctrl and 1) or (alt and 2) or 0)
-				p:hostWritten()
 				p:syncDev()
 				thread.ops[v[1]]({p, s, r, c}, self) -- allow for tweak (+), smooth (alt) and reset (ctrl)
 			end
@@ -95,7 +93,6 @@ return function(ops)
 
 			n.data.curve = data:new(1, 1, 256)
 			for i = 0, 255 do n.data.curve:set(0, 0, i, 0.5) end
-			n.data.curve:hostWritten()
 			n.data.curve:syncDev()
 
 			require "ui.graph".curveView(n)

@@ -38,7 +38,6 @@ local offset = data:new(1, 1, 3)
 offset:set(0, 0, 0, 0)
 offset:set(0, 0, 1, 0)
 offset:set(0, 0, 2, 1) -- no scaling
-offset:hostWritten()
 offset:syncDev()
 function pool.resize(x, y) -- resize full image
 	if not (pool.sx==x and pool.sy==y) then
@@ -70,7 +69,6 @@ offset:set(0, 0, 2, 1) -- no scaling!
 local function pasteView(image)
 	offset:set(0, 0, 0, image.x)
 	offset:set(0, 0, 1, image.y)
-	offset:hostWritten()
 	offset:syncDev()
 	thread.ops.paste({image.view, image.full, offset}, "dev")
 end
@@ -80,7 +78,6 @@ offset:set(0, 0, 2, 1) -- no scaling!
 local function cropView(image)
 	offset:set(0, 0, 0, image.x)
 	offset:set(0, 0, 1, image.y)
-	offset:hostWritten()
 	offset:syncDev()
 	thread.ops.crop({image.full, image.view, offset}, "dev")
 end
@@ -131,7 +128,6 @@ local offset = data:new(1, 1, 3)
 offset:set(0, 0, 0, 0)
 offset:set(0, 0, 1, 0)
 offset:set(0, 0, 2, 1) -- no scaling
-offset:hostWritten()
 offset:syncDev()
 function pool.add(fullImage)
 	local new = data:new(pool.sx, pool.sy, fullImage.z)

@@ -74,7 +74,6 @@ local function temperatureProcess(self)
 	p:set(0, 0, 0, Lo / Li)
 	p:set(0, 0, 1, Mo / Mi)
 	p:set(0, 0, 2, So / Si)
-	p:hostWritten()
 	p:syncDev()
 	thread.ops.whitepoint({i, p, o}, self)
 end
@@ -294,7 +293,6 @@ local function processSampleWB(self)
 	local s = t.autoTempBuffer(self, -2, 1, 1, 3) -- [r, g, b]
 	p:set(0, 0, 0, ox)
 	p:set(0, 0, 1, oy)
-	p:hostWritten()
 	p:syncDev()
 
 	if update or self.elem[2].value then
@@ -317,7 +315,6 @@ function ops.sampleWB(x, y)
 	s:set(0, 0, 0, 1)
 	s:set(0, 0, 1, 1)
 	s:set(0, 0, 2, 1)
-	s:hostWritten()
 	s:syncDev()
 
 	n:setPos(x, y)
@@ -380,7 +377,6 @@ do
 				p:set(0, 0, 8, self.elem[8].value)
 				p:set(0, 0, 9, alt and ox or cx)
 				p:set(0, 0, 10, alt and oy or cy)
-				p:hostWritten()
 				p:syncDev()
 
 				thread.ops.paintSmart({link.data, i, p}, self)
@@ -568,7 +564,6 @@ function ops.histogram(x, y)
 
 	n.process = histogramProcess
 	n.data.histogram = data:new(256, 1, 4):allocHost()
-	n.data.histogram:hostWritten()
 	n.compute = true
 	require "ui.graph".histogram(n)
 	n:setPos(x, y)
@@ -948,7 +943,7 @@ local function genClut(lut)
 		local n = node:new(lut)
 
 		require "ui.notice".blocking("Loading look: "..lut)
-		n.data.lut = require("io.native").read("looks/"..lut..".png"):hostWritten():syncDev()
+		n.data.lut = require("io.native").read("looks/"..lut..".png"):syncDev()
 
 		n:addPortIn(0, "LRGB"):addPortOut(0, "LRGB")
 		n:addPortIn(1, "Y"):addElem("float", 1, "Mix", 0, 2, 1)
@@ -1561,7 +1556,6 @@ local function nlmeansProcess(self)
 	local p4 = t.autoTempBuffer(self, 4, 1, 1, 3)
 	p4:set(0, 0, 0, self.elem[7].value)
 	p4:set(0, 0, 1, self.elem[8].value)
-	p4:hostWritten()
 	local kernel = t.autoTempBuffer(self, 5, 1, 1, 15)
 	local sum = 0
 	for i = -7, 7 do
@@ -1569,7 +1563,6 @@ local function nlmeansProcess(self)
 		sum = sum + v
 		kernel:set(0, 0, i+7, v)
 	end
-	kernel:hostWritten()
 	for i = 0, 14 do
 		local v = kernel:get(0, 0, i)
 		v = v / sum

@@ -244,7 +244,6 @@ function love.filedropped(file)
 
 		imageOffset:set(0, 0, 12, s_min)
 	end
-  imageOffset:hostWritten()
 	imageOffset:syncDev()
 
 	pipeline.input.imageData = originalImage:new()
@@ -413,7 +412,6 @@ function love.update()
 			if panels.info.elem[15].value or panels.info.elem[16].value then
 				flags:set(0, 0, 0, panels.info.elem[15].value and 1 or 0)
 				flags:set(0, 0, 1, panels.info.elem[16].value and 1 or 0)
-				flags:hostWritten()
 				thread.ops.cropCorrect({originalImage, pipeline.input.imageData, imageOffset, flags}, "dev")
 			else
 				thread.ops.crop({originalImage, pipeline.input.imageData, imageOffset}, "dev")
@@ -425,7 +423,6 @@ function love.update()
 				flags:set(0, 0, 4, panels.info.elem[19].value and 1 or 0)
 				flags:set(0, 0, 5, panels.info.elem[20].value and 1 or 0)
 				flags:set(0, 0, 6, panels.info.elem[21].value and 1 or 0)
-				flags:hostWritten()
 				thread.ops.RAWtoSRGB({pipeline.input.imageData, RAW_SRGBmatrix, RAW_WBmultipliers, RAW_PREmultipliers, flags}, "dev")
 			end
 
@@ -668,7 +665,6 @@ function widget.imagePan(dx, dy)
 		oy = oy + dy / displayScale
 		imageOffset:set(0, 0, 0, ox)
 		imageOffset:set(0, 0, 1, oy)
-    imageOffset:hostWritten()
 		loadInputImage = true
 	end
 end
@@ -904,7 +900,6 @@ function love.keypressed(key)
 		displayScale = false
 		imageOffset:set(0, 0, 0, 0)
 		imageOffset:set(0, 0, 1, 0)
-    imageOffset:hostWritten()
 	end
 
 	if key == "f11" then
