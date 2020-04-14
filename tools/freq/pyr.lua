@@ -1,5 +1,5 @@
 --[[
-  Copyright (C) 2011-2019 G. Bajlekov
+  Copyright (C) 2011-2020 G. Bajlekov
 
     Ivy is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
