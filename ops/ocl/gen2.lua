@@ -15,7 +15,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ]]
 
-local process = require "lib.opencl.process"
+local process = require "lib.opencl.process.ivy"
 
 local function init(d, c, q, name, filename)
   local proc = process.new()
@@ -24,11 +24,8 @@ local function init(d, c, q, name, filename)
   proc:loadSourceFile(filename)
 
   local function execute()
-    proc:getAllBuffers("in1", "in2", "out")
-		proc.buffers.in1.__write = false
-		proc.buffers.in2.__write = false
-		proc.buffers.out.__read = false
-    proc:executeKernel(name, proc:size3D("out"))
+    local A, B, O = proc:getAllBuffers(3)
+    proc:executeKernel(name, proc:size3D(O), {A, B, O})
   end
 
   return execute

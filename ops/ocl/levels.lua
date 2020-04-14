@@ -15,39 +15,36 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ]]
 
-local proc = require "lib.opencl.process".new()
+local proc = require "lib.opencl.process.ivy".new()
 
 local source = [[
-kernel void levels_RGB(
-  global float *i,
-  global float *bpi,
-  global float *wpi,
-  global float *g,
-  global float *bpo,
-  global float *wpo,
-  global float *o)
-{
-  const int x = get_global_id(0);
-  const int y = get_global_id(1);
+kernel levels_RGB(I, Ibp, Iwp, G, Obp, Owp, O)
+  const x = get_global_id(0)
+  const y = get_global_id(1)
 
-	$$ i.z==3 and "float3" or "float" $$ v = $i[x, y];
-  // calculate f(0) and f'(0)
-  v = v - $bpi[x, y];
-  v = v / ($wpi[x, y]-$bpi[x, y]);
+  var ibp = LtoY(Ibp[x, y])
+  var iwp = LtoY(Iwp[x, y])
 
-  v = max(v, 0.0f); // gamma function not defined for negative input
-  v = pow(v, log($g[x, y])/log(0.5f));
+  var obp = LtoY(Obp[x, y])
+  var owp = LtoY(Owp[x, y])
 
-  v = v * ($wpo[x, y]-$bpo[x, y]);
-  v = v + $bpo[x, y];
+	var v = I[x, y]
+  v = v - ibp
+  v = v / (iwp - ibp)
 
-  $o[x, y] = v;
-}
+  v = max(v, 0.0) -- gamma function not defined for negative input
+  v = v^(log(G[x, y])/log(0.5))
+
+  v = v * (owp - obp)
+  v = v + obp
+
+  O[x, y] = v
+end
 ]]
 
 local function execute()
-	proc:getAllBuffers("i", "bpi", "wpi", "g", "bpo", "wpo", "o")
-	proc:executeKernel("levels_RGB", proc:size2D("o"))
+	local I, Ibp, Iwp, G, Obp, Owp, O = proc:getAllBuffers(7)
+	proc:executeKernel("levels_RGB", proc:size2D(O), {I, Ibp, Iwp, G, Obp, Owp, O})
 end
 
 local function init(d, c, q)

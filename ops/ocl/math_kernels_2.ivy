@@ -1,0 +1,110 @@
+--  Copyright (C) 2011-2019 G. Bajlekov
+--
+--  Ivy is free software: you can redistribute it and/or modify
+--  it under the terms of the GNU General Public License as published by
+--  the Free Software Foundation, either version 3 of the License, or
+--  (at your option) any later version.
+--
+--  Ivy is distributed in the hope that it will be useful,
+--  but WITHOUT ANY WARRANTY without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+--  GNU General Public License for more details.
+--
+--  You should have received a copy of the GNU General Public License
+--  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+kernel ivy_add(A, B, O)
+  const x = get_global_id(0)
+  const y = get_global_id(1)
+  const z = get_global_id(2)
+
+  O[x, y, z] = A[x, y, z] + B[x, y, z]
+end
+
+kernel ivy_sub(A, B, O)
+  const x = get_global_id(0)
+  const y = get_global_id(1)
+  const z = get_global_id(2)
+
+  O[x, y, z] = A[x, y, z] - B[x, y, z]
+end
+
+kernel ivy_mul(A, B, O)
+  const x = get_global_id(0)
+  const y = get_global_id(1)
+  const z = get_global_id(2)
+
+  O[x, y, z] = A[x, y, z] * B[x, y, z]
+end
+
+kernel ivy_div(A, B, O)
+  const x = get_global_id(0)
+  const y = get_global_id(1)
+  const z = get_global_id(2)
+
+  O[x, y, z] = A[x, y, z] / B[x, y, z]
+end
+
+kernel ivy_pow(A, B, O)
+  const x = get_global_id(0)
+  const y = get_global_id(1)
+  const z = get_global_id(2)
+
+  O[x, y, z] = A[x, y, z] ^ B[x, y, z]
+end
+
+kernel ivy_max(A, B, O)
+  const x = get_global_id(0)
+  const y = get_global_id(1)
+  const z = get_global_id(2)
+
+  O[x, y, z] = max(A[x, y, z], B[x, y, z])
+end
+
+kernel ivy_min(A, B, O)
+  const x = get_global_id(0)
+  const y = get_global_id(1)
+  const z = get_global_id(2)
+
+  O[x, y, z] = min(A[x, y, z], B[x, y, z])
+end
+
+kernel ivy_average(A, B, O)
+  const x = get_global_id(0)
+  const y = get_global_id(1)
+  const z = get_global_id(2)
+
+  O[x, y, z] = (A[x, y, z] + B[x, y, z])*0.5
+end
+
+kernel ivy_difference(A, B, O)
+  const x = get_global_id(0)
+  const y = get_global_id(1)
+  const z = get_global_id(2)
+
+  O[x, y, z] = abs(A[x, y, z] - B[x, y, z])
+end
+
+kernel ivy_GT(A, B, O)
+  const x = get_global_id(0)
+  const y = get_global_id(1)
+  const z = get_global_id(2)
+
+  if A[x, y, z] > B[x, y, z] then
+    O[x, y, z] = 1.0
+  else
+    O[x, y, z] = 0.0
+  end
+end
+
+kernel ivy_LT(A, B, O)
+  const x = get_global_id(0)
+  const y = get_global_id(1)
+  const z = get_global_id(2)
+
+  if A[x, y, z] < B[x, y, z] then
+    O[x, y, z] = 1.0
+  else
+    O[x, y, z] = 0.0
+  end
+end

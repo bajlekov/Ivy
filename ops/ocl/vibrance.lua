@@ -15,29 +15,34 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ]]
 
-local proc = require "lib.opencl.process".new()
+local proc = require "lib.opencl.process.ivy".new()
 
 local source = [[
+kernel vibrance(I, V, O)
+  const x = get_global_id(0)
+  const y = get_global_id(1)
 
-kernel void vibrance(global float *I, global float *V, global float *P, global float *O)
-{
-  const int x = get_global_id(0);
-  const int y = get_global_id(1);
+	var i = I[x, y]
+	var v = V[x, y]
 
-	float3 i = $I[x, y];
-	float v = $V[x, y, 0]*i.x + 1.0f;
+  var Y = LRGBtoY(i)
 
-	i.y = clamp(i.y, 0.0f, 1.0f);
-	float o = (1-v)*pown(i.y, 2) + v*i.y;
-	i.x *= 1.0f - $P[x, y]*(o - i.y)*0.25f;
+  var d = i-Y
+  var m3 = vec(0.0)
+  if d.x<0.0 then m3.x = -d.x/Y else m3.x = d.x/(1.0-Y) end
+  if d.y<0.0 then m3.y = -d.y/Y else m3.y = d.y/(1.0-Y) end
+  if d.z<0.0 then m3.z = -d.z/Y else m3.z = d.z/(1.0-Y) end
+  
+  var m = clamp(max(m3.x, max(m3.y, m3.z)), 0.0001, 1.0) -- greatest multiplier without clipping
+  var mv = (1.0 - v)*m^2 + v*m
 
-  $O[x, y] = (float3)(i.x, o, i.z);
-}
+  O[x, y] = Y + mv/m*d
+end
 ]]
 
 local function execute()
-	proc:getAllBuffers("I", "V", "P", "O")
-	proc:executeKernel("vibrance", proc:size2D("O"))
+	local I, V, O = proc:getAllBuffers(3)
+	proc:executeKernel("vibrance", proc:size2D(O), {I, V, O})
 end
 
 local function init(d, c, q)

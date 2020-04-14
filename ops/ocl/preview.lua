@@ -18,47 +18,30 @@
 local ffi = require "ffi"
 local tools = require "lib.opencl.tools"
 
-local proc = require "lib.opencl.process".new()
+local proc = require "lib.opencl.process.ivy".new()
 
 local source = [[
-kernel void preview(global float *I, global uchar *P) {
-  const int x = get_global_id(0);
-  const int y = get_global_id(1);
+kernel preview(I, P)
+  const x = get_global_id(0)
+  const y = get_global_id(1)
 
-	int xi = floor((float)x/$P.x$*$I.x$);
-	int yi = floor((float)y/$P.y$*$I.y$);
+	var xi = int(floor(float(x)/P.x*I.x))
+	var yi = int(floor(float(y)/P.y*I.y))
 
-	float3 v = $I[xi, yi]SRGB;
+	var v = I[xi, yi].SRGB
 
-	uchar r = (uchar)(clamp(v.x, 0.0f, 1.0f)*255);
-	uchar g = (uchar)(clamp(v.y, 0.0f, 1.0f)*255);
-	uchar b = (uchar)(clamp(v.z, 0.0f, 1.0f)*255);
-
-	const int idx = x*4 + ($P.y$-y-1)*$P.x$*4;
-  P[idx + 0] = r;
-  P[idx + 1] = g;
-  P[idx + 2] = b;
-  P[idx + 3] = 255;
-}
+  P[x, P.y-y-1] = RGBA(v, 1.0)
+end
 ]]
 
 local function execute()
-	proc:getAllBuffers("I", "P")
+	local I, P = proc:getAllBuffers(2)
+  P:allocDev()
 
-	local x = proc.buffers.P.x
-	local y = proc.buffers.P.y
-
-	local previewBuffer = proc.context:create_buffer("write_only", x * y * 4 * ffi.sizeof("cl_uchar"))
-
-	proc.buffers.P.dataOCL = previewBuffer
-	proc:executeKernel("preview", proc:size2D("P"))
-	local event2 = proc.queue:enqueue_read_buffer(proc.buffers.P.dataOCL, true, proc.buffers.P.data)
-
-	proc.context.release_mem_object(previewBuffer)
-
-	if proc.profile() then
-		tools.profile("copy", event2, proc.queue)
-	end
+	proc:executeKernel("preview", proc:size2D(P), {I, P})
+  P:devWritten()
+  P:syncHost(true)
+  P:freeDev()
 end
 
 local function init(d, c, q)

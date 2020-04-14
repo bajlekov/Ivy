@@ -69,10 +69,10 @@ kernel display(I, O, P, H)
   if int(get_local_size(0))==256 then
     const lx = int(get_local_id(0))
 
-    lh[lx, 0] = 0;
-    lh[lx, 1] = 0;
-    lh[lx, 2] = 0;
-    lh[lx, 3] = 0;
+    lh[lx, 0] = 0
+    lh[lx, 1] = 0
+    lh[lx, 2] = 0
+    lh[lx, 3] = 0
     barrier(CLK_LOCAL_MEM_FENCE)
 
     atomic_inc(lh[r, 0].ptr)
@@ -99,20 +99,21 @@ end
 
 local function execute()
 	local I, O, P, H = proc:getAllBuffers(4)
-
-  O.dataOCL = proc.context:create_buffer("write_only", O.x * O.y * ffi.sizeof("cl_float"))
-  O.z = 1
-  O.sx = 1
-  O.sy = O.x
-  O.sz = 1
   O:allocDev()
+  H:allocDev()
 
   proc:setWorkgroupSize({256, 1, 1})
   proc:executeKernel("clearHist", {256, 1, 4}, {H})
   proc:executeKernel("display", proc:size2D(O), {I, O, P, H})
+  O:devWritten()
+  O:syncHost(true)
+  O:freeDev()
 
-  O:freeDev(true)
-  H:toHost(true)
+  H:lock()
+  H:devWritten()
+  H:syncHost(true)
+  H:unlock()
+  H:freeDev()
 end
 
 local function init(d, c, q)

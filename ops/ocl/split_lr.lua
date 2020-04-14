@@ -15,26 +15,31 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ]]
 
-local proc = require "lib.opencl.process".new()
+local proc = require "lib.opencl.process.ivy".new()
 
 local source = [[
-kernel void split(global float *i1, global float *i2, global float *p1, global float *p2, global float *o)
-{
-  const int x = get_global_id(0);
-  const int y = get_global_id(1);
-  const int z = get_global_id(2);
+kernel split(i1, i2, p1, p2, o)
+  const x = get_global_id(0)
+  const y = get_global_id(1)
+  const z = get_global_id(2)
 
-  bool A = (x < $o.x$*p1[0]);
+  var A = x < o.x*p1[0]
 
-  A = (p2[0]<0.5) ? A : !A;
+  if p2[0]<0.5 then
+    A = not A
+  end
 
-  $o[x, y, z] = A ? $i1[x, y, z] : $i2[x, y, z];
-}
+  if A then
+    o[x, y, z] = i1[x, y, z]
+  else
+    o[x, y, z] = i2[x, y, z]
+  end
+end
 ]]
 
 local function execute()
-  proc:getAllBuffers("i1", "i2", "p1", "p2", "o")
-  proc:executeKernel("split", proc:size3D("o"))
+  local i1, i2, p1, p2, o = proc:getAllBuffers(5)
+  proc:executeKernel("split", proc:size3D(o), {i1, i2, p1, p2, o})
 end
 
 local function init(d, c, q)

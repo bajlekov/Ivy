@@ -42,7 +42,7 @@ function format.rgba8(image)
 
 	local buf = ffi.cast("float*", canvasDataPtr)
 
-	local data = data:new(x, y, 3)
+	local data = data:new(x, y, 3):allocHost()
 
 	for i = 0, x - 1 do
 		for j = 0, y - 1 do
@@ -74,8 +74,6 @@ function stb.read(fileName)
 	end
 
 	local status, image = pcall(love.graphics.newImage, fileName) --FIXME: use newImageData directly!
-
-	print(fileName)
 
 	if status then
 		return format[image:getFormat()](image)

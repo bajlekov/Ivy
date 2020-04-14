@@ -206,6 +206,7 @@ function draw.histogram(graph, x, y, w, h)
 	love.graphics.line(x + math.round((w) * 0.75), y + h - 2.5, x + math.round((w) * 0.75), y + 2.5)
 
 	local hist = graph.parent.data.histogram
+	hist:lock()
 
 	local mr = graph.parent.elem[1].frame.elem[1].value and 1 or 0
 	local mg = graph.parent.elem[1].frame.elem[2].value and 1 or 0
@@ -240,6 +241,7 @@ function draw.histogram(graph, x, y, w, h)
 		lc[(i - 1) * 2 + 1] = x + w / 255 * i
 		lc[(i - 1) * 2 + 2] = y + h * l
 	end
+	hist:unlock()
 
 	love.graphics.setLineWidth(4)
 	love.graphics.setColor(0, 0, 0, 0.3)
@@ -336,6 +338,7 @@ function draw.curveView(graph, x, y, w, h)
 	love.graphics.line(x + math.round((w) * 0.75), y + h - 2.5, x + math.round((w) * 0.75), y + 2.5)
 
 	local hist = graph.parent.data.curve
+	hist:lock()
 
 	local a = {}
 
@@ -345,6 +348,7 @@ function draw.curveView(graph, x, y, w, h)
 		a[(i - 1) * 2 + 1] = x + w / 255 * i
 		a[(i - 1) * 2 + 2] = y + h * (1 - v)
 	end
+	hist:unlock()
 
 	love.graphics.setLineWidth(4)
 	love.graphics.setColor(0, 0, 0, 0.3)

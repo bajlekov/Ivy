@@ -15,59 +15,65 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ]]
 
-local proc = require "lib.opencl.process".new()
+local proc = require "lib.opencl.process.ivy".new()
 
 local source = [[
-#include "range.cl"
+const G7 = {0.009033, 0.018476, 0.033851, 0.055555, 0.08167, 0.107545, 0.126854, 0.134032, 0.126854, 0.107545, 0.08167, 0.055555, 0.033851, 0.018476, 0.009033};
 
-constant float G7[15] = {0.009033, 0.018476, 0.033851, 0.055555, 0.08167, 0.107545, 0.126854, 0.134032, 0.126854, 0.107545, 0.08167, 0.055555, 0.033851, 0.018476, 0.009033};
+kernel paintSmart(O, I, P)
+  const x = get_global_id(0)
+  const y = get_global_id(1)
 
-kernel void paintSmart(global float *O, global float *I, global float *P) {
-  const int x = get_global_id(0);
-  const int y = get_global_id(1);
+	var px = P[0] -- brush
+	var py = P[1] -- brush
+	var ps = P[4] -- brush size
 
-	float px = P[0]; // brush x
-	float py = P[1]; // brush y
-	float ps = P[4]; // brush size
+	var ix = px - ps + x -- image x
+	var iy = py - ps + y -- image y
 
-	float ix = px - ps + x; // image x
-	float iy = py - ps + y; // image y
+	if ix<0 or ix>=O.x or iy<0 or iy>=O.y then return end -- clamp to image
 
-	if (ix<0 || ix>=$O.x$ || iy<0 || iy>=$O.y$) return; // clamp to image
+	var mask = 0.0
 
-	float mask;
-	if (P[6]<0.0f) { // negative values disable smart paint
-		mask = 1.0f;
-	} else if (P[8]<0.5f) {
-		float sx = P[9];
-		float sy = P[10];
-		float3 i = $I[ix, iy];
-		float3 s = $I[sx, sy];
-		float d = sqrt(pown(i.x-s.x, 2) + pown(i.y-s.y, 2) + pown(i.z-s.z, 2));
-		mask = range(d, P[6], P[7]);
-	} else {
-		float sx = P[9];
-		float sy = P[10];
-		float d = 0;
-		// collect 15x15 area around sample
-		for (int j=-7; j<8; j++)
-			for (int k=-7; k<8; k++) {
-				float3 i = $I[ix+j, iy+k];
-				float3 s = $I[sx+j, sy+k];
-				d += (pown(i.x-s.x, 2) + pown(i.y-s.y, 2) + pown(i.z-s.z, 2))*G7[j+7]*G7[k+7];
-			}
-		mask = range(sqrt(d), P[6], P[7]);
-	}
+  -- negative values disable smart paint
+	if P[6]<0.0 then
+		mask = 1.0
+	else
+    if P[8]<0.5 then
+		  var sx = P[9]
+		  var sy = P[10]
+		  var i = I[ix, iy]
+		  var s = I[sx, sy]
+		  var d = sqrt( (i.x-s.x)^2 + (i.y-s.y)^2 + (i.z-s.z)^2 )
+      var w = P[6]*P[7]*0.5
+		  mask = range(P[6] - w, w, d)
+	  else
+		  var sx = P[9]
+		  var sy = P[10]
+		  var d = 0.0
+		  -- collect 15x15 area around sample
+		  for j = -7, 7 do
+			  for k = -7, 7 do
+				  var i = I[ix+j, iy+k]
+				  var s = I[sx+j, sy+k]
+				  d = d + ((i.x-s.x)^2 + (i.y-s.y)^2 + (i.z-s.z)^2)*G7[j+7]*G7[k+7]
+			  end
+      end
+      var w = P[6]*P[7]*0.5
+		  mask = range(P[6] - w, w, sqrt(d))
+    end
+  end
 
-	float d = sqrt( pown(x-ps, 2) + pown(y-ps, 2) ); // distance from center
-	float brush = range(d, ps/(1 + P[5]), P[5]);
+	var d = sqrt( (x-ps)^2 + (y-ps)^2 ) -- distance from center
+  var w = P[5]*ps*0.5
+  var brush = range(ps - w, w + 1.0, d)
 
-	float f = mask*brush*P[3];
-	float o = $O[ix, iy];
-	o = o + f*(P[2] - o);
+	var f = mask*brush*P[3]
+	var o = O[ix, iy]
+	o = o + f*(P[2] - o)
 
-	$O[ix, iy] = clamp(o, 0.0f, 1.0f);
-}
+	O[ix, iy] = clamp(o, 0.0, 1.0)
+end
 ]]
 
 --[[
@@ -79,17 +85,15 @@ kernel void paintSmart(global float *O, global float *I, global float *P) {
 	p[5] - brush fall-off
 	p[6] - smart range
 	p[7] - smart range fall-off
-	p[7] - smart patch
+	p[8] - smart patch
 	p[9] - sample x
 	p[10] - sample y
 --]]
 
 local function execute()
-	proc:getAllBuffers("O", "I", "P")
-	proc.buffers.P.__write = false
-	proc.buffers.I.__write = false
-	local ps = math.ceil(proc.buffers.P:get(0, 0, 4)) -- brush size
-	proc:executeKernel("paintSmart", {ps*2+1, ps*2+1})
+	local O, I, P = proc:getAllBuffers(3)
+	local ps = math.ceil(P:get(0, 0, 4)) -- brush size
+	proc:executeKernel("paintSmart", {ps*2+1, ps*2+1}, {O, I, P})
 end
 
 local function init(d, c, q)

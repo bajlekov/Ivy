@@ -94,7 +94,7 @@ do
 		print("vendor  : " .. platform:get_info("vendor"))
 		print("version : " .. platform:get_info("version"))
 		print()
-		local devices = platform:get_devices()
+		local devices = platform:get_devices() or {}
 		for j, device in ipairs(devices) do
 			print("\tplatform: " .. i)
 			print("\tdevice  : " .. j)
@@ -110,11 +110,12 @@ do
 end
 
 local data = require "data"
+local image = require "ui.image"
 local thread = require "thread"
 thread.init(oclPlatform, oclDevice)
 data.initDev(thread.getContext(), thread.getQueue())
+image.initDev(thread.getContext(), thread.getQueue())
 
-local image = require "ui.image"
 local panels = require "ui.panels"
 local overlay = require "ui.overlay"
 local node = require "ui.node"
@@ -156,14 +157,13 @@ local processReady = true
 
 function love.filedropped(file)
 	require "ui.notice".blocking("Loading image: "..(type(file) == "string" and file or file:getFilename()), true)
-	collectgarbage("collect")
 	assert(file, "ERROR: File loading failed")
 
 	originalImage, RAW_SRGBmatrix, RAW_WBmultipliers, RAW_PREmultipliers = require("io."..settings.imageLoader).read(file)
-	originalImage:toDevice(true)
-	if RAW_SRGBmatrix then RAW_SRGBmatrix:toDevice(true) end
-	if RAW_WBmultipliers then RAW_WBmultipliers:toDevice(true) end
-	if RAW_PREmultipliers then RAW_PREmultipliers:toDevice(true) end
+	originalImage:syncDev()
+	if RAW_SRGBmatrix then RAW_SRGBmatrix:syncDev() end
+	if RAW_WBmultipliers then RAW_WBmultipliers:syncDev() end
+	if RAW_PREmultipliers then RAW_PREmultipliers:syncDev() end
 
 	love.window.setTitle("Ivy: "..( type(file) == "string" and file or file:getFilename() ))
 	exifData = require("io.exif").read(file)
@@ -188,7 +188,7 @@ function love.filedropped(file)
 	}
 
 	panels.info.elem[6].right = exifData.ExposureProgram and programModes[tonumber(exifData.ExposureProgram)] or "-"
-	panels.info.elem[7].right = (("%+0.1f"):format(exifData.ExposureCompensation) or " -").." EV"
+	panels.info.elem[7].right = (exifData.ExposureCompensation and ("%+0.1f"):format(exifData.ExposureCompensation) or " -").." EV"
 
 	local shutter = tonumber(exifData.ShutterSpeed)
 	if shutter then
@@ -244,8 +244,7 @@ function love.filedropped(file)
 
 		imageOffset:set(0, 0, 12, s_min)
 	end
-
-	imageOffset:toDevice()
+	imageOffset:syncDev()
 
 	pipeline.input.imageData = originalImage:new()
 	pipeline.output.image = image.new(pipeline.input.imageData)
@@ -388,7 +387,7 @@ function love.update()
 		previewImage = pipeline.output.image:refresh() -- set to display the new output.image next
 
 		if pipeline.output.elem[1].value then
-			hist = pipeline.output.data.histogram:copy()
+			hist = pipeline.output.data.histogram:syncHost(true, true)
 		else
 			hist = false
 		end
@@ -402,18 +401,17 @@ function love.update()
 
 		if loadInputImage then -- load cropped image if not already cached
 			rescaleInputOutput()
-			imageOffset:toDevice()
+			imageOffset:syncDev()
 
 			local pool = require "tools.imagePool"
 			pool.resize(originalImage.x, originalImage.y)
-			pool.crop(imageOffset.data[0], imageOffset.data[1], pipeline.input.imageData.x, pipeline.input.imageData.y)
+			pool.crop(imageOffset:get(0, 0, 0), imageOffset:get(0, 0, 1), pipeline.input.imageData.x, pipeline.input.imageData.y)
 
 			--thread.ops.cropCorrectFisheye({originalImage, input.imageData, imageOffset}, "dev")
 
 			if panels.info.elem[15].value or panels.info.elem[16].value then
 				flags:set(0, 0, 0, panels.info.elem[15].value and 1 or 0)
 				flags:set(0, 0, 1, panels.info.elem[16].value and 1 or 0)
-				flags:toDevice()
 				thread.ops.cropCorrect({originalImage, pipeline.input.imageData, imageOffset, flags}, "dev")
 			else
 				thread.ops.crop({originalImage, pipeline.input.imageData, imageOffset}, "dev")
@@ -425,9 +423,10 @@ function love.update()
 				flags:set(0, 0, 4, panels.info.elem[19].value and 1 or 0)
 				flags:set(0, 0, 5, panels.info.elem[20].value and 1 or 0)
 				flags:set(0, 0, 6, panels.info.elem[21].value and 1 or 0)
-				flags:toDevice()
 				thread.ops.RAWtoSRGB({pipeline.input.imageData, RAW_SRGBmatrix, RAW_WBmultipliers, RAW_PREmultipliers, flags}, "dev")
 			end
+
+      flags:syncDev()
 
 			pipeline.input.imageData.__cpuDirty = true
 			pipeline.input.imageData.__gpuDirty = false
@@ -501,7 +500,6 @@ end
 
 
 local style = require("ui.style")
-local alloc = require("data.alloc")
 
 function love.draw()
 	love.graphics.scale(settings.scaleUI, settings.scaleUI)
@@ -513,10 +511,11 @@ function love.draw()
 	panels.status.leftText = string.format(
 		"UI: %.1ffps | Processing: %.1fms (%s) | Memory: CPU %.1fMB, GPU %.1fMB (Temp: CPU %.1fMB, GPU %.1fMB)",
 		love.timer.getFPS(), procTime * 1000, processor,
-		data.stats.data.cpu_max/1024/1024, data.stats.data.gpu_max/1024/1024,
-		data.stats.thread.cpu_max/1024/1024, data.stats.thread.gpu_max/1024/1024)
-	data.stats.clearCPU()
-	data.stats.clearGPU()
+		--data.stats.data.cpu_max/1024/1024, data.stats.data.gpu_max/1024/1024,
+		--data.stats.thread.cpu_max/1024/1024, data.stats.thread.gpu_max/1024/1024)
+    -999, -999, -999, -999)
+	--data.stats.clearCPU()
+	--data.stats.clearGPU()
 
 
 	panels.ui:draw()
@@ -530,7 +529,8 @@ function love.draw()
 
 	-- draw histogram
 	local scale = 0
-	if hist then
+  if hist then
+    hist:lock()
 		local histPanel = panels.hist.panel
 		local mr = panels.hist.r.value and 1 or 0
 		local mg = panels.hist.g.value and 1 or 0
@@ -569,6 +569,7 @@ function love.draw()
 			lc[(i - 1) * 2 + 1] = x + w / 255 * i
 			lc[(i - 1) * 2 + 2] = y + h * l
 		end
+    hist:unlock()
 
 		local x = histPanel.x + 1
 		local y = histPanel.y + histPanel.h
@@ -625,8 +626,7 @@ function love.draw()
 			love.graphics.setColor(style.gray9)
 			love.graphics.line(lc)
 		end
-
-	end
+  end
 
 	require "ui.widget".drawCursor()
 
@@ -797,13 +797,13 @@ function love.keypressed(key)
 		print("Scale: 200%")
 	elseif key == "3" then
 		displayScale = 4
-		print("Scale: 300%")
+		print("Scale: 400%")
 	elseif key == "4" then
 		displayScale = 8
-		print("Scale: 400%")
+		print("Scale: 800%")
 	elseif key == "5" then
 		displayScale = 16
-		print("Scale: 500%")
+		print("Scale: 1600%")
 	end
 
 	if key == "r" then

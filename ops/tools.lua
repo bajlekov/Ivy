@@ -76,7 +76,7 @@ function tools.plainParam(self, elemIdx)
 	data.cs = "Y"
 	self.data[elemIdx] = data
 	data:set(0, 0, 0, self.elem[elemIdx].value)
-	return self.procType == "dev" and data:toDevice() or data
+	return self.procType == "dev" and data:syncDev() or data
 end
 
 -- link input, param value used if not connected

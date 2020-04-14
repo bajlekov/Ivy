@@ -38,7 +38,7 @@ local offset = data:new(1, 1, 3)
 offset:set(0, 0, 0, 0)
 offset:set(0, 0, 1, 0)
 offset:set(0, 0, 2, 1) -- no scaling
-offset:toDevice()
+offset:syncDev()
 function pool.resize(x, y) -- resize full image
 	if not (pool.sx==x and pool.sy==y) then
 		pool.sx = x
@@ -46,6 +46,7 @@ function pool.resize(x, y) -- resize full image
 
 		for k, image in pairs(pool.images) do
 			local new = data:new(x, y, image.full.z)
+			thread.ops.copy({data.zero, new}, "dev")
 			thread.ops.paste({image.full, new, offset}, "dev")
 			image.full = new
 		end
@@ -68,7 +69,7 @@ offset:set(0, 0, 2, 1) -- no scaling!
 local function pasteView(image)
 	offset:set(0, 0, 0, image.x)
 	offset:set(0, 0, 1, image.y)
-	offset:toDevice()
+	offset:syncDev()
 	thread.ops.paste({image.view, image.full, offset}, "dev")
 end
 
@@ -77,7 +78,7 @@ offset:set(0, 0, 2, 1) -- no scaling!
 local function cropView(image)
 	offset:set(0, 0, 0, image.x)
 	offset:set(0, 0, 1, image.y)
-	offset:toDevice()
+	offset:syncDev()
 	thread.ops.crop({image.full, image.view, offset}, "dev")
 end
 
@@ -118,8 +119,8 @@ local function set(image) -- refreshes full image with latest view and copies da
 		--]]
 		thread.ops.done()
 		while not thread.done() do love.timer.sleep(0.001) end
-
-		image.full:toHost(true)
+		image.full:devWritten()
+		image.full:syncHost()
 	end
 end
 
@@ -127,7 +128,7 @@ local offset = data:new(1, 1, 3)
 offset:set(0, 0, 0, 0)
 offset:set(0, 0, 1, 0)
 offset:set(0, 0, 2, 1) -- no scaling
-offset:toDevice()
+offset:syncDev()
 function pool.add(fullImage)
 	local new = data:new(pool.sx, pool.sy, fullImage.z)
 	thread.ops.paste({fullImage, new, offset}, "dev")

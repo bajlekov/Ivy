@@ -16,254 +16,267 @@
 ]]
 
 local ffi = require "ffi"
-local proc = require "lib.opencl.process".new()
+local proc = require "lib.opencl.process.ivy".new()
 local data = require "data"
 
 local source = [[
-#include "cs.cl"
+const eps = 0.0001
 
-// domain transform copy
-kernel void derivative(global float *J, global float *dHdx, global float *dVdy, global float *S, global float *R)
-{
-  const int x = get_global_id(0);
-  const int y = get_global_id(1);
+kernel derivative(J, dHdx, dVdy, S, R)
+  const x = get_global_id(0)
+  const y = get_global_id(1)
 
-	float3 jo = $J[x, y];
-	float3 jx = $J[x+1, y];
-	float3 jy = $J[x, y+1];
+	var jo = J[x, y].LAB
+	var jx = J[x+1, y].LAB
+	var jy = J[x, y+1].LAB
 
-	float s = S[0];
-	float r = R[0];
-	float sr = s/fmax(r, 0.0001f);
+	var s = S[x, y]
+	var r = R[x, y]
+	var sr = s/max(r, eps)
 
-	float3 h3 = fabs(jx-jo);
-	float h = 1.0f + sr*(h3.x + h3.y + h3.z);
+	var h3 = abs(jx-jo)
+	var h = 1.0 + sr*(h3.x + h3.y + h3.z)
 
-	float3 v3 = fabs(jy-jo);
-	float v = 1.0f + sr*(v3.x + v3.y + v3.z);
+	var v3 = abs(jy-jo)
+	var v = 1.0 + sr*(v3.x + v3.y + v3.z)
 
-	if (x+1<$dHdx.x$) $dHdx[x+1, y] = h;
-	if (y+1<$dVdy.y$) $dVdy[x, y+1] = v;
-}
+	dHdx[x+1, y] = h
+	dVdy[x, y+1] = v
+end
 
-kernel void horizontal(global float *dHdx, global float *O, global float *S, float h) {
-	//const int x = get_global_id(0);
-	const int y = get_global_id(1);
+kernel horizontal(dHdx, O, S, h)
+	const y = get_global_id(1)
 
-	for (int x = 1; x<$O.x$; x++) {
-		float3 io = $O[x, y];
-		float3 ix = $O[x-1, y];
-		float a = exp( -sqrt(2.0f) / ($S[x, y]*h));
-		float v = pow(a, $dHdx[x, y]);
-		$O[x, y] = io + v * (ix - io);
-	}
+	for x = 1, O.x-1 do
+		var io = O[x, y]
+		var ix = O[x-1, y]
+		var a = exp( -sqrt(2.0) / (S[x, y]*h) )
+		var v = a ^ dHdx[x, y]
+    O[x, y] = io + v * (ix - io)
+	end
 
-	for (int x = $O.x$-2; x>=0; x--) {
-		float3 io = $O[x, y];
-		float3 ix = $O[x+1, y];
-		float a = exp( -sqrt(2.0f) / ($S[x+1, y]*h));
-		float v = pow(a, $dHdx[x+1, y]);
-		$O[x, y] = io + v * (ix - io);
-	}
-}
+	for x = O.x - 2, 0, -1 do
+		var io = O[x, y]
+		var ix = O[x+1, y]
+		var a = exp( -sqrt(2.0) / (S[x+1, y]*h) )
+		var v = a ^ dHdx[x+1, y]
+    O[x, y] = io + v * (ix - io)
+	end
+end
 
-kernel void vertical(global float *dVdy, global float *O, global float *S, float h) {
-	const int x = get_global_id(0);
-	//const int y = get_global_id(1);
+kernel vertical(dVdy, O, S, h)
+	const x = get_global_id(0)
 
-	for (int y = 1; y<$O.y$; y++) {
-		float3 io = $O[x, y];
-		float3 iy = $O[x, y-1];
-		float a = exp( -sqrt(2.0f) / ($S[x, y]*h));
-		float v = pow(a, $dVdy[x, y]);
-		$O[x, y] = io + v * (iy - io);
-	}
+	for y = 1, O.y-1 do
+		var io = O[x, y]
+		var iy = O[x, y-1]
+		var a = exp( -sqrt(2.0) / (S[x, y]*h) )
+		var v = a ^ dVdy[x, y]
+    $O[x, y] = io + v * (iy - io)
+	end
 
-	for (int y = $O.y$-2; y>=0; y--) {
-		float3 io = $O[x, y];
-		float3 iy = $O[x, y+1];
-		float a = exp( -sqrt(2.0f) / ($S[x, y+1]*h));
-		float v = pow(a, $dVdy[x, y+1]);
-		$O[x, y] = io + v * (iy - io);
-	}
-}
+	for y = O.y - 2, 0, -1 do
+		var io = O[x, y]
+		var iy = O[x, y+1]
+		var a = exp( -sqrt(2.0) / (S[x, y+1]*h) )
+		var v = a ^ dVdy[x, y+1]
+    O[x, y] = io + v * (iy - io)
+	end
+end
 
+const SQRT3 = 1.73205081
+const SQRT12 = 3.46410162
 
-#define SQRT3 1.73205081
-#define SQRT12 3.46410162
+kernel convert(I, M, W, P, flags, C)
+	const x = get_global_id(0)
+	const y = get_global_id(1)
 
-kernel void convert(
-	global float *I,
-	global float *M,
-	global float *W,
-	global float *P,
-	global float *flags,
-	global float *C
-) {
-	const int x = get_global_id(0);
-	const int y = get_global_id(1);
+	var i = I[x, y]
 
-	float3 i = $I[x, y];
+	var clip = i.x>0.98 or i.y>0.98 or i.z>0.98
 
-	bool clip = i.x>0.95f || i.y>0.95f || i.z>0.95f;
+	if flags[3]>0.5 then
+		i = i * P[0, 0]
+  end
 
-	if (flags[3]>0.5f)
-		i = i * $P[0, 0];
+  if flags[4]>0.5 then
+		i = i * W[0, 0]
+  end
 
-  if (flags[4]>0.5f)
-		i = i * $W[0, 0];
+  var i_r = vec(0.0)
+  if flags[5]>0.5 then
+  -- adapted from DarkTable's process_lch_bayer (GNU General Public License v3.0)
 
-  float3 ir;
-  if (flags[5]>0.5f) {
-    // adapted from DarkTable's process_lch_bayer (GNU General Public License v3.0)
+    var r = i.x
+    var g = i.y
+    var b = i.z
 
-    float r = i.x;
-    float g = i.y;
-    float b = i.z;
+    var ro = min(r, 1.0)
+    var go = min(g, 1.0)
+    var bo = min(b, 1.0)
 
-    float ro = min(r, 1.0f);
-    float go = min(g, 1.0f);
-    float bo = min(b, 1.0f);
+    var l = (r + g + b) / 3.0
+    var c = SQRT3 * (r-g)
+    var h = 2*b - g - r
 
-    float l = (r + g + b) / 3.0f;
-    float c = SQRT3 * (r-g);
-    float h = 2.0f * b - g - r;
+    var co = SQRT3 * (ro - go)
+    var ho = 2*bo - go - ro
 
-    float co = SQRT3 * (ro - go);
-    float ho = 2.0f * bo - go - ro;
+    if r~=g and g~=b then
+      var r = sqrt((co^2 + ho^2) / (c^2 + h^2))
+      c = c * r
+      h = h * r
+    end
 
-    if (r != g && g != b) {
-      float r = sqrt((co*co + ho*ho) / (c*c + h*h));
-      c = c * r;
-      h = h * r;
-    }
+    i_r.x = l - h / 6.0 + c / SQRT12
+    i_r.y = l - h / 6.0 - c / SQRT12
+    i_r.z = l + h / 3.0
+  end
 
-    ir.x = l - h / 6.0f + c / SQRT12;
-    ir.y = l - h / 6.0f - c / SQRT12;
-    ir.z = l + h / 3.0f;
-  }
+	if flags[3]>0.5 then
+		var o = vec(0.0)
+		o.x = i.x*M[0, 0, 0] + i.y*M[0, 1, 0] + i.z*M[0, 2, 0]
+		o.y = i.x*M[1, 0, 0] + i.y*M[1, 1, 0] + i.z*M[1, 2, 0]
+		o.z = i.x*M[2, 0, 0] + i.y*M[2, 1, 0] + i.z*M[2, 2, 0]
 
-	if (flags[3]>0.5f) {
-		float3 o;
-		o.x = i.x*$M[0, 0, 0] + i.y*$M[0, 1, 0] + i.z*$M[0, 2, 0];
-		o.y = i.x*$M[1, 0, 0] + i.y*$M[1, 1, 0] + i.z*$M[1, 2, 0];
-		o.z = i.x*$M[2, 0, 0] + i.y*$M[2, 1, 0] + i.z*$M[2, 2, 0];
+    if clip then
+      -- desaturate clipped values
+			o = YtoLRGB(LRGBtoY(o))
+    end
 
-    if (clip) {
-      // desaturate clipped values
-			o = YtoLRGB(LRGBtoY(o));
-    }
+    if flags[5]>0.5 then
+      -- replace luminance with reconstructed value
+      var o_r = vec(0.0)
+      o_r.x = i_r.x*M[0, 0, 0] + i_r.y*M[0, 1, 0] + i_r.z*M[0, 2, 0]
+      o_r.y = i_r.x*M[1, 0, 0] + i_r.y*M[1, 1, 0] + i_r.z*M[1, 2, 0]
+      o_r.z = i_r.x*M[2, 0, 0] + i_r.y*M[2, 1, 0] + i_r.z*M[2, 2, 0]
 
-    if (flags[5]>0.5f) {
-      // replace luminance with reconstructed value
-      float3 or;
-      or.x = ir.x*$M[0, 0, 0] + ir.y*$M[0, 1, 0] + ir.z*$M[0, 2, 0];
-      or.y = ir.x*$M[1, 0, 0] + ir.y*$M[1, 1, 0] + ir.z*$M[1, 2, 0];
-      or.z = ir.x*$M[2, 0, 0] + ir.y*$M[2, 1, 0] + ir.z*$M[2, 2, 0];
+      var y = LRGBtoXYZ(o)
+      var yr = LRGBtoY(o_r)
 
-      float3 y = LRGBtoXYZ(o);
-      float yr = LRGBtoY(or);
+      o = XYZtoLRGB(y * yr/y.y)
+    end
 
-      o = XYZtoLRGB(y * yr/y.y);
-    }
+		I[x, y] = o
+	else
+		I[x, y] = i
+	end
 
-		$I[x, y] = o;
-	} else {
-		$I[x, y] = i;
-	}
+  if clip then
+    C[x, y] = 1.0
+  else
+    C[x, y] = 0.0
+  end
+end
 
-  $C[x, y] = clip ? 1.0f : 0.0f;
-}
+kernel expand(I, C, J, O)
+	const x = get_global_id(0)
+	const y = get_global_id(1)
 
-kernel void expand(global float *I, global float *C, global float *J, global float *O) {
-	const int x = get_global_id(0);
-	const int y = get_global_id(1);
+	var e = false
+	var f = false
+	var c = C[x, y] > 0.5
 
-	bool e = false;
-	bool f = false;
-	bool c = $C[x, y] > 0.5f;
+	for i = -2, 2 do
+		for j = -2, 2 do
+			if C[x+i, y+j]>0.5 then
+        f = true
+      end
+    end
+  end
 
-	for (int i = -2; i<=2; i++)
-		for (int j = -2; j<=2; j++)
-			if ($C[x+i, y+j]>0.5f) f = true;
+	for i = -4, 4 do
+		for j = -4, 4 do
+			if C[x+i, y+j]>0.5 then
+        e = true
+      end
+    end
+  end
 
-	for (int i = -4; i<=4; i++)
-		for (int j = -4; j<=4; j++)
-			if ($C[x+i, y+j]>0.5f) e = true;
+	var i = I[x, y]
+	var l = max(max(i.x, i.y), i.z) > 0.75
 
-	float3 i = $I[x, y];
-	bool l = max(max(i.x, i.y), i.z) > 0.75f;
+  if e then
+    --J[x, y] = i -- detailed guide
+    J[x, y] = 1.0 -- smooth guide
+  else
+    J[x, y] = 0.0
+  end
 
-	$J[x, y] = e ? i : (float3)(0.0f);
-	$O[x, y] = (e && !f && l) ? i : (float3)(0.0f);
-}
+  if e and not f and l then
+    O[x, y] = i
+  else
+    O[x, y] = vec(0.0)
+  end
+end
 
-kernel void merge(global float *I, global float *C, global float *O) {
-	const int x = get_global_id(0);
-	const int y = get_global_id(1);
+kernel merge(I, C, O)
+	const x = get_global_id(0)
+	const y = get_global_id(1)
 
-	bool c = $C[x, y]>0.5f;
+	var c = C[x, y]>0.5
 
-	if (c) {
-		float3 i = $I[x, y];
-		float3 o = $O[x, y];
+	if c then
+		var i = I[x, y]
+		var o = O[x, y]
 
-		i = LRGBtoXYZ(i);
-		o = LRGBtoXYZ(o);
-		o = o * i.y/o.y;
+		i = LRGBtoXYZ(i)
+		o = LRGBtoXYZ(o)
+		o = o * i.y/o.y
 
-		$I[x, y] = XYZtoLRGB(o);
-	}
-}
+		I[x, y] = XYZtoLRGB(o)
+	end
+end
 
 ]]
 
+
 local function execute()
-	proc:getAllBuffers("I", "M", "W", "P", "flags")
+	local I, M, W, P, flags = proc:getAllBuffers(5)
 
-	local x, y, z = proc.buffers.I:shape()
-	proc.buffers.C = data:new(x, y, 1) -- clipping mask
-	proc.buffers.J = data:new(x, y, z) -- guide
+	local x, y, z = I:shape()
+	local C = data:new(x, y, 1) -- clipping mask
+	local J = data:new(x, y, z) -- guide
 
-	proc.buffers.S = data:new(1, 1, 1) -- DT filter param
-	proc.buffers.R = data:new(1, 1, 1) -- DT filter param
-	proc.buffers.S:set(0, 0, 0, 50)
-	proc.buffers.R:set(0, 0, 0, 0.5)
-	proc.buffers.S:toDevice()
-	proc.buffers.R:toDevice()
+	local S = data:new(1, 1, 1) -- DT filter param
+	local R = data:new(1, 1, 1) -- DT filter param
+	S:set(0, 0, 0, 50)
+  S:syncDev()
+	R:set(0, 0, 0, 0.5)
+  R:syncDev()
 
-	proc.buffers.dHdx = data:new(x, y, 1)
-	proc.buffers.dVdy = data:new(x, y, 1)
-	proc.buffers.O = data:new(x, y, z) -- reference in, reconstructed colors out
+	local dHdx = data:new(x, y, 1)
+	local dVdy = data:new(x, y, 1)
+	local O = data:new(x, y, z) -- reference in, reconstructed colors out
 
-	proc:executeKernel("convert", proc:size2D("I"), {"I", "M", "W", "P", "flags", "C"})
+	proc:executeKernel("convert", proc:size2D(I), {I, M, W, P, flags, C})
 
-	if proc.buffers.flags:get(0, 0, 6) > 0.5 then -- reconstruct color
-		proc:executeKernel("expand", proc:size2D("I"), {"I", "C", "J", "O"})
+	if flags:get(0, 0, 6) > 0.5 then -- reconstruct color
+		proc:executeKernel("expand", proc:size2D(I), {I, C, J, O})
 
 		-- DT dx, dy generate dHdx, dVdy from G
-		proc:executeKernel("derivative", proc:size2D("I"), {"J", "dHdx", "dVdy", "S", "R"})
+		proc:executeKernel("derivative", proc:size2D(I), {J, dHdx, dVdy, S, R})
 
 		-- DT iterate V, H over R with G as guide
 		local N = 5 -- number of iterations
 		local h = ffi.new("float[1]")
 		for i = 0, N-1 do
 			h[0] = math.sqrt(3) * 2^(N - (i+1)) / math.sqrt(4^N - 1)
-			proc:executeKernel("vertical", {x, 1}, {"dVdy", "O", "S", h})
-			proc:executeKernel("horizontal", {1, y}, {"dHdx", "O", "S", h})
+			proc:executeKernel("vertical", {x, 1}, {dVdy, O, S, h})
+			proc:executeKernel("horizontal", {1, y}, {dHdx, O, S, h})
 		end
 
 		-- merge colors from R in I according to C
-		proc:executeKernel("merge", proc:size2D("I"), {"I", "C", "O"})
+		proc:executeKernel("merge", proc:size2D(I), {I, C, O})
 	end
 
-  proc.buffers.C:free()
-  proc.buffers.J:free()
-  proc.buffers.S:free()
-  proc.buffers.R:free()
-  proc.buffers.dHdx:free()
-  proc.buffers.dVdy:free()
-  proc.buffers.O:free()
+  C:free()
+  J:free()
+  S:free()
+  R:free()
+  dHdx:free()
+  dVdy:free()
+  O:free()
 end
 
 local function init(d, c, q)

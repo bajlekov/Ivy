@@ -52,15 +52,12 @@ kernel scalePlot(C, S, W, I)
 	const x = get_global_id(0)
 	const y = get_global_id(1)
 
-	var s = S[0]
+	var s = S[0]*4096/(I.x*I.y)
 	var c = C[x, y].int
 
 	if c>0.0 then
-		s = s*2048*5/(I.x*I.y)
-		var v = clamp(c*s, 0.0, 255.0)
-
 		var a = (x - 73.0)*2.0/C.x
-		var b = -(y - 71.0)*2.0/C.x
+		var b = (71.0 - y)*2.0/C.x
 
 		var srgb = LABtoSRGB(vec(1.0 - 0.5*sqrt(a^2 + b^2), a, b))
 		srgb = srgb*clamp(s*c, 0.0, 1.0)
@@ -75,21 +72,20 @@ end
 local function execute()
 	local I, W, S, clip = proc:getAllBuffers(4)
 
-	W.dataOCL = proc.context:create_buffer("write_only", W.x * W.y * ffi.sizeof("cl_float"))
-  W.z = 1
-  W.sx = 1
-  W.sy = W.x
-  W.sz = 1
-  W:updateStr()
-
+	-- allocate temporary count buffer
 	local C = data:new(W.x, W.y, 1)
+  W:allocDev()
+  C:allocDev()
 
 	proc:executeKernel("clearPlot", proc:size2D(C), {C})
 	proc:executeKernel("plot", proc:size2D(I), {I, C, clip})
 	proc:executeKernel("scalePlot", proc:size2D(C), {C, S, W, I})
 
-  W:freeDev(true)
   C:free()
+
+  W:devWritten()
+  W:syncHost(true)
+  W:freeDev()
 end
 
 local function init(d, c, q)

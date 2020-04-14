@@ -115,8 +115,6 @@ function raw.read(name)
 		W[1] = W[1]/W_min
 		W[2] = W[2]/W_min
 	end
-	print(W[0], W[1], W[2])
-
 
 	local SRGBmatrix = data:new(3, 4, 1)
 	local WBmultipliers = data:new(1, 1, 3)

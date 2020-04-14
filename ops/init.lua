@@ -37,6 +37,7 @@ t.register(ops, "bilateral")
 t.register(ops, "domainTransform")
 t.register(ops, "split_lr")
 t.register(ops, "split_ud")
+t.register(ops, "random")
 
 t.imageShapeSet(1, 1, 1)
 
@@ -61,7 +62,7 @@ end
 
 
 local cct = require "tools.cct"
-
+local bradford = require "tools.bradford"
 local function temperatureProcess(self)
 	self.procType = "dev"
 	local i = t.inputSourceBlack(self, 0)
@@ -70,11 +71,10 @@ local function temperatureProcess(self)
 
 	local Li, Mi, Si = bradford.fwd(cct(self.elem[1].value, self.elem[2].value))
 	local Lo, Mo, So = bradford.fwd(cct(6500))
-	print(Lo/Li, Mo/Mi, So/Si)
 	p:set(0, 0, 0, Lo / Li)
 	p:set(0, 0, 1, Mo / Mi)
 	p:set(0, 0, 2, So / Si)
-	p:toDevice()
+	p:syncDev()
 	thread.ops.whitepoint({i, p, o}, self)
 end
 
@@ -293,7 +293,7 @@ local function processSampleWB(self)
 	local s = t.autoTempBuffer(self, -2, 1, 1, 3) -- [r, g, b]
 	p:set(0, 0, 0, ox)
 	p:set(0, 0, 1, oy)
-	p:toDevice()
+	p:syncDev()
 
 	if update or self.elem[2].value then
 		thread.ops.whitepointSample({i, p, s}, self)
@@ -315,7 +315,28 @@ function ops.sampleWB(x, y)
 	s:set(0, 0, 0, 1)
 	s:set(0, 0, 1, 1)
 	s:set(0, 0, 2, 1)
-	s:toDevice()
+	s:syncDev()
+
+	n:setPos(x, y)
+	return n
+end
+
+local function processSetWP(self)
+	self.procType = "dev"
+	local i = t.inputSourceBlack(self, 0)
+	local w = t.inputSourceWhite(self, 1)
+	local o = t.autoOutputSink(self, 0, i:shape())
+
+	thread.ops.whitepoint({i, w, o}, self)
+end
+
+function ops.setWP(x, y)
+	local n = node:new("Set White")
+	n.data.tweak = require "ui.widget.tweak"()
+	n:addPortIn(0, "XYZ")
+	n:addPortOut(0, "XYZ")
+	n:addPortIn(1, "XYZ"):addElem("text", 1, "White point")
+	n.process = processSetWP
 
 	n:setPos(x, y)
 	return n
@@ -356,7 +377,7 @@ do
 				p:set(0, 0, 8, self.elem[8].value)
 				p:set(0, 0, 9, alt and ox or cx)
 				p:set(0, 0, 10, alt and oy or cy)
-				p:toDevice(true)
+				p:syncDev()
 
 				thread.ops.paintSmart({link.data, i, p}, self)
 			end
@@ -368,7 +389,8 @@ do
 
 		do
 			local sx, sy = t.imageShape()
-			local mask = data:new(sx, sy, 1):toDevice()
+			local mask = data:new(sx, sy, 1)
+			thread.ops.copy({data.zero, mask}, "dev")
 			pool.resize(sx, sy)
 			n.mask = pool.add(mask)
 		end
@@ -519,6 +541,29 @@ function ops.localLaplacian(x, y)
 	return n
 end
 
+local function watershedProcess(self)
+	self.procType = "dev"
+	local i = t.inputSourceWhite(self, 0)
+	local x, y = i:shape()
+	local m1 = t.inputSourceBlack(self, 1)
+	local m2 = t.inputSourceBlack(self, 2)
+	local o = t.autoOutput(self, 0, x, y, 1)
+	local hq = t.plainParam(self, 3)
+
+	thread.ops.watershed({i, m1, m2, o, hq}, self)
+end
+
+function ops.watershed(x, y)
+	local n = node:new("Watershed")
+	n:addPortIn(0, "LAB"):addPortOut(0, "Y")
+	n:addPortIn(1, "Y"):addElem("text", 1, "Mask A")
+	n:addPortIn(2, "Y"):addElem("text", 2, "Mask B")
+	n:addElem("bool", 3, "HQ", false)
+	n.process = watershedProcess
+	n:setPos(x, y)
+	return n
+end
+
 
 
 local function histogramProcess(self)
@@ -623,14 +668,14 @@ local function previewProcess(self)
 	local i = t.inputSourceBlack(self, 0)
 	local w, h = i:shape()
 
-	h = h==1 and 2 or math.floor(h / w * 150)
+	h = h==1 and 2 or math.max(math.floor(h / w * 150), 50)
 	if self.data.preview.y ~= h then
+		require "thread".keepData(self.data.preview)
 		self.data.preview = require "ui.image":new(150, h)
 		self.graph.h = h
 	end
 
-	local p = self.data.preview -- pre-allocated
-	thread.ops.preview({i, p}, self)
+	thread.ops.preview({i, self.data.preview}, self)
 end
 
 function ops.preview(x, y)
@@ -639,7 +684,7 @@ function ops.preview(x, y)
 	n.process = previewProcess
 	require "ui.graph".preview(n)
 	local w, h = t.imageShape()
-	h = math.floor(h / w * 150)
+	h = h==1 and 2 or math.max(math.floor(h / w * 150), 50)
 	n.data.preview = require "ui.image":new(150, h)
 	n.graph.h = h
 	n.compute = true
@@ -792,20 +837,18 @@ end
 local function vibranceProcess(self)
 	self.procType = "dev"
 	assert(self.portOut[0].link)
-	local i, v, p, o
+	local i, v, o
 	i = t.inputSourceBlack(self, 0)
 	v = t.inputParam(self, 1)
-	p = t.plainParam(self, 2)
 	o = t.autoOutput(self, 0, data.superSize(i, v))
-	thread.ops.vibrance({i, v, p, o}, self)
+	thread.ops.vibrance({i, v, o}, self)
 end
 
 function ops.vibrance(x, y)
 	local n = node:new("Vibrance")
-	n:addPortIn(0, "LCH")
-	n:addPortIn(1, "Y"):addElem("float", 1, "Vibrance", - 1, 1, 0)
-	n:addElem("bool", 2, "Adjust lightness", true)
-	n:addPortOut(0, "LCH")
+	n:addPortIn(0, "LRGB")
+	n:addPortOut(0, "LRGB")
+	n:addPortIn(1, "Y"):addElem("float", 1, "Vibrance", 0, 2, 1)
 	n.process = vibranceProcess
 	n:setPos(x, y)
 	return n
@@ -923,7 +966,7 @@ local function genClut(lut)
 		local n = node:new(lut)
 
 		require "ui.notice".blocking("Loading look: "..lut)
-		n.data.lut = require("io.native").read("looks/"..lut..".png"):toDevice(true)
+		n.data.lut = require("io.native").read("looks/"..lut..".png"):syncDev()
 
 		n:addPortIn(0, "LRGB"):addPortOut(0, "LRGB")
 		n:addPortIn(1, "Y"):addElem("float", 1, "Mix", 0, 2, 1)
@@ -1548,7 +1591,7 @@ local function nlmeansProcess(self)
 		v = v / sum
 		kernel:set(0, 0, i, v)
 	end
-	kernel:toDevice()
+	kernel:syncDev(true)
 
 	local x, y, z = data.superSize(i, p1, p2, p3)
 
@@ -1617,28 +1660,28 @@ local function genMath2(name, fn, init, min, max)
 	end
 end
 
-genMath1("Absolute", "_abs")
-genMath1("Negative", "neg")
-genMath1("Invert", "inv")
-genMath1("Clamp", "_clamp")
+genMath1("Absolute", "ivy_abs")
+genMath1("Negative", "ivy_neg")
+genMath1("Invert", "ivy_inv")
+genMath1("Clamp", "ivy_clamp")
 
-genMath2("Add", "add", 0)
-genMath2("Subtract", "sub", 0)
-genMath2("Multiply", "mul", 1)
-genMath2("Divide", "div", 1)
-genMath2("Power", "_pow", 1, 0, 2)
-genMath2("Maximum", "_max", 0, 0, 1)
-genMath2("Minimum", "_min", 1, 0, 1)
-genMath2("Average", "average", 0, 0, 1)
-genMath2("Difference", "difference", 0, 0, 1)
-genMath2("Greater", "GT", 0.5, 0, 1)
-genMath2("Less", "LT", 0.5, 0, 1)
+genMath2("Add", "ivy_add", 0)
+genMath2("Subtract", "ivy_sub", 0)
+genMath2("Multiply", "ivy_mul", 1)
+genMath2("Divide", "ivy_div", 1)
+genMath2("Power", "ivy_pow", 1, 0, 2)
+genMath2("Maximum", "ivy_max", 0, 0, 1)
+genMath2("Minimum", "ivy_min", 1, 0, 1)
+genMath2("Average", "ivy_average", 0, 0, 1)
+genMath2("Difference", "ivy_difference", 0, 0, 1)
+genMath2("Greater", "ivy_GT", 0.5, 0, 1)
+genMath2("Less", "ivy_LT", 0.5, 0, 1)
 
 local function processValue(self)
 	local o = t.autoOutput(self, 0, 1, 1, 1)
 	local v = tonumber(self.elem[1].value)
 	o:set(0, 0, 0, v)
-	o:toDevice()
+	o:syncDev()
 end
 
 ops.math.value = function(x, y)

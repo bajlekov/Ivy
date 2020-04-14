@@ -75,7 +75,7 @@ return function(ops)
 		p:set(0, 0, 0, r + m)
 		p:set(0, 0, 1, g + m)
 		p:set(0, 0, 2, b + m)
-		p:toDevice()
+		p:syncDev()
 
 		thread.ops.color_lift({i, p, o}, self)
 	end
@@ -107,7 +107,7 @@ return function(ops)
 		p:set(0, 0, 0, r + m)
 		p:set(0, 0, 1, g + m)
 		p:set(0, 0, 2, b + m)
-		p:toDevice()
+		p:syncDev()
 
 		thread.ops.color_gain({i, p, o}, self)
 	end
@@ -138,7 +138,7 @@ return function(ops)
 		p:set(0, 0, 0, r + m)
 		p:set(0, 0, 1, g + m)
 		p:set(0, 0, 2, b + m)
-		p:toDevice()
+		p:syncDev()
 
 		thread.ops.color_gamma({i, p, o}, self)
 	end
@@ -170,7 +170,7 @@ return function(ops)
 		p:set(0, 0, 0, r + m)
 		p:set(0, 0, 1, g + m)
 		p:set(0, 0, 2, b + m)
-		p:toDevice()
+		p:syncDev()
 
 		thread.ops.color_offset({i, p, o}, self)
 	end
@@ -203,7 +203,7 @@ return function(ops)
 		p:set(0, 0, 0, r + m)
 		p:set(0, 0, 1, g + m)
 		p:set(0, 0, 2, b + m)
-		p:toDevice()
+		p:syncDev()
 
 		thread.ops.color_shadows({i, p, o}, self)
 	end
@@ -235,7 +235,7 @@ return function(ops)
 		p:set(0, 0, 0, r + m)
 		p:set(0, 0, 1, g + m)
 		p:set(0, 0, 2, b + m)
-		p:toDevice()
+		p:syncDev()
 
 		thread.ops.color_midtones({i, p, o}, self)
 	end
@@ -267,7 +267,7 @@ return function(ops)
 		p:set(0, 0, 0, r + m)
 		p:set(0, 0, 1, g + m)
 		p:set(0, 0, 2, b + m)
-		p:toDevice()
+		p:syncDev()
 
 		thread.ops.color_highlights({i, p, o}, self)
 	end
@@ -282,6 +282,27 @@ return function(ops)
 		n.process = highlightsProcess
 
 		n.w = 100
+		n:setPos(x, y)
+		return n
+	end
+
+
+	local function transferProcess(self)
+		self.procType = "dev"
+		assert(self.portOut[0].link)
+		local I, C, O
+		I = t.inputSourceBlack(self, 0)
+		C = t.inputSourceWhite(self, 1)
+		O = t.autoOutput(self, 0, data.superSize(I, C))
+		thread.ops.colorTransfer({I, C, O}, self)
+	end
+
+	function ops.colorTransfer(x, y)
+		local n = node:new("Color Transfer")
+		n:addPortIn(0, "Y")
+		n:addPortIn(1, "XYZ"):addElem("text", 1, "Color")
+		n:addPortOut(0, "XYZ")
+		n.process = transferProcess
 		n:setPos(x, y)
 		return n
 	end

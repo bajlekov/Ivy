@@ -16,37 +16,25 @@
 ]]
 
 local proc = require "lib.opencl.process.ivy".new()
+local ffi = require "ffi"
 
 local source = [[
-kernel lightnessAdjust(P, S, R, C)
-	const z = get_global_id(2)
+kernel random(I, W, O, seed)
+  const x = get_global_id(0)
+  const y = get_global_id(1)
+  const z = get_global_id(2)
 
-	var p = -P[3]/1000.0
-	var a = S[0]
-	var b = z/255.0
+  var i = I[x, y, z]
+  var w = W[x, y]
 
-	var w = R[0]
-	var f = range(w, w, abs(a-b))
-
-	var i = C[z]
-	var o = 0.0
-	if P[4]==1 then
-		p = clamp(abs(p)*5.0, -1.0, 1.0)
-		o = (1.0 - f*p)*i + f*p*0.5
-	else
-		o = i + f*p
-	end
-
-	C[z] = clamp(o, 0.0, 1.0)
+  O[x, y, z] = max(i + rnorm(seed+z, x, y)*W[x, y]*sqrt(i)*0.5, 0.0)
 end
 ]]
 
 local function execute()
-	local P, S, R, C = proc:getAllBuffers(4)
-	proc:executeKernel("lightnessAdjust", {1, 1, 256}, {P, S, R, C})
-	C:lock()
-	C:devWritten():syncHost()
-	C:unlock()
+	local I, W, O = proc:getAllBuffers(3)
+  local seed = ffi.new("int[1]", math.random( -2147483648, 2147483647))
+	proc:executeKernel("random", proc:size3D(O), {I, W, O, seed})
 end
 
 local function init(d, c, q)

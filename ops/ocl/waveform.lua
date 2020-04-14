@@ -19,92 +19,70 @@ local ffi = require "ffi"
 local tools = require "lib.opencl.tools"
 local data = require "data"
 
-local proc = require "lib.opencl.process".new()
+local proc = require "lib.opencl.process.ivy".new()
 
 local source = [[
-kernel void clearWaveform(global uint *C) {
-  const int x = get_global_id(0);
-	const int y = get_global_id(1);
+kernel clearWaveform(C)
+  const x = get_global_id(0)
+	const y = get_global_id(1)
 
-  C[0*$C.sz$ + y*$C.sy$ + x*$C.sx$] = 0;
-  C[1*$C.sz$ + y*$C.sy$ + x*$C.sx$] = 0;
-  C[2*$C.sz$ + y*$C.sy$ + x*$C.sx$] = 0;
-}
+  C[x, y, 0].int = 0
+  C[x, y, 1].int = 0
+  C[x, y, 2].int = 0
+end
 
-kernel void waveform(global float *I, global uint *C, global float *L) {
-  const int x = get_global_id(0);
-  const int y = get_global_id(1);
+kernel waveform(I, C, L)
+  const x = get_global_id(0)
+  const y = get_global_id(1)
 
-	uint xf = clamp((x*$C.x$)/$I.x$, 0, ($C.x$-1));
+  var cx = clamp(int(x*C.x/I.x), 0, C.x-1)
 
-	if (L[0]>0.5f) {
-		float v = $I[x, y]L;
-		uchar l = (uchar)round(clamp(v, 0.0f, 1.0f)*($C.y$-1));
-		atomic_inc(C + 0*$C.sz$ + l*$C.sy$ + xf*$C.sx$);
-	} else {
-		float3 v = $I[x, y]SRGB;
-		uchar r = (uchar)round(clamp(v.x, 0.0f, 1.0f)*($C.y$-1));
-		uchar g = (uchar)round(clamp(v.y, 0.0f, 1.0f)*($C.y$-1));
-		uchar b = (uchar)round(clamp(v.z, 0.0f, 1.0f)*($C.y$-1));
-		atomic_inc(C + 0*$C.sz$ + r*$C.sy$ + xf*$C.sx$);
-		atomic_inc(C + 1*$C.sz$ + g*$C.sy$ + xf*$C.sx$);
-		atomic_inc(C + 2*$C.sz$ + b*$C.sy$ + xf*$C.sx$);
-	}
-}
+	if L[0]>0.5 then
+		var v = I[x, y].L
+		var l = round(clamp(I[x, y].L, 0.0, 1.0)*(C.y-1))
+		atomic_inc(C[cx, l, 0].intptr)
+	else
+		var v = I[x, y].SRGB
+		var r = round(clamp(v.x, 0.0, 1.0)*(C.y-1))
+		var g = round(clamp(v.y, 0.0, 1.0)*(C.y-1))
+		var b = round(clamp(v.z, 0.0, 1.0)*(C.y-1))
+		atomic_inc(C[cx, r, 0].intptr)
+		atomic_inc(C[cx, g, 1].intptr)
+		atomic_inc(C[cx, b, 2].intptr)
+	end
+end
 
-kernel void scaleWaveform(global uint *C, global float *S, global uchar *W, global float *L, global float *I) {
-	const int x = get_global_id(0);
-	const int y = get_global_id(1);
+kernel scaleWaveform(C, S, W, L, I)
+  const x = get_global_id(0)
+	const y = get_global_id(1)
 
-	const int idx = x*4 + ($W.y$-y-1)*$W.x$*4;
+	var s = S[0]*4096/(I.x*I.y)
 
-	float s = S[0];
-	s = s * $$2048*256/(I.x*I.y)$$; // add I to arguments to force recompile on change
-
-	if (L[0]>0.5f) {
-		float v = clamp($C[x, y, 0]*s, 0.0f, 255.0f);
-		W[idx + 0] = v;
-		W[idx + 1] = v;
-		W[idx + 2] = v;
-	} else {
-		W[idx + 0] = clamp($C[x, y, 0]*s, 0.0f, 255.0f);
-		W[idx + 1] = clamp($C[x, y, 1]*s, 0.0f, 255.0f);
-		W[idx + 2] = clamp($C[x, y, 2]*s, 0.0f, 255.0f);
-	}
-	W[idx + 3] = 255;
-}
-
+	if L[0]>0.5 then
+		W[x, W.y-1-y] = RGBA(C[x, y, 0].int*s, 1.0)
+	else
+    W[x, W.y-1-y] = RGBA(vec(C[x, y, 0].int, C[x, y, 1].int, C[x, y, 2].int)*s, 1.0)
+	end
+end
 ]]
 
 local function execute()
-	proc:getAllBuffers("I", "W", "S", "L")
-
-	local x = proc.buffers.W.x
-	local y = proc.buffers.W.y
-
-	-- allocate openCL buffer to image
-	proc.buffers.W.dataOCL = proc.context:create_buffer("write_only", x * y * 4 * ffi.sizeof("cl_uchar"))
+	local I, W, S, L = proc:getAllBuffers(4)
 
 	-- allocate temporary count buffer
-	proc.buffers.C = data:new(x, y, 4)
+	local C = data:new(W.x, W.y, 3)
+  W:allocDev()
+  C:allocDev()
 
-	proc:executeKernel("clearWaveform", proc:size2D("C"), {"C"})
-	proc:executeKernel("waveform", proc:size2D("I"), {"I", "C", "L"})
-	proc:executeKernel("scaleWaveform", proc:size2D("C"), {"C", "S", "W", "L", "I"})
+	proc:executeKernel("clearWaveform", proc:size2D(C), {C})
+	proc:executeKernel("waveform", proc:size2D(I), {I, C, L})
+	proc:executeKernel("scaleWaveform", proc:size2D(C), {C, S, W, L, I})
 
-	local event3 = proc.queue:enqueue_read_buffer(proc.buffers.W.dataOCL, true, proc.buffers.W.data)
+  C:free()
 
-	if proc.profile() then
-		tools.profile("copyWaveform", event3, proc.queue)
-	end
-
-	-- remove image openCL buffer
-	proc.context.release_mem_object(proc.buffers.W.dataOCL)
-	proc.buffers.W.dataOCL = nil
-
-	-- free temporary count buffer
-	proc.buffers.C:free()
-	proc.buffers.C = nil
+  W:devWritten()
+  W:syncHost(true)
+  W:freeDev()
 end
 
 local function init(d, c, q)

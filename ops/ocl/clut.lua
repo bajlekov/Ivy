@@ -29,7 +29,7 @@ function getColor(LUT, r, g, b)
 	g = clamp(g, 0, Q-1)
 	b = clamp(b, 0, Q-1)
 	var x = r + mod(g, float(F)) * Q
-	var y = D - (b*F + g/F)
+	var y = D - (b*F + int(g/F))
 	return LUT[x, y]
 end
 

@@ -18,41 +18,27 @@
 local proc = require "lib.opencl.process.ivy".new()
 
 local source = [[
-kernel lightnessAdjust(P, S, R, C)
-	const z = get_global_id(2)
+kernel transfer(I, C, O)
+  const x = get_global_id(0)
+  const y = get_global_id(1)
 
-	var p = -P[3]/1000.0
-	var a = S[0]
-	var b = z/255.0
+  var Y = I[x, y].Y
+  var R = C[x, y].XYZ
+  R = R / R.y
 
-	var w = R[0]
-	var f = range(w, w, abs(a-b))
-
-	var i = C[z]
-	var o = 0.0
-	if P[4]==1 then
-		p = clamp(abs(p)*5.0, -1.0, 1.0)
-		o = (1.0 - f*p)*i + f*p*0.5
-	else
-		o = i + f*p
-	end
-
-	C[z] = clamp(o, 0.0, 1.0)
+  O[x, y].XYZ = R * Y
 end
 ]]
 
 local function execute()
-	local P, S, R, C = proc:getAllBuffers(4)
-	proc:executeKernel("lightnessAdjust", {1, 1, 256}, {P, S, R, C})
-	C:lock()
-	C:devWritten():syncHost()
-	C:unlock()
+  local I, C, O = proc:getAllBuffers(3)
+  proc:executeKernel("transfer", proc:size2D(O), {I, C, O})
 end
 
 local function init(d, c, q)
-	proc:init(d, c, q)
-	proc:loadSourceString(source)
-	return execute
+  proc:init(d, c, q)
+  proc:loadSourceString(source)
+  return execute
 end
 
 return init

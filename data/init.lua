@@ -16,539 +16,479 @@
 ]]
 
 local ffi = require "ffi"
---local cl = require "lib.opencl"
-ffi.cdef[[
-	typedef float cl_float __attribute__((aligned(4)));
-	typedef struct _cl_mem *cl_mem;
-]]
+local mutex = require "tools.mutex"
+local ocl = require "lib.opencl"
 
-local onDemandMemory = settings.openclLowMemory
-local oclDebug = settings.openclDebug
-
-require "lib.opencl"
-
-local unroll = require "tools.unroll"
-local filter = require "tools.filter"
-local alloc = require "data.alloc"
-
-local data = {type = "data"}
+local data = {type="data"}
 data.meta = {__index = data}
 
-require "data.ops"(data)
-
-data.CS = {
-	"SRGB",
-	"LRGB",
-	"XYZ",
-	"LAB",
-	"LCH",
-	"Y",
-	"L",
-}
-for k, v in ipairs(data.CS) do
-	data.CS[v] = k
-end
-
-local context, queue
+local devContext, devQueue
 function data.initDev(c, q)
-	if c == NULL then
-		context = nil
-		queue = nil
+  if c == NULL then
+		devContext = nil
+		devQueue = nil
 	else
-		context = c
-		queue = q
+		devContext = c
+		devQueue = q
 	end
 
-	data.sink = data:new(1, 1, 3)
+  data.sink = data:new(1, 1, 3):allocHost()
+  data.sink:hostWritten()
+  data.sink:syncDev()
 
-	data.oneCS = {}
-	data.zeroCS = {}
+  data.oneCS = {}
+  data.zeroCS = {}
 
-	data.oneCS.SRGB = data:new(1, 1, 3)
-	data.oneCS.SRGB:set(0, 0, 0, 1)
-	data.oneCS.SRGB:set(0, 0, 1, 1)
-	data.oneCS.SRGB:set(0, 0, 2, 1)
-	data.oneCS.SRGB:toDevice()
-	data.oneCS.SRGB.cs = "SRGB"
-	data.oneCS.LRGB = data:new(1, 1, 3)
-	data.oneCS.LRGB:set(0, 0, 0, 1)
-	data.oneCS.LRGB:set(0, 0, 1, 1)
-	data.oneCS.LRGB:set(0, 0, 2, 1)
-	data.oneCS.LRGB:toDevice()
-	data.oneCS.LRGB.cs = "LRGB"
-	data.oneCS.XYZ = data:new(1, 1, 3)
-	data.oneCS.XYZ:set(0, 0, 0, 0.95047)
-	data.oneCS.XYZ:set(0, 0, 1, 1)
-	data.oneCS.XYZ:set(0, 0, 2, 1.08883)
-	data.oneCS.XYZ:toDevice()
-	data.oneCS.XYZ.cs = "XYZ"
-	data.oneCS.LAB = data:new(1, 1, 3)
-	data.oneCS.LAB:set(0, 0, 0, 1)
-	data.oneCS.LAB:set(0, 0, 1, 0)
-	data.oneCS.LAB:set(0, 0, 2, 0)
-	data.oneCS.LAB:toDevice()
-	data.oneCS.LAB.cs = "LAB"
-	data.oneCS.LCH = data:new(1, 1, 3)
-	data.oneCS.LCH:set(0, 0, 0, 1)
-	data.oneCS.LCH:set(0, 0, 1, 0)
-	data.oneCS.LCH:set(0, 0, 2, 0)
-	data.oneCS.LCH:toDevice()
-	data.oneCS.LCH.cs = "LCH"
-	data.oneCS.Y = data:new(1, 1, 1)
-	data.oneCS.Y:set(0, 0, 0, 1)
-	data.oneCS.Y:toDevice()
-	data.oneCS.Y.cs = "Y"
-	data.oneCS.L = data:new(1, 1, 1)
-	data.oneCS.L:set(0, 0, 0, 1)
-	data.oneCS.L:toDevice()
-	data.oneCS.L.cs = "L"
+  data.oneCS.SRGB = data:new(1, 1, 3)
+  data.oneCS.SRGB:set(0, 0, 0, 1)
+  data.oneCS.SRGB:set(0, 0, 1, 1)
+  data.oneCS.SRGB:set(0, 0, 2, 1)
+  data.oneCS.SRGB:syncDev()
+  data.oneCS.SRGB.cs = "SRGB"
+  data.oneCS.LRGB = data:new(1, 1, 3)
+  data.oneCS.LRGB:set(0, 0, 0, 1)
+  data.oneCS.LRGB:set(0, 0, 1, 1)
+  data.oneCS.LRGB:set(0, 0, 2, 1)
+  data.oneCS.LRGB:syncDev()
+  data.oneCS.LRGB.cs = "LRGB"
+  data.oneCS.XYZ = data:new(1, 1, 3)
+  data.oneCS.XYZ:set(0, 0, 0, 0.95047)
+  data.oneCS.XYZ:set(0, 0, 1, 1)
+  data.oneCS.XYZ:set(0, 0, 2, 1.08883)
+  data.oneCS.XYZ:syncDev()
+  data.oneCS.XYZ.cs = "XYZ"
+  data.oneCS.LAB = data:new(1, 1, 3)
+  data.oneCS.LAB:set(0, 0, 0, 1)
+  data.oneCS.LAB:set(0, 0, 1, 0)
+  data.oneCS.LAB:set(0, 0, 2, 0)
+  data.oneCS.LAB:syncDev()
+  data.oneCS.LAB.cs = "LAB"
+  data.oneCS.LCH = data:new(1, 1, 3)
+  data.oneCS.LCH:set(0, 0, 0, 1)
+  data.oneCS.LCH:set(0, 0, 1, 0)
+  data.oneCS.LCH:set(0, 0, 2, 0)
+  data.oneCS.LCH:syncDev()
+  data.oneCS.LCH.cs = "LCH"
+  data.oneCS.Y = data:new(1, 1, 1)
+  data.oneCS.Y:set(0, 0, 0, 1)
+  data.oneCS.Y:syncDev()
+  data.oneCS.Y.cs = "Y"
+  data.oneCS.L = data:new(1, 1, 1)
+  data.oneCS.L:set(0, 0, 0, 1)
+  data.oneCS.L:syncDev()
+  data.oneCS.L.cs = "L"
 
-	data.zeroCS.SRGB = data:new(1, 1, 3)
-	data.zeroCS.SRGB:set(0, 0, 0, 0)
-	data.zeroCS.SRGB:set(0, 0, 1, 0)
-	data.zeroCS.SRGB:set(0, 0, 2, 0)
-	data.zeroCS.SRGB:toDevice()
-	data.zeroCS.SRGB.cs = "SRGB"
-	data.zeroCS.LRGB = data:new(1, 1, 3)
-	data.zeroCS.LRGB:set(0, 0, 0, 0)
-	data.zeroCS.LRGB:set(0, 0, 1, 0)
-	data.zeroCS.LRGB:set(0, 0, 2, 0)
-	data.zeroCS.LRGB:toDevice()
-	data.zeroCS.LRGB.cs = "LRGB"
-	data.zeroCS.XYZ = data:new(1, 1, 3)
-	data.zeroCS.XYZ:set(0, 0, 0, 0)
-	data.zeroCS.XYZ:set(0, 0, 1, 0)
-	data.zeroCS.XYZ:set(0, 0, 2, 0)
-	data.zeroCS.XYZ:toDevice()
-	data.zeroCS.XYZ.cs = "XYZ"
-	data.zeroCS.LAB = data:new(1, 1, 3)
-	data.zeroCS.LAB:set(0, 0, 0, 0)
-	data.zeroCS.LAB:set(0, 0, 1, 0)
-	data.zeroCS.LAB:set(0, 0, 2, 0)
-	data.zeroCS.LAB:toDevice()
-	data.zeroCS.LAB.cs = "LAB"
-	data.zeroCS.LCH = data:new(1, 1, 3)
-	data.zeroCS.LCH:set(0, 0, 0, 0)
-	data.zeroCS.LCH:set(0, 0, 1, 0)
-	data.zeroCS.LCH:set(0, 0, 2, 0)
-	data.zeroCS.LCH:toDevice()
-	data.zeroCS.LCH.cs = "LCH"
-	data.zeroCS.Y = data:new(1, 1, 1)
-	data.zeroCS.Y:set(0, 0, 0, 0)
-	data.zeroCS.Y:toDevice()
-	data.zeroCS.Y.cs = "Y"
-	data.zeroCS.L = data:new(1, 1, 1)
-	data.zeroCS.L:set(0, 0, 0, 0)
-	data.zeroCS.L:toDevice()
-	data.zeroCS.L.cs = "L"
+  data.zeroCS.SRGB = data:new(1, 1, 3)
+  data.zeroCS.SRGB:set(0, 0, 0, 0)
+  data.zeroCS.SRGB:set(0, 0, 1, 0)
+  data.zeroCS.SRGB:set(0, 0, 2, 0)
+  data.zeroCS.SRGB:syncDev()
+  data.zeroCS.SRGB.cs = "SRGB"
+  data.zeroCS.LRGB = data:new(1, 1, 3)
+  data.zeroCS.LRGB:set(0, 0, 0, 0)
+  data.zeroCS.LRGB:set(0, 0, 1, 0)
+  data.zeroCS.LRGB:set(0, 0, 2, 0)
+  data.zeroCS.LRGB:syncDev()
+  data.zeroCS.LRGB.cs = "LRGB"
+  data.zeroCS.XYZ = data:new(1, 1, 3)
+  data.zeroCS.XYZ:set(0, 0, 0, 0)
+  data.zeroCS.XYZ:set(0, 0, 1, 0)
+  data.zeroCS.XYZ:set(0, 0, 2, 0)
+  data.zeroCS.XYZ:syncDev()
+  data.zeroCS.XYZ.cs = "XYZ"
+  data.zeroCS.LAB = data:new(1, 1, 3)
+  data.zeroCS.LAB:set(0, 0, 0, 0)
+  data.zeroCS.LAB:set(0, 0, 1, 0)
+  data.zeroCS.LAB:set(0, 0, 2, 0)
+  data.zeroCS.LAB:syncDev()
+  data.zeroCS.LAB.cs = "LAB"
+  data.zeroCS.LCH = data:new(1, 1, 3)
+  data.zeroCS.LCH:set(0, 0, 0, 0)
+  data.zeroCS.LCH:set(0, 0, 1, 0)
+  data.zeroCS.LCH:set(0, 0, 2, 0)
+  data.zeroCS.LCH:syncDev()
+  data.zeroCS.LCH.cs = "LCH"
+  data.zeroCS.Y = data:new(1, 1, 1)
+  data.zeroCS.Y:set(0, 0, 0, 0)
+  data.zeroCS.Y:syncDev()
+  data.zeroCS.Y.cs = "Y"
+  data.zeroCS.L = data:new(1, 1, 1)
+  data.zeroCS.L:set(0, 0, 0, 0)
+  data.zeroCS.L:syncDev()
+  data.zeroCS.L.cs = "L"
 
-	data.one = data.oneCS.Y
-	data.zero = data.zeroCS.Y
+  data.one = data.oneCS.Y
+  data.zero = data.zeroCS.Y
 
-	data.oneCS.ANY = data.one
-	data.zeroCS.ANY = data.zero
+  data.oneCS.ANY = data.one
+  data.zeroCS.ANY = data.zero
 end
 
-function data:new(x, y, z) -- new image data
-	x = x or self.x or 1 -- default dimensions or inherit
-	y = y or self.y or 1
-	z = z or self.z or 1
+ffi.cdef[[
+	void * malloc ( size_t size );
+	void free ( void * ptr );
 
-	local o = {
-		x = x, y = y, z = z, -- set extents
-		sx = self.sx or 1, sy = self.sy or x, sz = self.sz or x * y, -- set strides
-		ox = self.ox or 0, oy = self.oy or 0, oz = self.oz or 0, -- set offsets
-		cs = self.cs or "LRGB", -- default CS or inherit
+  typedef float host_float __attribute__((aligned(32)));
+  typedef int32_t host_int __attribute__((aligned(32)));
+  typedef float cl_float __attribute__((aligned(4)));
+  typedef int32_t cl_int __attribute__((aligned(4)));
+  typedef struct _cl_mem *cl_mem;
 
-		-- TODO: clean up implementation
-		__cpuDirty = false,
-		__gpuDirty = false,
-		__csDirty = false,
-		__read = true,
-		__write = true,
-	}
+  typedef struct {
+    host_float *dataHost;
+    cl_mem dataDev;
+    host_int *strHost;
+    cl_mem strDev;
+    int32_t dirtyHost;
+    int32_t dirtyDev;
+  } ivy_buffer;
+]]
 
-	setmetatable(o, self.meta) -- inherit data methods
-	if not settings.hostLowMemory then
-		o:allocHost()
-		self.__cpuDirty = false
-	end
-	if not settings.openclLowMemory then
-		o:allocDev(false)
-	end
-
-	return o
+local function ivyBufferFree(buffer)
+  if buffer[0].dataHost~=NULL then
+    ffi.C.free(buffer[0].dataHost)
+    buffer[0].dataHost = NULL
+  end
+  if buffer[0].strHost~=NULL then
+    ffi.C.free(buffer[0].strHost)
+    buffer[0].strHost = NULL
+  end
+  if buffer[0].dataDev~=NULL then
+    devContext.release_mem_object(buffer[0].dataDev)
+    buffer[0].dataDev = NULL
+  end
+  if buffer[0].strDev~=NULL then
+    devContext.release_mem_object(buffer[0].strDev)
+    buffer[0].strDev = NULL
+  end
+  ffi.C.free(buffer)
 end
 
+function data:new(x, y, z)
+  local d = {}
+  d.x = x or self.x or 1
+  d.y = y or self.y or 1
+  d.z = z or self.z or 1
 
-data.stats = {}
-data.stats.data = {
-	cpu = 0,
-	gpu = 0,
-	cpu_n = 0,
-	gpu_n = 0,
-	cpu_max = 0,
-	gpu_max = 0,
-	cpu_n_max = 0,
-	gpu_n_max = 0,
-}
-data.stats.thread = {
-	cpu = 0,
-	gpu = 0,
-	cpu_n = 0,
-	gpu_n = 0,
-	cpu_max = 0,
-	gpu_max = 0,
-	cpu_n_max = 0,
-	gpu_n_max = 0,
-}
+	d.sx = self.sx or 1
+	d.sy = self.sy or d.x
+	d.sz = self.sz or d.x * d.y
 
-data.stats.memCPU = {}
-data.stats.memGPU = {}
+  d.cs = self.cs or (d.z==3 and "LRGB") or "Y"
 
-local sd = data.stats.data
-function data.stats.allocCPU(buf)
-	ffi.gc(buf.data, data.stats.gcCPU)
-	local m = buf.x*buf.y*buf.z*4
-	data.stats.memCPU[tonumber(ffi.cast("uintptr_t", buf.data))] = m
-	sd.cpu = sd.cpu + m
-	sd.cpu_n = sd.cpu_n + 1
-	sd.cpu_max = math.max(sd.cpu_max, sd.cpu)
-	sd.cpu_n_max = math.max(sd.cpu_n_max, sd.cpu_n)
-end
-function data.stats.allocGPU(buf)
-	ffi.gc(buf.dataOCL, data.stats.gcGPU)
-	local m = buf.x*buf.y*buf.z*4
-	data.stats.memGPU[tonumber(ffi.cast("uintptr_t", buf.dataOCL))] = m
-	sd.gpu = sd.gpu + m
-	sd.gpu_n = sd.gpu_n + 1
-	sd.gpu_max = math.max(sd.gpu_max, sd.gpu)
-	sd.gpu_n_max = math.max(sd.gpu_n_max, sd.gpu_n)
-end
-function data.stats.freeCPU(ptr)
-	local n = tonumber(ffi.cast("uintptr_t", ptr))
-	local m = data.stats.memCPU[n]
-	if not m then return end
-	data.stats.memCPU[n] = nil
-	sd.cpu = sd.cpu - m
-	sd.cpu_n = sd.cpu_n - 1
-end
-function data.stats.freeGPU(ptr)
-	local n = tonumber(ffi.cast("uintptr_t", ptr))
-	local m = data.stats.memGPU[n]
-	if not m then return end
-	data.stats.memGPU[n] = nil
-	sd.gpu = sd.gpu - m
-	sd.gpu_n = sd.gpu_n - 1
-end
-function data.stats.getCPU()
-	return sd.cpu, sd.cpu_n, sd.cpu_max, sd.cpu_n_max
-end
-function data.stats.getGPU()
-	return sd.gpu, sd.gpu_n, sd.gpu_max, sd.gpu_n_max
-end
-function data.stats.clearCPU()
-	sd.cpu_max = sd.cpu
-	sd.cpu_n_max = sd.cpu_n
-end
-function data.stats.clearGPU()
-	sd.gpu_max = sd.gpu
-	sd.gpu_n_max = sd.gpu_n
-end
-function data.stats.gcCPU(ptr)
-	data.stats.freeCPU(ptr)
-	alloc.free(ptr)
-end
-function data.stats.gcGPU(ptr)
-	data.stats.freeGPU(ptr)
-	context.release_mem_object(ptr)
+  d.buffer = ffi.cast("ivy_buffer *", ffi.C.malloc(ffi.sizeof("ivy_buffer")))
+  ffi.gc(d.buffer, ivyBufferFree)
+	d.buffer[0].dataHost = NULL
+	d.buffer[0].dataDev = NULL
+	d.buffer[0].strHost = NULL
+	d.buffer[0].strDev = NULL
+
+	d.buffer[0].dirtyHost = 1
+	d.buffer[0].dirtyDev = 1
+
+	d.mutex = mutex:new()
+
+  setmetatable(d, self.meta)
+  return d
 end
 
-function data:allocHost()
-	if not self.data or self.data==NULL then
-		self.data = alloc.float32(self.x * self.y * self.z)
-		data.stats.allocCPU(self)
-
-		self.str = ffi.new("int32_t[6]", self.x, self.y, self.z, self.sx, self.sy, self.sz)
-
-		self.data_u32 = ffi.cast("uint32_t*", self.data)
-		self.data_i32 = ffi.cast("int32_t*", self.data)
-		self.__cpuDirty = true
-	end
-	return self
+function data:allocHost(transfer)
+  self:lock()
+  if self.buffer[0].dataHost==NULL then
+    assert(self.buffer[0].strHost==NULL)
+    self.buffer[0].dataHost = ffi.cast("host_float *", ffi.C.malloc(ffi.sizeof("host_float") * self.x * self.y * self.z))
+    self.buffer[0].strHost = ffi.cast("host_int *", ffi.C.malloc(ffi.sizeof("host_int") * 6))
+		self.buffer[0].strHost[0] = self.x
+		self.buffer[0].strHost[1] = self.y
+		self.buffer[0].strHost[2] = self.z
+		self.buffer[0].strHost[3] = self.sx
+		self.buffer[0].strHost[4] = self.sy
+		self.buffer[0].strHost[5] = self.sz
+    self.buffer[0].dirtyHost = 1
+  end
+  if transfer then
+    self:syncHost()
+  end
+  self:unlock()
+  return self
 end
 
+local strDev = ffi.new("cl_int[6]")
 function data:allocDev(transfer)
-	--print("Allocate device memory", tonumber(ffi.cast("uintptr_t", self.data)))
-	if transfer==nil then transfer = self.__read end
-	assert(context, "No OpenCL device detected")
-
-	-- helps with CPU/iGPU memory transfers, significantly degrades performance on dGPU
-	--self.dataOCL = context:create_buffer("use_host_ptr", self.x * self.y * self.z * ffi.sizeof("cl_float"), self.data) -- allocate OCL data
-
-	self.dataOCL = context:create_buffer(self.x * self.y * self.z * ffi.sizeof("cl_float")) -- allocate OCL data
-	data.stats.allocGPU(self)
-
-	self.strOCL = context:create_buffer(6 * ffi.sizeof("cl_int"))
-	queue:enqueue_write_buffer(self.strOCL, true, ffi.new("int32_t[6]", self.x, self.y, self.z, self.sx, self.sy, self.sz))
-
-	if transfer then self:toDevice(true) end
-	return self
+  assert(devContext, "No OpenCL device detected")
+	self:lock()
+  if self.buffer[0].dataDev==NULL then
+    assert(self.buffer[0].strDev==NULL)
+    self.buffer[0].dataDev = ffi.gc(devContext:create_buffer(ffi.sizeof("cl_float") * self.x * self.y * self.z), nil)
+    self.buffer[0].strDev = ffi.gc(devContext:create_buffer(ffi.sizeof("cl_int") * 6), nil)
+    strDev[0] = self.x
+    strDev[1] = self.y
+    strDev[2] = self.z
+    strDev[3] = self.sx
+    strDev[4] = self.sy
+    strDev[5] = self.sz
+    devQueue:enqueue_write_buffer(self.buffer[0].strDev, true, strDev)
+    self.buffer[0].dirtyDev = 1
+  end
+  if transfer then
+    self:syncDev()
+  end
+  self:unlock()
+  return self
 end
 
-function data:updateStr()
-	if self.dataOCL and self.dataOCL~=NULL then
-		if not self.strOCL or self.strOCL==NULL then
-			self.strOCL = context:create_buffer(6 * ffi.sizeof("cl_int"))
-		end
-		queue:enqueue_write_buffer(self.strOCL, true, ffi.new("int32_t[6]", self.x, self.y, self.z, self.sx, self.sy, self.sz))
-	end
-
-	if self.data and self.data~=NULL then
-		if not self.str or self.str==NULL then
-			self.str = ffi.new("int32_t[6]", self.x, self.y, self.z, self.sx, self.sy, self.sz)
-		else
-			self.str[0] = self.x
-			self.str[1] = self.y
-			self.str[2] = self.z
-			self.str[3] = self.sx
-			self.str[4] = self.sy
-			self.str[5] = self.sz
-		end
-	end
+function data:freeHost(transfer)
+  self:lock()
+  if transfer then
+    self:allocDev(true)
+  end
+  if self.buffer[0].dataHost~=NULL then
+    assert(self.buffer[0].strHost~=NULL)
+    ffi.C.free(self.buffer[0].dataHost)
+    ffi.C.free(self.buffer[0].strHost)
+    self.buffer[0].dataHost = NULL
+    self.buffer[0].strHost = NULL
+  end
+  self:unlock()
+  return self
 end
 
 function data:freeDev(transfer)
-	--print("Free device memory", tonumber(ffi.cast("uintptr_t", self.data)))
-	if transfer==nil then transfer = self.__write end
-	assert(context, "No OpenCL device detected")
-	if transfer then self:toHost(true) end
-	if self.dataOCL then
-		data.stats.freeGPU(self.dataOCL)
-		context.release_mem_object(self.dataOCL)
-	end
-	self.dataOCL = nil
-	return self
+  assert(devContext, "No OpenCL device detected")
+  self:lock()
+  if transfer then
+    self:allocHost(true)
+  end
+	if self.buffer[0].dataDev~=NULL then
+    assert(self.buffer[0].strDev~=NULL)
+    devContext.release_mem_object(self.buffer[0].dataDev)
+    devContext.release_mem_object(self.buffer[0].strDev)
+    self.buffer[0].dataDev = NULL
+    self.buffer[0].strDev = NULL
+  end
+  self:unlock()
+  return self
 end
 
 function data:free()
-	if self.data then
-		data.stats.freeCPU(self.data)
-		alloc.free(self.data)
-	end
-	if self.dataOCL then
-		data.stats.freeGPU(self.dataOCL)
-		context.release_mem_object(self.dataOCL)
-	end
-	self.data = nil
-	self.dataOCL = nil
+	self:freeHost()
+  self:freeDev()
+  return self
 end
 
-function data:toDevice(blocking)
-	self:allocHost()
-	blocking = blocking or false
-	if queue and self.dataOCL then
-		if oclDebug then print(">>>", self.dataOCL, tostring(self), tonumber(ffi.cast("uintptr_t", self.data))) end
-		queue:enqueue_write_buffer(self.dataOCL, blocking, self.data)
-	end
-	return self
+function data:sync(blocking)
+  self:lock()
+  local h = self.buffer[0].dirtyHost==1
+  local d = self.buffer[0].dirtyDev==1
+  assert(not (h and d))
+  if h then
+    self:syncHost(true, blocking)
+  end
+  if d then
+    self:syncDev(true, blocking)
+  end
+  self:unlock()
+  return self
 end
 
-function data:toHost(blocking)
-	self:allocHost()
-	blocking = blocking or false
-	if queue and self.dataOCL then
-		if oclDebug then print("<<<", self.dataOCL, tostring(self), tonumber(ffi.cast("uintptr_t", self.data))) end
-		queue:enqueue_read_buffer(self.dataOCL, blocking, self.data)
-	end
-	return self
+function data:syncHost(blocking)
+  if blocking==nil then blocking = true end
+  self:lock()
+  self:allocHost()
+  if self.buffer[0].dirtyHost==1 then
+    assert(self.buffer[0].dataDev~=NULL)
+    assert(self.buffer[0].dirtyDev==0)
+	  devQueue:enqueue_read_buffer(self.buffer[0].dataDev, blocking and 1 or 0, self.buffer[0].dataHost)
+    self.buffer[0].dirtyHost = 0
+  end
+  self:unlock()
+  return self
 end
 
-function data.meta.__tostring(a)
-	local host = (a.data and a.data~=NULL) and "CPU" or ""
-	local device = a.dataOCL and (host=="CPU" and "/GPU" or "GPU") or ""
-	return "Data["..a.x..", "..a.y..", "..a.z.."]"..a.cs.." ("..host..device..")"
+function data:forceSyncHost(blocking)
+  if blocking==nil then blocking = true end
+  self:lock()
+  assert(self.buffer[0].dataDev~=NULL)
+  assert(self.buffer[0].dirtyDev==0)
+  self:allocHost()
+  devQueue:enqueue_read_buffer(self.buffer[0].dataDev, blocking and 1 or 0, self.buffer[0].dataHost)
+  self.buffer[0].dirtyHost = 0
+  self:unlock()
+  return self
+end
+
+function data:syncDev(blocking)
+  self:lock()
+  self:allocDev()
+  if self.buffer[0].dirtyDev==1 then
+    assert(self.buffer[0].dataHost~=NULL)
+    assert(self.buffer[0].dirtyHost==0)
+    devQueue:enqueue_write_buffer(self.buffer[0].dataDev, blocking and 1 or 0, self.buffer[0].dataHost)
+    self.buffer[0].dirtyDev = 0
+  end
+  self:unlock()
+  return self
+end
+
+function data:forceSyncDev(blocking)
+  self:lock()
+  assert(self.buffer[0].dataHost~=NULL)
+  assert(self.buffer[0].dirtyHost==0)
+  self:allocDev()
+  devQueue:enqueue_write_buffer(self.buffer[0].dataDev, blocking and 1 or 0, self.buffer[0].dataHost)
+  self.buffer[0].dirtyDev = 0
+  self:unlock()
+  return self
+end
+
+function data.meta.__tostring(self)
+	local host = self.buffer[0].dataHost~=NULL and "Host" or ""
+	local dev = self.buffer[0].dataDev~=NULL and (host=="Host" and "/Device" or "Device") or ""
+	return "Data["..self.x..", "..self.y..", "..self.z.."]"..self.cs.." ("..host..dev..")"
 end
 
 function data:shape()
 	return self.x, self.y, self.z
 end
 
--- conversion to and from c structures
-ffi.cdef[[
-	typedef struct{
-		float *data;		// buffer data
-		int x, y, z;	  // dimensions
-		int sx, sy, sz;	// strides
-		int ox, oy, oz; // offsets
-		int cs;					// color space
-	} dataStruct;
-]]
-data.CStruct = ffi.typeof("dataStruct")
 
-function data:toCStruct()
-	-- remember to anchor data allocation!!!
-	return self.CStruct(self.data,
-		self.x, self.y, self.z,
-		self.sx, self.sy, self.sz,
-		self.ox, self.oy, self.oz,
-	0) -- FIXME export color space
-end
-
-function data:fromCStruct()
-	local o = {
-		data = self.data,
+function data:toTable()
+	return {
 		x = self.x,
 		y = self.y,
 		z = self.z,
 		sx = self.sx,
 		sy = self.sy,
 		sz = self.sz,
-		ox = self.ox,
-		oy = self.oy,
-		oz = self.oz,
-		cs = self.CS[self.cs],
+    cs = self.cs,
+		buffer = tonumber(ffi.cast("uintptr_t", self.buffer)),
+		mutex = self.mutex:ptr(),
 	}
-	o.data_i32 = ffi.cast("int32_t*", o.data)
-	o.data_u32 = ffi.cast("uint32_t*", o.data)
-	setmetatable(o, self.meta) -- inherit data methods
-	return o
 end
 
--- conversion to and from flat tables to send across channels
-function data:toChTable()
-	local o = {
-		data = tonumber(ffi.cast("uintptr_t", self.data)),
-		str = tonumber(ffi.cast("uintptr_t", self.str)),
-		dataOCL = tonumber(ffi.cast("uintptr_t", self.dataOCL)),
-		strOCL = tonumber(ffi.cast("uintptr_t", self.strOCL)),
-		x = self.x,
-		y = self.y,
-		z = self.z,
-		sx = self.sx,
-		sy = self.sy,
-		sz = self.sz,
-		ox = self.ox,
-		oy = self.oy,
-		oz = self.oz,
-		cs = self.cs,
-		type = self.type,
-	}
-	return o
+function data:fromTable(t)
+	local d = {}
+  d.x = t.x
+  d.y = t.y
+  d.z = t.z
+	d.sx = t.sx
+	d.sy = t.sy
+	d.sz = t.sz
+  d.cs = t.cs
+  d.buffer = ffi.cast("ivy_buffer *", t.buffer)
+	d.mutex = mutex:new(t.mutex)
+  setmetatable(d, self.meta)
+  return d
 end
 
-function data:fromChTable()
-	local o = {
-		data = ffi.cast("float*", self.data),
-		str = ffi.cast("int*", self.str),
-		dataOCL = ffi.cast("cl_mem", self.dataOCL),
-		strOCL = ffi.cast("cl_mem", self.strOCL),
-		x = self.x,
-		y = self.y,
-		z = self.z,
-		sx = self.sx,
-		sy = self.sy,
-		sz = self.sz,
-		ox = self.ox,
-		oy = self.oy,
-		oz = self.oz,
-		cs = self.cs,
-		type = self.type,
-	}
-	if self.__read==nil then o.__read = true else o.__read = self.__read end
-	if self.__write==nil then o.__write = true else o.__write = self.__write end
-
-	o.data_i32 = ffi.cast("int32_t*", o.data)
-	o.data_u32 = ffi.cast("uint32_t*", o.data)
-	setmetatable(o, data.meta)
-	return o
+function data:lock()
+	self.mutex:lock()
+  return self
 end
 
--- CPU data access
-function data:abc(x, y, z) -- array bounds checking
-	assert(x < (self.x + self.ox), "x out of bounds")
-	assert(x >= self.ox, "x out of bounds")
-	assert(y < (self.y + self.oy), "y out of bounds")
-	assert(y >= self.oy, "y out of bounds")
-	assert(z < (self.z + self.oz), "z out of bounds")
-	assert(z >= self.oz, "z out of bounds")
-	return x, y, z
+function data:unlock()
+	self.mutex:unlock()
+  return self
 end
 
-function data:broadcastCheck(x, y, z)
-	x = self.x == 1 and 0 or x
-	y = self.y == 1 and 0 or y
-	z = self.z == 1 and 0 or z
-	x, y, z = self:abc(x, y, z)
-	return x, y, z
+function data:setDirtyHost()
+  self:lock()
+	self.buffer[0].dirtyHost = 1
+  self:unlock()
+  return self
 end
 
-function data:broadcastUnsafe(x, y, z)
-	x = self.x == 1 and 0 or x
-	y = self.y == 1 and 0 or y
-	z = self.z == 1 and 0 or z
-	return x, y, z
+function data:setDirtyDev()
+  self:lock()
+	self.buffer[0].dirtyDev = 1
+  self:unlock()
+  return self
 end
 
-function data:broadcastExtend(x, y, z)
-	x = math.max(math.min(x, self.x - 1), 0)
-	y = math.max(math.min(y, self.y - 1), 0)
-	z = math.max(math.min(z, self.z - 1), 0)
-	return x, y, z
+function data:clearDirtyHost()
+  self:lock()
+	self.buffer[0].dirtyHost = 0
+  self:unlock()
+  return self
 end
 
-function data:idx(x, y, z)
-	x, y, z = self:broadcastExtend(x, y, z)
-	return ((x + self.ox) * self.sx + (y + self.oy) * self.sy + (z + self.oz) * self.sz)
+function data:clearDirtyDev()
+  self:lock()
+	self.buffer[0].dirtyDev = 0
+  self:unlock()
+  return self
 end
 
--- TODO: differentiate between idx functions
+function data:hostWritten()
+  self:lock()
+  self.buffer[0].dirtyHost = 0
+  self.buffer[0].dirtyDev = 1
+  self:unlock()
+  return self
+end
+
+function data:devWritten()
+  self:lock()
+  self.buffer[0].dirtyHost = 1
+  self.buffer[0].dirtyDev = 0
+  self:unlock()
+  return self
+end
+
+local function clamp(x, a, b)
+	return math.min(math.max(x, a), b)
+end
+
 function data:get(x, y, z)
-	self:allocHost()
-	return self.data[self:idx(x, y, z)]
+  assert(self.buffer[0].dataHost~=NULL, "Host data not allocated for read")
+  assert(self.buffer[0].dirtyHost==0, "Host data not synchronised")
+	x = clamp(x, 0, self.x-1)
+	y = clamp(y, 0, self.y-1)
+	z = clamp(z, 0, self.z-1)
+	return self.buffer[0].dataHost[x*self.sx + y*self.sy + z*self.sz]
+end
+
+local i32 = ffi.typeof("int32_t*")
+function data:get_i32(x, y, z)
+  assert(self.buffer[0].dataHost~=NULL, "Host data not allocated for read")
+  assert(self.buffer[0].dirtyHost==0, "Host data not synchronised")
+	x = clamp(x, 0, self.x-1)
+	y = clamp(y, 0, self.y-1)
+	z = clamp(z, 0, self.z-1)
+	return ffi.cast(i32, self.buffer[0].dataHost)[x*self.sx + y*self.sy + z*self.sz]
+end
+
+local u32 = ffi.typeof("uint32_t*")
+function data:get_u32(x, y, z)
+  assert(self.buffer[0].dataHost~=NULL, "Host data not allocated for read")
+  assert(self.buffer[0].dirtyHost==0, "Host data not synchronised")
+	x = clamp(x, 0, self.x-1)
+	y = clamp(y, 0, self.y-1)
+	z = clamp(z, 0, self.z-1)
+	return ffi.cast(u32, self.buffer[0].dataHost)[x*self.sx + y*self.sy + z*self.sz]
 end
 
 function data:set(x, y, z, v)
-	self:allocHost()
-	self.data[self:idx(x, y, z)] = v
+  if self.buffer[0].dataHost==NULL then
+    self:allocHost()
+  end
+	if x<0 or x>=self.x or y<0 or y>=self.y or z<0 or z>=self.z then
+    return
+  end
+	self.buffer[0].dataHost[x*self.sx + y*self.sy + z*self.sz] = v
+  self:hostWritten()
 end
 
-function data:get_i32(x, y, z)
-	self:allocHost()
-	return self.data_i32[self:idx(x, y, z)]
-end
 
-function data:set_i32(x, y, z, v)
-	self:allocHost()
-	self.data_i32[self:idx(x, y, z)] = v
-end
-
-function data:get_u32(x, y, z)
-	self:allocHost()
-	return self.data_u32[self:idx(x, y, z)]
-end
-
-function data:set_u32(x, y, z, v)
-	self:allocHost()
-	self.data_u32[self:idx(x, y, z)] = v
-end
-
-function data:transferTo(new)
-	local function fun(z, x, y)
-		new:set(x, y, z, self:get(x, y, z))
-	end
-
-	-- TODO: optimize based on layout
-	for x = 0, self.x - 1 do
-		for y = 0, self.y - 1 do
-			unroll.fixed(self.z, 2)(fun, x, y)
-		end
-	end
-	return new
-end
-
-function data:copy()
-	return self:transferTo(self:new())
+function data.superSize(...)
+  local buffers = {...}
+  local x, y, z = 1, 1, 1
+  for _, t in ipairs(buffers) do
+    x = math.max(x, t.x)
+    y = math.max(y, t.y)
+    z = math.max(z, t.z)
+  end
+  return x, y, z
 end
 
 return data

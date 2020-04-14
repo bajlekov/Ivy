@@ -57,7 +57,7 @@ do
 			j = math.floor(j/2)
 			n = n + 1
 		end
-		print(n)
+
 		local h1 = r
 
 		local f = 1

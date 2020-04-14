@@ -41,7 +41,7 @@ return function(ops)
   			p:set(0, k-1, 4, v.size)
   			p:set(0, k-1, 5, v.falloff)
   		end
-  		p:toDevice()
+  		p:syncDev()
   		thread.ops.spotClone({i, o, p}, self)
   	end
   end
@@ -80,7 +80,7 @@ return function(ops)
   			p:set(0, k-1, 4, v.size)
   			p:set(0, k-1, 5, v.falloff)
   		end
-  		p:toDevice()
+  		p:syncDev()
   		thread.ops.spotCloneSmart({o, p}, self)
   	end
   end
@@ -119,7 +119,7 @@ return function(ops)
   			p:set(0, k-1, 4, v.size)
   			p:set(0, k-1, 5, v.falloff)
   		end
-  		p:toDevice()
+  		p:syncDev()
   		thread.ops.spotCloneTexture({o, p}, self)
   	end
   end

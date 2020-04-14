@@ -67,7 +67,6 @@ local function spotmask(p1, p2) -- size, fall-off
 	local function spotReleaseCallback(mouse)
 		dragN = false
 		dragT = false
-		print("release")
 	end
 	local function spotDragCallback(mouse)
 		local fx, fy = widget.frame.x, widget.frame.y
@@ -106,7 +105,6 @@ local function spotmask(p1, p2) -- size, fall-off
 			dragT = "src"
 		end
 		node.dirty = true
-		print("grab")
 	end
 
 	local function spotScrollCallback(scrollX, scrollY)

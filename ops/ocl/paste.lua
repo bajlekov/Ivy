@@ -15,27 +15,25 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ]]
 
-local proc = require "lib.opencl.process".new()
+local proc = require "lib.opencl.process.ivy".new()
 
 local source = [[
-kernel void paste(global float *p1, global float *p2, global float *offset)
-{
-  const int x = get_global_id(0);
-  const int y = get_global_id(1);
-  const int z = get_global_id(2);
+kernel paste(p1, p2, offset)
+  const x = get_global_id(0)
+  const y = get_global_id(1)
+  const z = get_global_id(2)
 
-  float ox = offset[0];
-  float oy = offset[1];
-  float s = offset[2];
+  var ox = offset[0]
+  var oy = offset[1]
+  var s = offset[2]
 
-  //TODO: fix boundaries on write!!!
-  $p2[(int)(x*s+ox), (int)(y*s+oy), z] = $p1[x, y, z];
-}
+  p2[int(x*s+ox), int(y*s+oy), z] = p1[x, y, z]
+end
 ]]
 
 local function execute()
-  proc:getAllBuffers("p1", "p2", "offset")
-  proc:executeKernel("paste", proc:size3D("p1"))
+  local P1, P2, offset = proc:getAllBuffers(3)
+  proc:executeKernel("paste", proc:size3D(P1), {P1, P2, offset})
 end
 
 local function init(d, c, q)

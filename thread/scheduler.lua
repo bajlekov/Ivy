@@ -56,9 +56,9 @@ local schedule = {}
 local lastid = false
 function schedule.done()
 	hostSyncCh:push("done")
-	hostSyncCh:push(data.stats.data)
-	data.stats.clearCPU()
-	data.stats.clearGPU()
+	--hostSyncCh:push(data.stats.data)
+	--data.stats.clearCPU()
+	--data.stats.clearGPU()
 	if lastid then
 		messageCh:push{"end", lastid}
 	end
@@ -144,7 +144,7 @@ while true do
 	assert(type(com) == "string", "Invalid scheduler of type ["..type(com).."]")
 	if schedule[com] then
 
-		if profile then
+		if settings.schedulerProfile then
 			t2 = timer.getTime()
 			print("Cycle: "..string.format("%.3fms", (t2 - t1) * 1000))
 			t1 = t2
