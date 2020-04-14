@@ -198,6 +198,8 @@ local function args(buffers)
 	for k, v in ipairs(buffers) do
 		if type(v)=="table" then
 			assert(type(v.buffer[0].dataHost)=="cdata")
+			assert(type(v.buffer[0].strHost)=="cdata")
+			v:allocHost()
 			table.insert(args, v.buffer[0].dataHost)
 			table.insert(args, v.buffer[0].strHost)
 		else
