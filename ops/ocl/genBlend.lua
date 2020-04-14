@@ -15,32 +15,25 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ]]
 
-local process = require "lib.opencl.process"
+local process = require "lib.opencl.process.ivy"
 
 local source = {}
 for k, v in ipairs{"negate", "exclude", "screen", "overlay", "hardlight", "softlight", "dodge", "burn", "softdodge", "softburn", "linearlight", "vividlight", "pinlight"} do
   source[v] = [[
-	#include "blendops_LRGB.cl"
 
-	kernel void __]]..v..[[(
-	  global float *A,
-	  global float *B,
-		global float *F,
-	  global float *O)
-	{
-	  const int x = get_global_id(0);
-	  const int y = get_global_id(1);
-	  const int z = get_global_id(2);
+	kernel kernel_]]..v..[[(A, B, F, O)
+	  const x = get_global_id(0)
+	  const y = get_global_id(1)
+	  const z = get_global_id(2)
 
-		float a = $A[x, y, z];
-		float b = $B[x, y, z];
-		float f = $F[x, y, 0];
+		var a = A[x, y, z]
+		var b = B[x, y, z]
+		var f = F[x, y, z]
 
-		float o = ]]..v..[[(a, b);
+		var o = ]]..v..[[(a, b)
 
-	  $O[x, y, z] = a*(1.0f - f) + o*f;
-	}
-
+	  O[x, y, z] = a*(1.0 - f) + o*f
+	end
 	]]
 end
 
@@ -50,15 +43,12 @@ local function init(d, c, q, name)
   local proc = process.new()
 
   proc:init(d, c, q)
+  proc:loadSourceFile("blendops_LRGB.ivy")
   proc:loadSourceString(source[name])
 
   local function execute()
-    proc:getAllBuffers("A", "B", "F", "O")
-		proc.buffers.A.__write = false
-		proc.buffers.B.__write = false
-		proc.buffers.F.__write = false
-		proc.buffers.O.__read = false
-    proc:executeKernel("__"..name, proc:size3D("O"))
+    local A, B, F, O = proc:getAllBuffers(4)
+    proc:executeKernel("kernel_"..name, proc:size3D(O), {A, B, F, O})
   end
 
   return execute
