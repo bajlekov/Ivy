@@ -16,7 +16,7 @@
 const eps = 0.0001
 
 function negate(a, b)
-	return 1.0 - fabs(1.0 - a - b)
+	return 1.0 - abs(1.0 - a - b)
 end
 
 function exclude(a, b)
