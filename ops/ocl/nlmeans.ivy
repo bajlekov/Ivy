@@ -40,7 +40,7 @@ kernel dist(I, T1, p1, p2, p5, ox, oy)
   i1 = 2.0*sqrt(i1*depth + 3.0/8.0 + (p5[0]*25.0)^2)
   i2 = 2.0*sqrt(i2*depth + 3.0/8.0 + (p5[0]*25.0)^2)
 
-  var o = (i1 - i2)^2
+  var o = abs(i1 - i2)^2
   T1[x, y] = (o.x + o.y + o.z) -- r/g/b weight?
 end
 
