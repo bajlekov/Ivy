@@ -26,10 +26,10 @@ kernel spotClone(I, O, P, idx)
 	var s = P[0, idx, 4] -- spot size
 	var f = P[0, idx, 5] -- spot falloff
 
-	var sx = floor(P[0, idx, 0] * O.x) - s + x -- source x
-	var sy = floor(P[0, idx, 1] * O.y) - s + y -- source y
-	var dx = floor(P[0, idx, 2] * O.x) - s + x -- destination x
-	var dy = floor(P[0, idx, 3] * O.y) - s + y -- destination y
+	var sx = floor(P[0, idx, 0]) - s + x -- source x
+	var sy = floor(P[0, idx, 1]) - s + y -- source y
+	var dx = floor(P[0, idx, 2]) - s + x -- destination x
+	var dy = floor(P[0, idx, 3]) - s + y -- destination y
 
 	if dx<0 or dx>=O.x or dy<0 or dy>=O.y then
 		return

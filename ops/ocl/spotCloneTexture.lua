@@ -29,10 +29,10 @@ kernel take(O, S, D, M, P, idx)
 	var s = P[0, idx, 4] -- spot size
 	var f = P[0, idx, 5] -- spot falloff
 
-	var sx = floor(P[0, idx, 0] * O.x) - s - pad + x -- source x
-	var sy = floor(P[0, idx, 1] * O.y) - s - pad + y -- source y
-	var dx = floor(P[0, idx, 2] * O.x) - s - pad + x -- destination x
-	var dy = floor(P[0, idx, 3] * O.y) - s - pad + y -- destination y
+	var sx = floor(P[0, idx, 0]) - s - pad + x -- source x
+	var sy = floor(P[0, idx, 1]) - s - pad + y -- source y
+	var dx = floor(P[0, idx, 2]) - s - pad + x -- destination x
+	var dy = floor(P[0, idx, 3]) - s - pad + y -- destination y
 
 	S[x, y] = O[sx, sy]
 	D[x, y] = O[dx, dy]
@@ -47,8 +47,8 @@ kernel place(O, S, P, idx)
 
 	var s = P[0, idx, 4] -- spot size
 
-	var dx = floor(P[0, idx, 2] * O.x) - s - pad + x -- destination x
-	var dy = floor(P[0, idx, 3] * O.y) - s - pad + y -- destination y
+	var dx = floor(P[0, idx, 2]) - s - pad + x -- destination x
+	var dy = floor(P[0, idx, 3]) - s - pad + y -- destination y
 	O[dx, dy] = S[x, y]
 end
 

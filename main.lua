@@ -686,6 +686,12 @@ function widget.imagePos()
 	return x, y, w, h
 end
 
+function widget.imageOffset()
+  local ox, oy = imageOffset:get(0, 0, 0), imageOffset:get(0, 0, 1)
+  local w, h = originalImage.x, originalImage.y
+  return ox, oy, w, h
+end
+
 function widget.imageSize()
 	local w = previewImage.x
 	local h = previewImage.y

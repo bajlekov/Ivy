@@ -31,8 +31,35 @@ local function spotmask(p1, p2) -- size, fall-off
 	local dragN = false
 	local dragT = false
 
+	local function SCRtoIMG(x, y)
+		local fx, fy = widget.frame.x, widget.frame.y
+		local ox, oy, fix, fiy = widget.imageOffset()
+		local ix, iy, iw, ih = widget.imagePos()
+		local _, _, scale = widget.imageSize()
+
+		x = math.clamp(x, ix+fx, ix+iw+fx)
+		y = math.clamp(y, iy+fy, iy+ih+fy)
+		x = ((x-fx-ix)/scale + ox)/fix
+		y = 1 - (oy-(y-fy-iy-ih)/scale)/fiy
+
+		return x, y
+	end
+
+	local function IMGtoSCR(x, y)
+		local fx, fy = widget.frame.x, widget.frame.y
+		local ox, oy, fix, fiy = widget.imageOffset()
+		local ix, iy, iw, ih = widget.imagePos()
+		local _, _, scale = widget.imageSize()
+
+		x = fx + ix + (x*fix-ox)*scale
+		y = fy + iy + ih - ((1-y)*fiy-oy)*scale
+
+		return x, y
+	end
+
 	local function findSpot(x, y)
-		local w, h, s = widget.imageSize()
+		local _, _, w, h = widget.imageOffset()
+		local _, _, s = widget.imageSize()
 		for k, v in ipairs(spots) do
 			-- check both source and destination
 			local s2 = math.max(v.size^2, 10)
@@ -68,11 +95,9 @@ local function spotmask(p1, p2) -- size, fall-off
 		dragN = false
 		dragT = false
 	end
+
 	local function spotDragCallback(mouse)
-		local fx, fy = widget.frame.x, widget.frame.y
-		local ix, iy = widget.imageCoord(mouse.x - fx, mouse.y - fy)
-		local w, h, s = widget.imageSize()
-		local x, y = ix/w, 1-iy/h
+		local x, y = SCRtoIMG(mouse.x, mouse.y)
 
 		local spot = spots[dragN]
 		if dragT=="src" then
@@ -84,14 +109,11 @@ local function spotmask(p1, p2) -- size, fall-off
 		end
 		node.dirty = true
 	end
-	local function spotPressCallback(mouse)
-		-- check if spot found
-		local fx, fy = widget.frame.x, widget.frame.y
-		local ix, iy = widget.imageCoord(mouse.x - fx, mouse.y - fy)
-		local w, h, s = widget.imageSize()
-		local x, y = ix/w, 1-iy/h
 
+	local function spotPressCallback(mouse)
+		local x, y = SCRtoIMG(mouse.x, mouse.y)
 		local n, t = findSpot(x, y)
+
 		if n then
 			local ctrl = love.keyboard.isDown("lctrl") or love.keyboard.isDown("rctrl")
 			if ctrl then
@@ -108,15 +130,11 @@ local function spotmask(p1, p2) -- size, fall-off
 	end
 
 	local function spotScrollCallback(scrollX, scrollY)
-		local mx, my = love.mouse.getPosition()
-		local fx, fy = widget.frame.x, widget.frame.y
-		local ix, iy = widget.imageCoord(mx - fx, my - fy)
-		local w, h, s = widget.imageSize()
-		local x, y = ix/w, 1-iy/h
+		local x, y = love.mouse.getPosition()
+		local n, t = findSpot(SCRtoIMG(x, y))
 
 		local shift = love.keyboard.isDown("lshift") or love.keyboard.isDown("rshift")
 		local alt = love.keyboard.isDown("lalt") or love.keyboard.isDown("ralt")
-		local n, t = findSpot(x, y)
 
 		if n then
 			if alt then
@@ -150,6 +168,7 @@ local function spotmask(p1, p2) -- size, fall-off
 			widget.cursor.spotmask = cursor.none
 			widget.draw.spotmask.cursor = function(mouse)
 				local x, y = love.mouse.getPosition( )
+				local overSpot = findSpot(SCRtoIMG(x, y))
 
 				love.graphics.setLineWidth(4)
 				love.graphics.setColor(0, 0, 0, 0.3)
@@ -160,17 +179,7 @@ local function spotmask(p1, p2) -- size, fall-off
 				love.graphics.circle("fill", x, y, 3)
 
 				local fx, fy = widget.frame.x, widget.frame.y
-
-				local overSpot
-				do
-					local ix, iy = widget.imageCoord(x - fx, y - fy)
-					local w, h, s = widget.imageSize()
-					overSpot = findSpot(ix/w, 1-iy/h)
-				end
-
 				local ix, iy, iw, ih = widget.imagePos() -- take into account frame offsets
-				x = math.clamp(x, ix+fx, ix+iw+fx)
-				y = math.clamp(y, iy+fy, iy+ih+fy)
 				local _, _, scale = widget.imageSize()
 
 				love.graphics.setScissor(ix+fx, iy+fy, iw+1, ih+1)
@@ -195,10 +204,8 @@ local function spotmask(p1, p2) -- size, fall-off
 				love.graphics.line(x, y+10, x, y-10)
 
 				for k, v in ipairs(spots) do
-					local sx = fx + ix + v.sx*iw
-					local sy = fy + iy + v.sy*ih
-					local dx = fx + ix + v.dx*iw
-					local dy = fy + iy + v.dy*ih
+					local sx, sy = IMGtoSCR(v.sx, v.sy)
+					local dx, dy = IMGtoSCR(v.dx, v.dy)
 					local s = v.size*scale
 					local f = s*(1-v.falloff)
 
@@ -231,10 +238,8 @@ local function spotmask(p1, p2) -- size, fall-off
 				love.graphics.line(x, y+10, x, y-10)
 
 				for k, v in ipairs(spots) do
-					local sx = fx + ix + v.sx*iw
-					local sy = fy + iy + v.sy*ih
-					local dx = fx + ix + v.dx*iw
-					local dy = fy + iy + v.dy*ih
+					local sx, sy = IMGtoSCR(v.sx, v.sy)
+					local dx, dy = IMGtoSCR(v.dx, v.dy)
 					local s = v.size*scale
 					local f = s*(1-v.falloff)
 
