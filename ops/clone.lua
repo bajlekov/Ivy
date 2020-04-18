@@ -18,6 +18,7 @@
 local node = require "ui.node"
 local data = require "data"
 local thread = require "thread"
+local widget = require "ui.widget"
 
 local t = require "ops.tools"
 
@@ -33,11 +34,12 @@ return function(ops)
   	local spots = self.widget.getSpots()
   	if #spots>0 then
   		local p = t.autoTempBuffer(self, -1, 1, #spots, 6)
-  		for k, v in ipairs(spots) do
-  			p:set(0, k-1, 0, v.sx)
-  			p:set(0, k-1, 1, 1-v.sy)
-  			p:set(0, k-1, 2, v.dx)
-  			p:set(0, k-1, 3, 1-v.dy)
+      local ox, oy, fx, fy = widget.imageOffset()
+      for k, v in ipairs(spots) do
+  			p:set(0, k-1, 0, v.sx*fx-ox)
+  			p:set(0, k-1, 1, (1-v.sy)*fy-oy)
+  			p:set(0, k-1, 2, v.dx*fx-ox)
+  			p:set(0, k-1, 3, (1-v.dy)*fy-oy)
   			p:set(0, k-1, 4, v.size)
   			p:set(0, k-1, 5, v.falloff)
   		end
@@ -72,11 +74,12 @@ return function(ops)
   	local spots = self.widget.getSpots()
   	if #spots>0 then
   		local p = t.autoTempBuffer(self, -1, 1, #spots, 6)
+      local ox, oy, fx, fy = widget.imageOffset()
   		for k, v in ipairs(spots) do
-  			p:set(0, k-1, 0, v.sx)
-  			p:set(0, k-1, 1, 1-v.sy)
-  			p:set(0, k-1, 2, v.dx)
-  			p:set(0, k-1, 3, 1-v.dy)
+        p:set(0, k-1, 0, v.sx*fx-ox)
+  			p:set(0, k-1, 1, (1-v.sy)*fy-oy)
+  			p:set(0, k-1, 2, v.dx*fx-ox)
+  			p:set(0, k-1, 3, (1-v.dy)*fy-oy)
   			p:set(0, k-1, 4, v.size)
   			p:set(0, k-1, 5, v.falloff)
   		end
@@ -111,11 +114,12 @@ return function(ops)
   	local spots = self.widget.getSpots()
   	if #spots>0 then
   		local p = t.autoTempBuffer(self, -1, 1, #spots, 6)
+      local ox, oy, fx, fy = widget.imageOffset()
   		for k, v in ipairs(spots) do
-  			p:set(0, k-1, 0, v.sx)
-  			p:set(0, k-1, 1, 1-v.sy)
-  			p:set(0, k-1, 2, v.dx)
-  			p:set(0, k-1, 3, 1-v.dy)
+        p:set(0, k-1, 0, v.sx*fx-ox)
+  			p:set(0, k-1, 1, (1-v.sy)*fy-oy)
+  			p:set(0, k-1, 2, v.dx*fx-ox)
+  			p:set(0, k-1, 3, (1-v.dy)*fy-oy)
   			p:set(0, k-1, 4, v.size)
   			p:set(0, k-1, 5, v.falloff)
   		end
