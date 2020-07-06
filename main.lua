@@ -223,10 +223,11 @@ function love.filedropped(file)
 	do
 		local s_min = math.huge
 		local s_max = -math.huge
+    local ro = math.min(originalImage.x/2, originalImage.y/2)
 
 		local x = originalImage.x/2
 		for y = 0, originalImage.y/2 do
-			local ru = math.sqrt(x^2 + y^2) / math.sqrt((originalImage.x)/2^2 + (originalImage.y/2)^2)
+			local ru = math.sqrt(x^2 + y^2) / ro
 			local rd = ru*(A*ru*ru*ru + B*ru*ru + C*ru + (1-A-B-C))
 			local rr = ru/rd
 			if rr<s_min then s_min = rr end
@@ -235,7 +236,7 @@ function love.filedropped(file)
 
 		local y = originalImage.y/2
 		for x = 0, originalImage.x/2 do
-			local ru = math.sqrt(x^2 + y^2) / math.sqrt((originalImage.x)/2^2 + (originalImage.y/2)^2)
+			local ru = math.sqrt(x^2 + y^2) / ro
 			local rd = ru*(A*ru*ru*ru + B*ru*ru + C*ru + (1-A-B-C))
 			local rr = ru/rd
 			if rr<s_min then s_min = rr end
