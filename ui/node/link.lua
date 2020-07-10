@@ -193,13 +193,15 @@ local function convert(src, dst, cs)
 	return dst
 end
 
-local function checkSingleCS(t)
+function link:singleCS()
 	local cs
-	for k, v in pairs(t) do
-		if (not cs) then
-			cs = k.cs
-		elseif k.cs ~= cs then
-			return false
+	for k, v in pairs(self.portOut) do
+		if k.parent.state then
+			if not cs then
+				cs = k.cs
+			elseif k.cs~=cs then
+				return false
+			end
 		end
 	end
 	return true
@@ -211,7 +213,7 @@ function link:getData(cs, dev)
 		return self.data
 
 	-- TODO: in-place conversion may lead to data degradation after multiple conversions
-	elseif checkSingleCS(self.portOut) and cs~="Y" and cs ~="L" then -- optimize when all outputs have the same CS
+	elseif self:singleCS(self.portOut) and cs~="Y" and cs~="L" then -- optimize when all outputs have the same CS
 		local newData = convert(self.data, self.data, cs)
 		self.data = newData
 		return newData
