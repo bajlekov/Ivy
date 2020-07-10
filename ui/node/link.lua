@@ -130,6 +130,9 @@ function link:draw(color)
 	end
 
 	love.graphics.setLineWidth(1)
+
+
+	self:cleanData() -- TODO: properly address continuous node cleanup
 end
 
 function link:connect(portIn, portOut)
@@ -159,6 +162,7 @@ function link:removeOutput(port)
 	if table.empty(self.portOut) then
 		self:remove()
 	end
+	self:cleanData()
 end
 
 function link:remove()
@@ -172,46 +176,29 @@ function link:remove()
 
 	self.portOut = {}
 	self.curve = {}
+	self:cleanData()
 end
 
 
 local thread = require "thread"
 
-local function toDevice(buf)
-	if buf.__gpuDirty then
-		thread.ops.syncDevice(buf)
-		buf.__gpuDirty = false
-	end
-end
-
-local function toHost(buf)
-	buf:allocHost()
-	if buf.__cpuDirty then
-		thread.ops.syncHost(buf)
-		buf.__cpuDirty = false
-	end
-end
-
 local function convert(src, dst, cs)
-	toDevice(src)
 	if cs == "Y" or cs == "L" then
-		dst = link.dataResize(dst, src.x, src.y, 1)
+		dst = link._resize(dst, src.x, src.y, 1)
 	else
-		dst = link.dataResize(dst, src.x, src.y, 3)
+		dst = link._resize(dst, src.x, src.y, 3)
 	end
-	link.dataConvert(src, dst, src.cs, cs)
+	link._convert(src, dst, src.cs, cs)
 	dst.cs = cs
-	dst.__csDirty = false
-	dst.__cpuDirty = true
 	return dst
 end
 
 local function checkSingleCS(t)
 	local cs
 	for k, v in pairs(t) do
-		if (not cs) and k.parent.state == "waiting" then
+		if (not cs) then
 			cs = k.cs
-		elseif k.cs ~= cs and k.parent.state == "waiting" then
+		elseif k.cs ~= cs then
 			return false
 		end
 	end
@@ -221,31 +208,18 @@ end
 function link:getData(cs, dev)
 	self.data = self.data or require "data".zero
 	if cs == self.data.cs or cs == "ANY" or self.data.cs == "ANY" then -- no conversion needed
-		if dev then
-			toDevice(self.data)
-		else
-			toHost(self.data)
-		end
 		return self.data
-	elseif cs ~= "Y" and cs ~= "L" and checkSingleCS(self.portOut) then -- optimize when all outputs have the same CS
-		-- TODO: conversion to Y/L will be lossy!!
+
+	-- TODO: in-place conversion may lead to data degradation after multiple conversions
+	elseif checkSingleCS(self.portOut) and cs~="Y" and cs ~="L" then -- optimize when all outputs have the same CS
 		local newData = convert(self.data, self.data, cs)
-		if dev then
-			toDevice(newData)
-		else
-			toHost(newData)
-		end
 		self.data = newData
 		return newData
+
 	else
 		local newData = self.dataCS[cs]
-		if (not newData) or newData.__csDirty then
+		if not newData then
 			newData = convert(self.data, newData, cs)
-		end
-		if dev then
-			toDevice(newData)
-		else
-			toHost(newData)
 		end
 		self.dataCS[cs] = newData
 		return newData
@@ -253,41 +227,39 @@ function link:getData(cs, dev)
 end
 
 function link:resizeData(x, y, z)
-	self.data = link.dataResize(self.data, x, y, z)
+	self.data = link._resize(self.data, x, y, z)
 	return self.data
 end
 
 function link:setData(cs, dev)
 	local data = self.data
 	cs = cs or data.cs
-
-	if dev then
-		if dev == "dev" then
-			data.__cpuDirty = true
-		else
-			data.__gpuDirty = true
-		end
-	end
 	data.cs = cs
 
-	--self.dataCS = {}
-	---[[
-	self.dataCS[cs] = nil
-	for k, v in pairs(self.dataCS) do
-		if v.__csDirty then
-			self.dataCS[k] = nil -- remove all CS that were dirty before (not updated since previous change)
-		else
-			v.__csDirty = true -- set all CS to dirty due to changed main buffer
-		end
-	end
-	--]]
+	self.dataCS = {}
+
 	return data
 end
 
-function link:updateCS(cs)
-	local data = self.data
-	cs = cs or data.cs
-	self.dataCS[cs] = nil
+function link:cleanData()
+	local keep = {}
+
+	for k, v in pairs(self.portOut) do
+		if k.parent.state then -- check only active nodes
+			keep[k.cs] = true
+		end
+	end
+
+	if self.data then
+		keep[self.data.cs] = false
+	end
+
+	for k in pairs(self.dataCS) do
+		if not keep[k] then
+			self.dataCS[k]:free()
+			self.dataCS[k] = nil
+		end
+	end
 end
 
 return link

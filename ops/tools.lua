@@ -43,8 +43,8 @@ function tools.convert(dataSrc, dataDst, csSrc, csDst)
 end
 
 -- register resize and convert in link structure
-require "ui.node.link".dataResize = tools.resize
-require "ui.node.link".dataConvert = tools.convert
+require "ui.node.link"._resize = tools.resize
+require "ui.node.link"._convert = tools.convert
 
 
 -- link input, white if not connected
