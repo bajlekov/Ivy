@@ -71,11 +71,7 @@ end
 
 local function execute()
 	local I, W, S, clip = proc:getAllBuffers(4)
-
-	-- allocate temporary count buffer
 	local C = data:new(W.x, W.y, 1)
-  W:allocDev()
-  C:allocDev()
 
 	proc:executeKernel("clearPlot", proc:size2D(C), {C})
 	proc:executeKernel("plot", proc:size2D(I), {I, C, clip})

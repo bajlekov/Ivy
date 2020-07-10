@@ -57,13 +57,6 @@ end
 local function execute()
   local I, O, P = proc:getAllBuffers(3)
 
-  O.dataOCL = proc.context:create_buffer("write_only", O.x * O.y * ffi.sizeof("cl_float"))
-  O.z = 1
-  O.sx = 1
-  O.sy = O.x
-  O.sz = 1
-  O:allocDev()
-
   proc:executeKernel("display", proc:size2D(O), {I, O, P})
 
   O:devWritten()

@@ -99,20 +99,17 @@ end
 
 local function execute()
 	local I, O, P, H = proc:getAllBuffers(4)
-  O:allocDev()
-  H:allocDev()
 
   proc:setWorkgroupSize({256, 1, 1})
   proc:executeKernel("clearHist", {256, 1, 4}, {H})
   proc:executeKernel("display", proc:size2D(O), {I, O, P, H})
+
   O:devWritten()
   O:syncHost(true)
   O:freeDev()
 
-  H:lock()
   H:devWritten()
   H:syncHost(true)
-  H:unlock()
   H:freeDev()
 end
 

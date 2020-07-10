@@ -68,11 +68,7 @@ end
 
 local function execute()
 	local I, W, S, L = proc:getAllBuffers(4)
-
-	-- allocate temporary count buffer
 	local C = data:new(W.x, W.y, 3)
-  W:allocDev()
-  C:allocDev()
 
 	proc:executeKernel("clearWaveform", proc:size2D(C), {C})
 	proc:executeKernel("waveform", proc:size2D(I), {I, C, L})

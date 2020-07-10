@@ -36,9 +36,9 @@ end
 
 local function execute()
 	local I, P = proc:getAllBuffers(2)
-  P:allocDev()
 
 	proc:executeKernel("preview", proc:size2D(P), {I, P})
+  
   P:devWritten()
   P:syncHost(true)
   P:freeDev()
