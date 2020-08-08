@@ -986,7 +986,7 @@ end
 
 local function loadImage(image)
 	require "ui.notice".blocking("Loading image: "..(type(image) == "string" and image or image:getFilename()), true)
-	return require("io.im").read(image):toDevice()
+	return require("io.im").read(image):syncDev()
 end
 
 local function imageProcess(self)
