@@ -15,25 +15,24 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ]]
 
-local proc = require "lib.opencl.process".new()
+local proc = require "lib.opencl.process.ivy".new()
 
 local source = [[
-kernel void mixfactor(global float *p1, global float *p2, global float *p3, global float *p4)
-{
-  const int x = get_global_id(0);
-  const int y = get_global_id(1);
-  const int z = get_global_id(2);
+kernel mixfactor(p1, p2, p3, p4)
+  const x = get_global_id(0)
+  const y = get_global_id(1)
+  const z = get_global_id(2)
 
-  float f = $p3[x, y, z];
-  f = clamp(f, 0.0f, 1.0f);
+  var f = p3[x, y, z]
+  f = clamp(f, 0.0, 1.0)
 
-  $p4[x, y, z] = $p1[x, y, z]*f + $p2[x, y, z]*(1.0f - f);
-}
+  p4[x, y, z] = p1[x, y, z]*f + p2[x, y, z]*(1 - f)
+end
 ]]
 
 local function execute()
-  proc:getAllBuffers("p1", "p2", "p3", "p4")
-  proc:executeKernel("mixfactor", proc:size3D("p4"))
+  local p1, p2, p3, p4 = proc:getAllBuffers(4)
+  proc:executeKernel("mixfactor", proc:size3D(p4), {p1, p2, p3, p4})
 end
 
 local function init(d, c, q)
