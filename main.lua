@@ -221,29 +221,20 @@ function love.filedropped(file)
 
 	-- calculate distortion correction optimal scale
 	do
-		local s_min = math.huge
-		local s_max = -math.huge
-    local ro = math.min(originalImage.x/2, originalImage.y/2)
+    local x, y = originalImage.x/2, originalImage.y/2
+    local ro = math.min(x, y)
+    if ro==y then x, y = y, x end
 
-		local x = originalImage.x/2
-		for y = 0, originalImage.y/2 do
+		local rr = math.huge
+		for y = 0, y do
 			local ru = math.sqrt(x^2 + y^2) / ro
 			local rd = ru*(A*ru*ru*ru + B*ru*ru + C*ru + (1-A-B-C))
-			local rr = ru/rd
-			if rr<s_min then s_min = rr end
-			if rr>s_max then s_max = rr end
+			local rr1 = ru/rd/(BR*rd*rd + CR*rd + VR)
+      local rr2 = ru/rd/(BB*rd*rd + CB*rd + VB)
+      rr = math.min(rr1, rr2, rr)
 		end
 
-		local y = originalImage.y/2
-		for x = 0, originalImage.x/2 do
-			local ru = math.sqrt(x^2 + y^2) / ro
-			local rd = ru*(A*ru*ru*ru + B*ru*ru + C*ru + (1-A-B-C))
-			local rr = ru/rd
-			if rr<s_min then s_min = rr end
-			if rr>s_max then s_max = rr end
-		end
-
-		imageOffset:set(0, 0, 12, s_min)
+		imageOffset:set(0, 0, 12, rr)
 	end
 	imageOffset:syncDev()
 
