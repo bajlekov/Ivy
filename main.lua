@@ -623,17 +623,21 @@ function love.draw()
 	require "ui.widget".drawCursor()
 
 	-- draw nodes
-	for n in node.stack:traverseUp() do
-		n:draw("link out")
-	end
-	for n in node.stack:traverseUp() do
-		n:draw()
-	end
-	if #cycles > 0 then
-		for k, v in pairs(cycles) do
-			v:draw(style.red)
-		end
-	end
+  if not love.keyboard.isDown("tab") then
+
+    for n in node.stack:traverseUp() do
+  		n:draw("link out")
+  	end
+  	for n in node.stack:traverseUp() do
+  		n:draw()
+  	end
+  	if #cycles > 0 then
+  		for k, v in pairs(cycles) do
+  			v:draw(style.red)
+  		end
+  	end
+
+  end
 
 	overlay:draw()
 
