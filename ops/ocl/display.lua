@@ -59,8 +59,10 @@ local function execute()
 
   proc:executeKernel("display", proc:size2D(O), {I, O, P})
 
+  O:lock()
   O:devWritten()
   O:syncHost(true)
+  O:unlock()
   O:freeDev()
 end
 

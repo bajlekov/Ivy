@@ -79,8 +79,10 @@ local function execute()
 
   C:free()
 
+  W:lock()
   W:devWritten()
   W:syncHost(true)
+  W:unlock()
   W:freeDev()
 end
 

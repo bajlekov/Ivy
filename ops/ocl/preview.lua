@@ -39,8 +39,10 @@ local function execute()
 
 	proc:executeKernel("preview", proc:size2D(P), {I, P})
   
+  P:lock()
   P:devWritten()
   P:syncHost(true)
+  P:unlock()
   P:freeDev()
 end
 

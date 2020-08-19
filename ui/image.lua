@@ -108,7 +108,9 @@ function image:get(x, y, z)
 end
 
 function image:refresh()
+  self.data:lock()
   self.image:replacePixels(self.imageData)
+  self.data:unlock()
   return self
 end
 

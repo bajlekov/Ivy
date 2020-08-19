@@ -104,12 +104,16 @@ local function execute()
   proc:executeKernel("clearHist", {256, 1, 4}, {H})
   proc:executeKernel("display", proc:size2D(O), {I, O, P, H})
 
+  O:lock()
   O:devWritten()
   O:syncHost(true)
+  O:unlock()
   O:freeDev()
 
+  H:lock()
   H:devWritten()
   H:syncHost(true)
+  H:unlock()
   H:freeDev()
 end
 
