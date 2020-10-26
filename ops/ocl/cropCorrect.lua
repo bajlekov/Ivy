@@ -23,19 +23,6 @@ function rd(ru, A, B, C, BR, CR, VR)
 	return ru*(BR*ru*ru + CR*ru + VR)
 end
 
-function filterLinear(y0, y1, x)
-  return y1*x + y0*(1.0-x)
-end
-
-function filterCubic(y0, y1, y2, y3, x)
-  var a = 0.5*(-y0 + 3.0*y1 -3.0*y2 +y3)
-  var b = y0 -2.5*y1 + 2.0*y2 - 0.5*y3
-  var c = 0.5*(-y0 + y2)
-  var d = y1
-
-  return a*x^3 + b*x^2 + c*x + d
-end
-
 kernel cropCorrect(I, O, offset, flags)
   const x = get_global_id(0)
   const y = get_global_id(1)
@@ -90,39 +77,9 @@ kernel cropCorrect(I, O, offset, flags)
   cx = sd*cxn*fn_1 + x_2
   cy = sd*cyn*fn_1 + y_2
 
-  -- bicubic filtering
-  var xm = int(floor(cx))
-  var xf = cx - xm
-  var ym = int(floor(cy))
-  var yf = cy - ym
+  O[x, y, z] = bicubic_z(I, cx, cy, z)
 
-	var v = array(4, 4)
-
-  v[0, 0] = I[xm-1, ym-1, z]
-  v[0, 1] = I[xm-1, ym  , z]
-  v[0, 2] = I[xm-1, ym+1, z]
-  v[0, 3] = I[xm-1, ym+2, z]
-  v[1, 0] = I[xm  , ym-1, z]
-  v[1, 1] = I[xm  , ym  , z]
-  v[1, 2] = I[xm  , ym+1, z]
-  v[1, 3] = I[xm  , ym+2, z]
-  v[2, 0] = I[xm+1, ym-1, z]
-  v[2, 1] = I[xm+1, ym  , z]
-  v[2, 2] = I[xm+1, ym+1, z]
-  v[2, 3] = I[xm+1, ym+2, z]
-  v[3, 0] = I[xm+2, ym-1, z]
-  v[3, 1] = I[xm+2, ym  , z]
-  v[3, 2] = I[xm+2, ym+1, z]
-  v[3, 3] = I[xm+2, ym+2, z]
-
-  O[x, y, z] = filterCubic(
-    filterCubic(v[0, 0], v[0, 1], v[0, 2], v[0, 3], yf),
-    filterCubic(v[1, 0], v[1, 1], v[1, 2], v[1, 3], yf),
-    filterCubic(v[2, 0], v[2, 1], v[2, 2], v[2, 3], yf),
-    filterCubic(v[3, 0], v[3, 1], v[3, 2], v[3, 3], yf),
-    xf)
-
-	if xm<0 or ym<0 or xm>I.x-1 or ym>I.y-1 then
+	if cx<0 or cy<0 or cx>I.x-1 or cy>I.y-1 then
 		O[x, y, z] = 0.0
 	end
 end
@@ -135,6 +92,7 @@ end
 
 local function init(d, c, q)
 	proc:init(d, c, q)
+  proc:loadSourceFile("bicubic.ivy")
 	proc:loadSourceString(source)
 	return execute
 end

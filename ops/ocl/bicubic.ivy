@@ -1,0 +1,76 @@
+function filterCubic(y0, y1, y2, y3, x)
+  var a = 0.5*(-y0 + 3.0*y1 -3.0*y2 +y3)
+  var b = y0 -2.5*y1 + 2.0*y2 - 0.5*y3
+  var c = 0.5*(-y0 + y2)
+  var d = y1
+
+  return a*x^3 + b*x^2 + c*x + d
+end
+
+function bicubic(I, x, y)
+	var xm = int(floor(x))
+	var xf = x - xm
+	var ym = int(floor(y))
+	var yf = y - ym
+
+  return filterCubic(
+    filterCubic(
+			I[xm-1, ym-1],
+			I[xm-1, ym  ],
+			I[xm-1, ym+1],
+			I[xm-1, ym+2],
+			yf),
+    filterCubic(
+			I[xm  , ym-1],
+			I[xm  , ym  ],
+			I[xm  , ym+1],
+			I[xm  , ym+2],
+			yf),
+    filterCubic(
+			I[xm+1, ym-1],
+			I[xm+1, ym  ],
+			I[xm+1, ym+1],
+			I[xm+1, ym+2],
+			yf),
+    filterCubic(
+			I[xm+2, ym-1],
+			I[xm+2, ym  ],
+			I[xm+2, ym+1],
+			I[xm+2, ym+2],
+			yf),
+    xf)
+end
+
+function bicubic_z(I, x, y, z)
+	var xm = int(floor(x))
+	var xf = x - xm
+	var ym = int(floor(y))
+	var yf = y - ym
+
+  return filterCubic(
+    filterCubic(
+			I[xm-1, ym-1, z],
+			I[xm-1, ym  , z],
+			I[xm-1, ym+1, z],
+			I[xm-1, ym+2, z],
+			yf),
+    filterCubic(
+			I[xm  , ym-1, z],
+			I[xm  , ym  , z],
+			I[xm  , ym+1, z],
+			I[xm  , ym+2, z],
+			yf),
+    filterCubic(
+			I[xm+1, ym-1, z],
+			I[xm+1, ym  , z],
+			I[xm+1, ym+1, z],
+			I[xm+1, ym+2, z],
+			yf),
+    filterCubic(
+			I[xm+2, ym-1, z],
+			I[xm+2, ym  , z],
+			I[xm+2, ym+1, z],
+			I[xm+2, ym+2, z],
+			yf),
+    xf)
+end
