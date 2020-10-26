@@ -25,20 +25,28 @@ kernel spotClone(I, O, P, idx)
 
 	var s = P[0, idx, 4] -- spot size
 	var f = P[0, idx, 5] -- spot falloff
+	var ct = P[0, idx, 6] -- spot rotation cos(t)
+	var st = P[0, idx, 7] -- spot rotation sin(t)
 
-	var sx = floor(P[0, idx, 0]) - s + x -- source x
-	var sy = floor(P[0, idx, 1]) - s + y -- source y
-	var dx = floor(P[0, idx, 2]) - s + x -- destination x
-	var dy = floor(P[0, idx, 3]) - s + y -- destination y
+	var xo = x - s
+	var yo = y - s
+
+	var xr = xo*ct - yo*st
+	var yr = xo*st + yo*ct
+
+	var sx = floor(P[0, idx, 0]) + xr -- source x
+	var sy = floor(P[0, idx, 1]) + yr -- source y
+	var dx = floor(P[0, idx, 2]) + xo -- destination x
+	var dy = floor(P[0, idx, 3]) + yo -- destination y
 
 	if dx<0 or dx>=O.x or dy<0 or dy>=O.y then
 		return
 	end
 
-	var d = sqrt((x-s)^2 + (y-s)^2) -- distance from center
+	var d = sqrt((xo)^2 + (yo)^2) -- distance from center
 	var mask = range(1.0-f*0.5, f*0.5, d/s)
 
-	var o = O[dx, dy, z]
+	var o = bicubic_z(O, dx, dy, z)
 	var i = I[sx, sy, z]
 
 	O[dx, dy, z] = mix(o, i, mask)
@@ -60,6 +68,7 @@ end
 
 local function init(d, c, q)
 	proc:init(d, c, q)
+	proc:loadSourceFile("bicubic.ivy")
 	proc:loadSourceString(source)
 	return execute
 end

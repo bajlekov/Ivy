@@ -33,7 +33,7 @@ return function(ops)
 
   	local spots = self.widget.getSpots()
   	if #spots>0 then
-  		local p = t.autoTempBuffer(self, -1, 1, #spots, 6)
+  		local p = t.autoTempBuffer(self, -1, 1, #spots, 8)
       local ox, oy, fx, fy = widget.imageOffset()
       for k, v in ipairs(spots) do
   			p:set(0, k-1, 0, v.sx*fx-ox)
@@ -42,6 +42,9 @@ return function(ops)
   			p:set(0, k-1, 3, (1-v.dy)*fy-oy)
   			p:set(0, k-1, 4, v.size)
   			p:set(0, k-1, 5, v.falloff)
+        local r = v.rotation * 2 * math.pi
+        p:set(0, k-1, 6, math.cos(r))
+        p:set(0, k-1, 7, math.sin(r))
   		end
   		p:syncDev()
   		thread.ops.spotClone({i, o, p}, self)
@@ -54,9 +57,10 @@ return function(ops)
   	n:addPortOut(0, "LRGB")
   	n:addElem("float", 1, "Size", 0, 250, 50)
   	n:addElem("float", 2, "Falloff", 0, 1, 0.5)
+    n:addElem("float", 3, "Rotate", -1, 1, 0)
 
-  	n.widget = require "ui.widget.spotmask"(n.elem[1], n.elem[2])
-  	n.widget.toolButton(n, 3, "Manipulate")
+  	n.widget = require "ui.widget.spotmask"(n.elem[1], n.elem[2], n.elem[3])
+  	n.widget.toolButton(n, 4, "Manipulate")
 
   	n.refresh = true
   	n.process = cloneProcess
@@ -73,7 +77,7 @@ return function(ops)
 
   	local spots = self.widget.getSpots()
   	if #spots>0 then
-  		local p = t.autoTempBuffer(self, -1, 1, #spots, 6)
+  		local p = t.autoTempBuffer(self, -1, 1, #spots, 8)
       local ox, oy, fx, fy = widget.imageOffset()
   		for k, v in ipairs(spots) do
         p:set(0, k-1, 0, v.sx*fx-ox)
@@ -82,6 +86,9 @@ return function(ops)
   			p:set(0, k-1, 3, (1-v.dy)*fy-oy)
   			p:set(0, k-1, 4, v.size)
   			p:set(0, k-1, 5, v.falloff)
+        local r = v.rotation * 2 * math.pi
+        p:set(0, k-1, 6, math.cos(r))
+        p:set(0, k-1, 7, math.sin(r))
   		end
   		p:syncDev()
   		thread.ops.spotCloneSmart({o, p}, self)
@@ -94,9 +101,10 @@ return function(ops)
   	n:addPortOut(0, "XYZ")
   	n:addElem("float", 1, "Size", 0, 250, 50)
   	n:addElem("float", 2, "Falloff", 0, 1, 0.5)
+    n:addElem("float", 3, "Rotate", -1, 1, 0)
 
-  	n.widget = require "ui.widget.spotmask"(n.elem[1], n.elem[2])
-  	n.widget.toolButton(n, 3, "Manipulate")
+  	n.widget = require "ui.widget.spotmask"(n.elem[1], n.elem[2], n.elem[3])
+  	n.widget.toolButton(n, 4, "Manipulate")
 
   	n.refresh = true
   	n.process = cloneSmartProcess
@@ -113,7 +121,7 @@ return function(ops)
 
   	local spots = self.widget.getSpots()
   	if #spots>0 then
-  		local p = t.autoTempBuffer(self, -1, 1, #spots, 6)
+  		local p = t.autoTempBuffer(self, -1, 1, #spots, 8)
       local ox, oy, fx, fy = widget.imageOffset()
   		for k, v in ipairs(spots) do
         p:set(0, k-1, 0, v.sx*fx-ox)
@@ -122,6 +130,9 @@ return function(ops)
   			p:set(0, k-1, 3, (1-v.dy)*fy-oy)
   			p:set(0, k-1, 4, v.size)
   			p:set(0, k-1, 5, v.falloff)
+        local r = v.rotation * 2 * math.pi
+        p:set(0, k-1, 6, math.cos(r))
+        p:set(0, k-1, 7, math.sin(r))
   		end
   		p:syncDev()
   		thread.ops.spotCloneTexture({o, p}, self)
@@ -134,9 +145,10 @@ return function(ops)
   	n:addPortOut(0, "XYZ")
   	n:addElem("float", 1, "Size", 0, 250, 50)
   	n:addElem("float", 2, "Falloff", 0, 1, 0.5)
+    n:addElem("float", 3, "Rotate", -1, 1, 0)
 
-  	n.widget = require "ui.widget.spotmask"(n.elem[1], n.elem[2])
-  	n.widget.toolButton(n, 3, "Manipulate")
+  	n.widget = require "ui.widget.spotmask"(n.elem[1], n.elem[2], n.elem[3])
+  	n.widget.toolButton(n, 4, "Manipulate")
 
   	n.refresh = true
   	n.process = cloneTextureProcess

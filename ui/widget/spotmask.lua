@@ -20,13 +20,13 @@ local cursor = require "ui.cursor"
 local style = require "ui.style"
 
 
-local function spotmask(p1, p2) -- size, fall-off
+local function spotmask(p1, p2, p3) -- size, fall-off, rotation
 	local o = {}
 
 	local node
 
 	local spots = {}
-	-- sx, sy, dx, dy, size, falloff, intensity???
+	-- sx, sy, dx, dy, size, falloff, rotation
 
 	local dragN = false
 	local dragT = false
@@ -73,13 +73,14 @@ local function spotmask(p1, p2) -- size, fall-off
 			end
 		end
 	end
-	local function addSpot(sx, sy, dx, dy, size, falloff)
+	local function addSpot(sx, sy, dx, dy, size, falloff, rotation)
 		size = math.clamp(size, 0, 1920)
 		table.insert(spots, {
 			sx = sx, sy = sy,
 			dx = dx, dy = dy,
 			size = size,
 			falloff = falloff,
+			rotation = rotation,
 		})
 		return #spots
 	end
@@ -123,7 +124,7 @@ local function spotmask(p1, p2) -- size, fall-off
 				dragT = t
 			end
 		else
-			dragN = addSpot(x, y, x, y, p1.value, p2.value)
+			dragN = addSpot(x, y, x, y, p1.value, p2.value, p3.value)
 			dragT = "src"
 		end
 		node.dirty = true
@@ -135,9 +136,13 @@ local function spotmask(p1, p2) -- size, fall-off
 
 		local shift = love.keyboard.isDown("lshift") or love.keyboard.isDown("rshift")
 		local alt = love.keyboard.isDown("lalt") or love.keyboard.isDown("ralt")
+		local ctrl = love.keyboard.isDown("lctrl") or love.keyboard.isDown("rctrl")
 
 		if n then
-			if alt then
+			if ctrl then
+				spots[n].rotation = spots[n].rotation - (shift and 0.005 or 0.05) * scrollY
+				spots[n].rotation = spots[n].rotation - math.floor(spots[n].rotation)
+			elseif alt then
 				spots[n].falloff = math.clamp(spots[n].falloff - (shift and 0.005 or 0.05) * scrollY, 0, 1)
 			else
 				spots[n].size = math.clamp(spots[n].size + (shift and 1 or 10) * scrollY, 0, 1920)
@@ -146,7 +151,11 @@ local function spotmask(p1, p2) -- size, fall-off
 			return true
 		else
 			if p1 then
-				if p2 and alt then
+				if p3 and ctrl then
+					p3.value = p3.value - (shift and 0.005 or 0.05) * scrollY
+					if p3.value > 1 then p3.value = p3.value - 2 end
+					if p3.value < -1 then p3.value = p3.value + 2 end
+				elseif p2 and alt then
 					p2.value = math.clamp(p2.value - (shift and 0.005 or 0.05) * scrollY, 0, 1)
 				else
 					p1.value = math.clamp(p1.value + (shift and 1 or 10) * scrollY, 0, 1920)
@@ -200,8 +209,8 @@ local function spotmask(p1, p2) -- size, fall-off
 					love.graphics.arc("line", "open", x, y, r1, c+w1, e-w1)
 				end
 
-				love.graphics.line(x+10, y, x-10, y)
-				love.graphics.line(x, y+10, x, y-10)
+				--love.graphics.line(x+10, y, x-10, y)
+				--love.graphics.line(x, y+10, x, y-10)
 
 				for k, v in ipairs(spots) do
 					local sx, sy = IMGtoSCR(v.sx, v.sy)
@@ -221,6 +230,13 @@ local function spotmask(p1, p2) -- size, fall-off
 					love.graphics.arc("line", "open", sx, sy, s, b+w2, c-w2)
 					love.graphics.arc("line", "open", sx, sy, s, c+w2, d-w2)
 					love.graphics.arc("line", "open", sx, sy, s, d+w2, e-w2)
+
+					local r = v.rotation*math.pi*2 - math.pi*0.5
+					if v.rotation>0.5 then
+						love.graphics.arc("line", "open", dx, dy, s + 5, math.pi*1.5, r)
+					else
+						love.graphics.arc("line", "open", dx, dy, s + 5, -math.pi*0.5, r)
+					end
 				end
 
 				love.graphics.setLineWidth(1)
@@ -234,8 +250,8 @@ local function spotmask(p1, p2) -- size, fall-off
 					love.graphics.arc("line", "open", x, y, r1, c+w1, e-w1)
 				end
 
-				love.graphics.line(x+10, y, x-10, y)
-				love.graphics.line(x, y+10, x, y-10)
+				--love.graphics.line(x+10, y, x-10, y)
+				--love.graphics.line(x, y+10, x, y-10)
 
 				for k, v in ipairs(spots) do
 					local sx, sy = IMGtoSCR(v.sx, v.sy)
@@ -255,6 +271,13 @@ local function spotmask(p1, p2) -- size, fall-off
 					love.graphics.arc("line", "open", sx, sy, s, b+w2, c-w2)
 					love.graphics.arc("line", "open", sx, sy, s, c+w2, d-w2)
 					love.graphics.arc("line", "open", sx, sy, s, d+w2, e-w2)
+
+					local r = v.rotation*math.pi*2 - math.pi*0.5
+					if v.rotation>0.5 then
+						love.graphics.arc("line", "open", dx, dy, s + 5, math.pi*1.5, r)
+					else
+						love.graphics.arc("line", "open", dx, dy, s + 5, -math.pi*0.5, r)
+					end
 				end
 
 				love.graphics.setScissor()

@@ -28,16 +28,24 @@ kernel take(O, S, D, M, P, idx)
 
 	var s = P[0, idx, 4] -- spot size
 	var f = P[0, idx, 5] -- spot falloff
+	var ct = P[0, idx, 6] -- spot rotation cos(t)
+	var st = P[0, idx, 7] -- spot rotation sin(t)
 
-	var sx = floor(P[0, idx, 0]) - s - pad + x -- source x
-	var sy = floor(P[0, idx, 1]) - s - pad + y -- source y
-	var dx = floor(P[0, idx, 2]) - s - pad + x -- destination x
-	var dy = floor(P[0, idx, 3]) - s - pad + y -- destination y
+	var xo = x - s - pad
+	var yo = y - s - pad
 
-	S[x, y] = O[sx, sy]
+	var xr = xo*ct - yo*st
+	var yr = xo*st + yo*ct
+
+	var sx = floor(P[0, idx, 0]) + xr -- source x
+	var sy = floor(P[0, idx, 1]) + yr -- source y
+	var dx = floor(P[0, idx, 2]) + xo -- destination x
+	var dy = floor(P[0, idx, 3]) + yo -- destination y
+
+	S[x, y] = bicubic(O, sx, sy)
 	D[x, y] = O[dx, dy]
 
-	var d = sqrt((x-s-pad)^2 + (y-s-pad)^2) -- distance from center
+	var d = sqrt((xo)^2 + (yo)^2) -- distance from center
 	M[x, y] = range(1.0-f*0.5, f*0.5, d/s)
 end
 
@@ -166,6 +174,7 @@ end
 local function init(d, c, q)
 	proc:init(d, c, q)
 	proc:loadSourceFile("pyr_c_3d.ivy")
+	proc:loadSourceFile("bicubic.ivy")
 	proc:loadSourceString(source)
 	return execute
 end
