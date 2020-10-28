@@ -166,7 +166,9 @@ overlayStats:addElem("addNode", 2, "Minimum", {ops, "stat", "minimum"})
 overlayStats:addElem("addNode", 3, "Mean", {ops, "stat", "mean"})
 overlayStats:addElem("addNode", 4, "SSD", {ops, "stat", "SSD"})
 overlayStats:addElem("addNode", 5, "SAD", {ops, "stat", "SAD"})
-overlayStats:addElem("addNode", 6, "Random", {ops, "random"})
+overlayStats:addElem("addNode", 6, "Thermal Noise", {ops, "random_normal"})
+overlayStats:addElem("addNode", 7, "Shot Noise", {ops, "random_poisson"})
+overlayStats:addElem("addNode", 8, "Impulse Noise", {ops, "random_impulse"})
 
 
 

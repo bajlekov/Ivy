@@ -25,9 +25,11 @@ kernel random(I, W, O, seed)
   const z = get_global_id(2)
 
   var i = I[x, y, z]
-  var w = W[x, y]
+  var w = clamp(1.0/W[x, y, z]^2, 0.1, 1000000.0)
 
-  O[x, y, z] = max(i + rnorm(seed+z, x, y)*W[x, y]*sqrt(i)*0.5, 0.0)
+  var l = i*w
+  var r = rpois(seed+z, x + O.x*y, l)/w
+  O[x, y, z] = r
 end
 ]]
 
