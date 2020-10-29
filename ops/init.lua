@@ -40,6 +40,7 @@ t.register(ops, "split_ud")
 t.register(ops, "random_normal")
 t.register(ops, "random_poisson")
 t.register(ops, "random_impulse")
+t.register(ops, "wiener")
 
 t.imageShapeSet(1, 1, 1)
 
