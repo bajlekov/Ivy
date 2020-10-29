@@ -27,7 +27,7 @@ kernel random(I, W, O, seed)
   var i = I[x, y, z]
   var w = W[x, y, z]
 
-  O[x, y, z] = i + rnorm(seed+z, x, y)*W[x, y]
+  O[x, y, z] = i + rnorm(seed+z, x, y)*w
 end
 ]]
 
