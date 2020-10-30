@@ -33,6 +33,7 @@ require "ops.script"(ops)
 
 -- list of ops + menu entries
 t.register(ops, "contrast")
+t.register(ops, "gamma")
 t.register(ops, "bilateral")
 t.register(ops, "domainTransform")
 t.register(ops, "split_lr")
@@ -927,27 +928,6 @@ function ops.mix(x, y)
 	n:addPortOut(0, "LRGB")
 	n.process = mixProcess
 	n.w = 75
-	n:setPos(x, y)
-	return n
-end
-
-
-local function gammaProcess(self)
-	self.procType = "dev"
-	assert(self.portOut[0].link)
-	local p1, p2, p3
-	p1 = t.inputSourceBlack(self, 0)
-	p2 = t.inputParam(self, 1)
-	p3 = t.autoOutput(self, 0, data.superSize(p1, p2))
-	thread.ops.gamma({p1, p2, p3}, self)
-end
-
-function ops.gamma(x, y)
-	local n = node:new("Gamma")
-	n:addPortIn(0, "XYZ")
-	n:addPortIn(1, "Y"):addElem("float", 1, "Gamma", 0, 1, 0.5)
-	n:addPortOut(0, "XYZ")
-	n.process = gammaProcess
 	n:setPos(x, y)
 	return n
 end

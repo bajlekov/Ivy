@@ -18,12 +18,14 @@
 local proc = require "lib.opencl.process.ivy".new()
 
 local source = [[
-kernel gamma(I, G, O)
+kernel gamma(I, G, P, O)
   const x = get_global_id(0)
   const y = get_global_id(1)
 
   var i = max(I[x, y], 0.0)
-  var j = i.y ^ (log(G[x, y])/log(0.5))
+  var p = max(LtoY(P[x, y]), 0.0001)
+
+  var j = (i.y/p) ^ (log(G[x, y])/log(0.5)) * p
   i = i * j / i.y
 
   O[x, y] = i
@@ -31,8 +33,8 @@ end
 ]]
 
 local function execute()
-	local I, G, O = proc:getAllBuffers(3)
-	proc:executeKernel("gamma", proc:size2D(O), {I, G, O})
+	local I, G, P, O = proc:getAllBuffers(4)
+	proc:executeKernel("gamma", proc:size2D(O), {I, G, P, O})
 end
 
 local function init(d, c, q)
