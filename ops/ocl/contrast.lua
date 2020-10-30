@@ -18,25 +18,32 @@
 local proc = require "lib.opencl.process.ivy".new()
 
 local source = [[
-kernel contrast(I, P, O)
+kernel contrast(I, S, P, O)
   const x = get_global_id(0)
   const y = get_global_id(1)
 
   var i = I[x, y]
+  var s = S[x, y]
   var p = P[x, y]
 
   var l = YtoL(i.y)
 
-  if l<0.0 then
-    l = (1.0-p)*l
+  if l<=0 then
+    l = (2-s)*l
   else
-    if l>1.0 then
-      l = 1.0 + (2.0-p)*(l-1.0)
+    if l>=1 then
+      l = 1 + (2-s)*(l-1)
     else
-      l = l*2.0-1.0
-  		var s = sign(l)
-  		l = (1.0 - p)*l^2 + abs(l)*p
-  		l = (s*l + 1.0)*0.5
+
+      if l>p then
+        l = 1-l
+        p = 1-p
+        l = (s-1)/p*(l^2) + (2-s)*l
+        l = 1-l
+      else
+        l = (s-1)/p*(l^2) + (2-s)*l
+      end
+
     end
   end
 
@@ -45,8 +52,8 @@ end
 ]]
 
 local function execute()
-	local I, P, O = proc:getAllBuffers(3)
-	proc:executeKernel("contrast", proc:size3D(O), {I, P, O})
+	local I, S, P, O = proc:getAllBuffers(4)
+	proc:executeKernel("contrast", proc:size3D(O), {I, S, P, O})
 end
 
 local function init(d, c, q)
