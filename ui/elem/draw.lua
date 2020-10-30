@@ -120,6 +120,14 @@ function draw.button(elem, x, y, w, h)
 	end
 end
 
+local function digits(max)
+	if max >= 100 then return "%.0f" end
+	if max >= 10 then return "%.1f" end
+	if max >= 1 then return "%.2f" end
+	if max >= 0.1 then return "%.3f" end
+	return "%.4f"
+end
+
 function draw.float(elem, x, y, w, h)
 	if elem.disabled then
 		love.graphics.setColor(style.elemHighlightColor)
@@ -139,7 +147,7 @@ function draw.float(elem, x, y, w, h)
 		love.graphics.setColor(style.elemFontColor)
 		love.graphics.setFont(style.elemFont)
 		love.graphics.printf(elem.name, x + 2, y + 2, w - 4, "left")
-		love.graphics.printf(string.format("%.2f", elem.value), x + 2, y + 2, w - 4, "right")
+		love.graphics.printf(string.format(digits(elem.max), elem.value), x + 2, y + 2, w - 4, "right")
 	end
 end
 
