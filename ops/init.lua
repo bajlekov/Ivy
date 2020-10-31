@@ -1103,13 +1103,13 @@ local function mixRGBProcess(self)
 	b:set(0, 0, 0, self.elem[7].value)
 	b:set(0, 0, 1, self.elem[8].value)
 	b:set(0, 0, 2, self.elem[9].value)
-	local p1, p2, r, g, b
-	p1 = t.inputSourceBlack(self, 0)
+	local i, o, r, g, b
+	i = t.inputSourceBlack(self, 0)
 	r = t.inputData(self, 2)
 	g = t.inputData(self, 5)
 	b = t.inputData(self, 8)
-	p2 = t.autoOutput(self, 0, data.superSize(p1, r, g, b))
-	thread.ops.mixrgb({p1, p2, r, g, b}, self)
+	o = t.autoOutput(self, 0, data.superSize(i, r, g, b))
+	thread.ops.mixrgb({i, o, r, g, b}, self)
 end
 
 function ops.mixRGB(x, y)

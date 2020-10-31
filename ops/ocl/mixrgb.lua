@@ -15,28 +15,27 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ]]
 
-local proc = require "lib.opencl.process".new()
+local proc = require "lib.opencl.process.ivy".new()
 
 local source = [[
-kernel void mixrgb(global float *p1, global float *p2, global float *r, global float *g, global float *b)
-{
-  const int x = get_global_id(0);
-  const int y = get_global_id(1);
+kernel mixrgb(I, O, R, G, B)
+  const x = get_global_id(0)
+  const y = get_global_id(1)
 
-  float3 iv = $p1[x, y];
-  float3 rv = $r[x, y];
-  float3 gv = $g[x, y];
-  float3 bv = $b[x, y];
+  var i = I[x, y]
+  var r = R[x, y]
+  var g = G[x, y]
+  var b = B[x, y]
 
-  $p2[x, y, 0] = iv.x*rv.x + iv.y*rv.y + iv.z*rv.z;
-  $p2[x, y, 1] = iv.x*gv.x + iv.y*gv.y + iv.z*gv.z;
-  $p2[x, y, 2] = iv.x*bv.x + iv.y*bv.y + iv.z*bv.z;
-}
+  O[x, y, 0] = i.x*r.x + i.y*r.y + i.z*r.z
+  O[x, y, 1] = i.x*g.x + i.y*g.y + i.z*g.z
+  O[x, y, 2] = i.x*b.x + i.y*b.y + i.z*b.z
+end
 ]]
 
 local function execute()
-  proc:getAllBuffers("p1", "p2", "r", "g", "b")
-  proc:executeKernel("mixrgb", proc:size2D("p2"))
+  local I, O, R, G, B =proc:getAllBuffers(5)
+  proc:executeKernel("mixrgb", proc:size2D(O), {I, O, R, G, B})
 end
 
 local function init(d, c, q)
