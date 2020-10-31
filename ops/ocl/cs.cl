@@ -644,4 +644,64 @@ float rnorm(uint key, uint x, uint y) {
 }
 
 
+float _poisson_small(uint key, uint x, float lambda) {
+  // Algorithm due to Donald Knuth, 1969.
+  float p = 1.0f;
+	float L = exp(-lambda);
+
+	uint k = 0;
+	do {
+    k++;
+		_philox_ctr ctr = {x, k};
+	  _philox_ctr res = _philox(ctr, key); // use alternative solutions res.a, res.b
+    p *= (float)res.a / 4294967296;
+  } while (p > L);
+  return (float)(k - 1);
+}
+
+/*
+Adapted from https://numpy.org/
+The transformed rejection method for generating Poisson random variables
+W. Hormann, Mathematics and Economics 12, 39-45 (1993)
+Described PTRS algorithm
+*/
+float _poisson_large(uint key, uint x, float lam) {
+  float k;
+  float U, V, slam, loglam, a, b, invalpha, vr, us;
+
+  slam = sqrt(lam);
+  loglam = log(lam);
+  b = 0.931 + 2.53 * slam;
+  a = -0.059 + 0.02483 * b;
+  invalpha = 1.1239 + 1.1328 / (b - 3.4);
+  vr = 0.9277 - 3.6224 / (b - 2);
+
+  for (int y = 0; y<1024; y++) {
+		_philox_ctr ctr = {x, y};
+		_philox_ctr res = _philox(ctr, key);
+
+    U = (float)res.a / 4294967296 - 0.5;
+    V = (float)res.b / 4294967296;
+    us = 0.5 - fabs(U);
+    k = floor((2 * a / us + b) * U + lam + 0.43);
+    if ((us >= 0.07) && (V <= vr)) {
+      return k;
+    }
+    if ((k < 0) || ((us < 0.013) && (V > us))) {
+      continue;
+    }
+    if ((log(V) + log(invalpha) - log(a / (us * us) + b)) <=
+        (-lam + k * loglam - lgamma(k + 1))) {
+      return k;
+    }
+  }
+	return k;
+}
+
+float rpois(uint key, uint x, float lambda) {
+	return (lambda < 10.0f) ? _poisson_small(key, x, lambda) : _poisson_large(key, x, lambda);
+}
+
+
+
 #endif
