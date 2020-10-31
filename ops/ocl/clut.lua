@@ -19,17 +19,17 @@ local proc = require "lib.opencl.process.ivy".new()
 
 local source = [[
 const Q = 144
-const D = 1727
 const F = 12
--- D = Q^(3/2) - 1
--- F = 144^(1/2)
 
 function getColor(LUT, r, g, b)
 	r = clamp(r, 0, Q-1)
-	g = clamp(g, 0, Q-1)
+	g = clamp(g + 1, 0, Q-1)
 	b = clamp(b, 0, Q-1)
-	var x = r + mod(g, float(F)) * Q
-	var y = D - (b*F + int(g/F))
+	var gf = floor(g/F)
+	var x = r + (g - gf*F - 1)*Q
+	var y = b*F + gf
+
+	y = Q*F - y - 1
 	return LUT[x, y]
 end
 
@@ -38,9 +38,9 @@ kernel clut(I, LUT, O, MIX)
   const y = get_global_id(1)
 
 	var i = I[x, y]
-  var v = LRGBtoSRGB(i) -- sample CLUT based on sRGB coordinates
- 	var s = clamp(floor(v*(Q-1.0)), 0.0, (Q-1.0))
-  var d = v*(Q-1.0) - s
+  var v = LRGBtoSRGB(i)*(Q-1) -- sample CLUT based on sRGB coordinates
+ 	var s = clamp(floor(v), 0, Q-1)
+  var d = v - s
 
 	var r = int(s.x)
 	var g = int(s.y)
@@ -68,6 +68,7 @@ kernel clut(I, LUT, O, MIX)
 	o = i + (o-i) * MIX[x, y]
 
   O[x, y] = o
+	--O[x, y] = getColor(LUT, r, g, b)
 end
 ]]
 
