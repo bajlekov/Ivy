@@ -84,9 +84,11 @@ local function execute()
 	if x > 0 and y > 0 then
 		proc:executeKernel("clearHist", {256, 1, 4}, {H})
 		proc:executeKernel("histogram", {x, y}, {I, H})
-    
+
+    H:lock()
     H:devWritten()
     H:syncHost(true)
+    H:unlock()
     H:freeDev()
 	end
 end
