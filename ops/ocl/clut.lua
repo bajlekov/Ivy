@@ -37,7 +37,7 @@ kernel clut(I, LUT, O, MIX)
   const x = get_global_id(0)
   const y = get_global_id(1)
 
-	var i = I[x, y]
+	var i = max(I[x, y], 0)
   var v = LRGBtoSRGB(i)*(Q-1) -- sample CLUT based on sRGB coordinates
  	var s = clamp(floor(v), 0, Q-1)
   var d = v - s
