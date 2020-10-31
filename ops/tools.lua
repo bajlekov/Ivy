@@ -67,7 +67,7 @@ function tools.inputData(self, inputIdx, dataIdx, cs)
 	local data = self.data[dataIdx]
 	local link = self.portIn[inputIdx].link
 	local cs = cs or self.portIn[inputIdx].cs
-	return link and link:getData(cs, self.procType == "dev") or self.procType == "dev" and data:toDevice() or data
+	return link and link:getData(cs, self.procType == "dev") or self.procType == "dev" and data:syncDev() or data
 end
 
 -- param, not overriden by link input
