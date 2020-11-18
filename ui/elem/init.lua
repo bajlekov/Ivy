@@ -117,6 +117,7 @@ function elem:addNode(n, name, action)
 	end
 
 	local function actionFunction(x, y)
+		assert(type(f)=="function", "Unknown function associated to action!")
 		local n = f(x, y)
 		n.call = c -- store init function info in node for saving and reproduction
 		return n
