@@ -43,6 +43,7 @@ t.register(ops, "random_poisson")
 t.register(ops, "random_impulse")
 t.register(ops, "random_film")
 t.register(ops, "wiener")
+t.register(ops, "median")
 
 t.imageShapeSet(1, 1, 1)
 
