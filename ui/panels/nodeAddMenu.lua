@@ -170,6 +170,7 @@ overlayStats:addElem("addNode", 5, "SAD", {ops, "stat", "SAD"})
 overlayStats:addElem("addNode", 6, "Thermal Noise", {ops, "random_normal"})
 overlayStats:addElem("addNode", 7, "Shot Noise", {ops, "random_poisson"})
 overlayStats:addElem("addNode", 8, "Impulse Noise", {ops, "random_impulse"})
+overlayStats:addElem("addNode", 9, "Film Grain", {ops, "random_film"})
 
 
 
