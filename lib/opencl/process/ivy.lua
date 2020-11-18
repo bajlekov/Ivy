@@ -186,7 +186,7 @@ local function setArgs(kernel, buffers)
 end
 
 -- use uniform workgroup sizes, settings-selectable
-function process:enqueueKernel(name, size, buffers)
+function process:enqueueKernel(name, size, offset, buffers)
 	local kernel = self:getKernel(name, buffers)
 	if not kernel then return end
 
@@ -194,34 +194,41 @@ function process:enqueueKernel(name, size, buffers)
 	size[2] = size[2] or 1
 	size[3] = size[3] or 1
 
+	offset[1] = offset[1] or 0
+	offset[2] = offset[2] or 0
+	offset[3] = offset[3] or 0
+
 	local workgroupSize = self.workgroupSize or workgroupSize
 	local workgroup = {math.min(size[1], workgroupSize[1]), math.min(size[2], workgroupSize[2]), math.min(size[3], workgroupSize[3])}
 
 	local sx = workgroup[1]
 	local sy = workgroup[2]
 	local sz = size[3]
-	local px = size[1]%sx
-	local py = size[2]%sy
-	local ox = size[1] - px
-	local oy = size[2] - py
-	local oz = size[3] and 0 or nil
+	local rx = size[1]%sx
+	local ry = size[2]%sy
+	local mx = size[1] - rx
+	local my = size[2] - ry
+
+	local ox = offset[1]
+	local oy = offset[2]
+	local oz = offset[3]
 
 	setArgs(kernel, buffers)
 
 	local event = {}
-	event[1] = self.queue:enqueue_ndrange_kernel(kernel, nil, {ox, oy, sz}, workgroup)
-	if px ~= 0 then
-		workgroup[1] = px
-		event[2] = self.queue:enqueue_ndrange_kernel(kernel, {ox, 0, oz}, {px, oy, sz}, workgroup)
-		if py ~= 0 then
-			workgroup[2] = py
-			event[3] = self.queue:enqueue_ndrange_kernel(kernel, {ox, oy, oz}, {px, py, sz}, workgroup)
-			workgroup[1] = sx
+	event[1] = self.queue:enqueue_ndrange_kernel(kernel, {0+ox, 0+oy, 0+oz}, {mx, my, sz}, workgroup)
+	if rx ~= 0 then
+		workgroup[1] = rx
+		event[2] = self.queue:enqueue_ndrange_kernel(kernel, {mx+ox, 0+oy, 0+oz}, {rx, my, sz}, workgroup)
+		if ry ~= 0 then
+			workgroup[2] = ry
+			event[3] = self.queue:enqueue_ndrange_kernel(kernel, {mx+ox, my+oy, 0+oz}, {rx, ry, sz}, workgroup)
 		end
 	end
-	if py ~= 0 then
-		workgroup[2] = py
-		event[4] = self.queue:enqueue_ndrange_kernel(kernel, {0, oy, oz}, {ox, py, sz}, workgroup)
+	if ry ~= 0 then
+		workgroup[1] = sx
+		workgroup[2] = ry
+		event[4] = self.queue:enqueue_ndrange_kernel(kernel, {0+ox, my+oy, 0+oz}, {mx, ry, sz}, workgroup)
 	end
 
 	if oclProfile then
@@ -236,9 +243,14 @@ function process:enqueueKernel(name, size, buffers)
 	end
 end
 
-function process:executeKernel(kernel, size, buffers)
+function process:executeKernel(kernel, size, offset, buffers)
 	if kernel then
-		self:enqueueKernel(kernel, size, buffers)
+		if not buffers then
+			buffers = offset
+			offset = {0, 0, 0}
+		end
+		
+		self:enqueueKernel(kernel, size, offset, buffers)
 	else
 		error("No kernel supplied")
 	end
