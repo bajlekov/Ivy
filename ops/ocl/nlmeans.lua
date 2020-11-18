@@ -19,6 +19,8 @@ local ffi = require "ffi"
 local proc = require "lib.opencl.process.ivy".new()
 local data = require "data"
 
+local messageCh = love.thread.getChannel("messageCh")
+
 local ox = ffi.new("cl_int[1]", 0)
 local oy = ffi.new("cl_int[1]", 0)
 
@@ -48,6 +50,8 @@ local function execute()
 				proc:executeKernel("vertical", proc:size2D(O), {T2, T1, K})
 				proc:executeKernel("accumulate", proc:size2D(O), {I, T1, T3, T4, W, p1, p2, ox, oy})
 			end
+			messageCh:push{"info", ("[Denoise]: %.1f%%"):format((x-1)/r*100)}
+			proc.queue:finish()
 		end
 		local x = 0
 		ox[0] = x
@@ -65,8 +69,6 @@ local function execute()
 			local rx, ry = math.halton2()
 			ox[0] = rx*r
 			oy[0] = ry*r*2-r
-			--ox[0] = math.random(0, r)
-			--oy[0] = math.random(-r, r)
 			if not (ox[0]==0 and oy[0]==0) then
 				proc:executeKernel("dist", proc:size2D(O), {I, T1, p1, p2, p5, ox, oy})
 				proc:executeKernel("horizontal", proc:size2D(O), {T1, T2, K})
@@ -75,7 +77,9 @@ local function execute()
 			end
 		end
 	end
+	messageCh:push{"info", ("[Denoise]: %.1f%%"):format(100)}
 	proc:executeKernel("norm", proc:size2D(O), {I, T3, T4, W, O, p3})
+	messageCh:push{"info", ""}
 
 	T1:free()
 	T2:free()
