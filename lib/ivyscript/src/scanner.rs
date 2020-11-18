@@ -154,6 +154,8 @@ impl Scanner {
             "function" => Some(TokenType::Function),
             "kernel" => Some(TokenType::Kernel),
             "return" => Some(TokenType::Return),
+            "continue" => Some(TokenType::Continue),
+            "break" => Some(TokenType::Break),
 
             "end" => Some(TokenType::End),
 

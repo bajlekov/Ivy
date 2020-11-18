@@ -69,6 +69,8 @@ pub enum TokenType {
     Function,
     Kernel,
     Return,
+    Continue,
+    Break,
 
     End,
 

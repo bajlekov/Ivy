@@ -144,6 +144,8 @@ pub enum Stmt {
 
     Call(String, Vec<Expr>),
     Return(Option<Expr>),
+    Continue,
+    Break,
 
     IfElse {
         cond: Expr,

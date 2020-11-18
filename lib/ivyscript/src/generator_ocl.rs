@@ -377,6 +377,8 @@ impl<'a> Generator<'a> {
                     String::from("// ERROR!!!\n")
                 }
             }
+            Stmt::Continue => String::from("continue;\n"),
+            Stmt::Break => String::from("break;\n"),
             Stmt::Return(Some(expr)) => {
                 let expr_str = self.gen_expr(expr); // generate before assessing type!
 

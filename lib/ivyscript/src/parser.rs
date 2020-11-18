@@ -329,6 +329,16 @@ impl Parser {
                 None => Stmt::Return(None),
             },
 
+            TokenType::Continue => match self.fun_return() {
+                Some(_) => Stmt::Error,
+                None => Stmt::Continue,
+            },
+
+            TokenType::Break => match self.fun_return() {
+                Some(_) => Stmt::Error,
+                None => Stmt::Break,
+            },
+
             TokenType::If => {
                 if let Some((cond, if_body, else_body)) = self.if_branch() {
                     Stmt::IfElse {
