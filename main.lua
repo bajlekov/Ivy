@@ -290,7 +290,6 @@ local processTotal = 0
 local messageCh = love.thread.getChannel("messageCh")
 local currentID = false
 local message = ""
-local tempMessage = ""
 
 local t1 = love.timer.getTime()
 local procTime = 0
@@ -317,8 +316,10 @@ function love.update()
 		local code = messageIn[1]
 		local id = messageIn[2]
 
-		if code == "error" then
-			tempMessage = id:sub(1, 4096)
+    if code == "info" then
+			message = id:sub(1, 4096)
+		elseif code == "error" then
+			message = id:sub(1, 4096)
 			--node.list[currentID].state = "error"
 		elseif code == "start" and id then
 			local node = node.list[id]
@@ -373,7 +374,6 @@ function love.update()
 
 	if thread.done() then
 		processReady = true
-		message = tempMessage
 
 		thread.freeData() -- clean all deleted data references once processing is finished
 		previewImage = pipeline.output.image:refresh() -- set to display the new output.image next
