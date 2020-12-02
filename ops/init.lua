@@ -976,27 +976,49 @@ local function loadImage(image)
 	return require("io.im").read(image):syncDev()
 end
 
+local pool = require "tools.imagePool"
+
 local function imageProcess(self)
+	self.procType = "dev"
+
 	local link = self.portOut[0].link
-	assert(link, "Attempted processing node ["..self.title.."] with no output ["..(0).."] connected")
-	link.data = self.data.image
+	if link then
+		link.data = self.data.image:get()
+		link:setData("LRGB", self.procType)
+
+		--force copy CS conversion!
+		link.forceCopyConvert = true
+
+		--TODO: read-only image pool
+
+		self.state = "ready"
+	end
 end
 
 
 function ops.image(x, y, image)
-	image = image or "img.jpg"
 	local n = node:new("Image")
-	n.data.image = loadImage(image)
+	n.data.imageName = image or "img.jpg"
+
+	do
+		local sx, sy = t.imageShape()
+		local image = loadImage(n.data.imageName)
+		pool.resize(sx, sy)
+		n.data.image = pool.add(image)
+	end
+
 	n.data.imageName = image
 	n:addPortOut(0, "LRGB")
-	n:addElem("text", 1, image or "-", "")
+	n:addElem("text", 1, n.data.imageName or "-", "")
 	n:addElem("button", 2, "Open", function()
 		n.data.imageName = require "lib.fileDialog".fileOpen()
-		n.data.image = loadImage(n.data.imageName)
+		local image = loadImage(n.data.imageName)
+		n.data.image = pool.add(image)
 		n.elem[1].left = n.data.imageName:gsub("^.*[/\\]", "")
 		n.dirty = true
 	end)
 
+	n.refresh = true
 	n.process = imageProcess
 	n:setPos(x, y)
 	return n

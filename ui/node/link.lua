@@ -215,7 +215,7 @@ function link:getData(cs, dev)
 	end
 
 	-- TODO: in-place conversion may lead to data degradation after multiple conversions
-	if self:singleCS() then -- optimize when all outputs have the same CS
+	if self:singleCS() and not self.forceCopyConvert then -- optimize when all outputs have the same CS
 		if self.data.cs=="Y" or self.data.cs=="L" or (cs~="Y" and cs~="L") then -- do not convert 3-channel data to 1-channel
 			local newData = convert(self.data, self.data, cs)
 			self.data = newData
