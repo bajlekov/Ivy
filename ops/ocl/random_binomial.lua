@@ -19,24 +19,66 @@ local proc = require "lib.opencl.process.ivy".new()
 local ffi = require "ffi"
 
 local source = [[
-kernel random(I, W, O, seed)
+kernel random(I, W, P, O, seed)
   const x = get_global_id(0)
   const y = get_global_id(1)
   const z = get_global_id(2)
 
-  var i = I[x, y, z]
-  var w = clamp(1.0/(4*W[x, y, z]^2), 0.1, 1000000.0)
+  --var n = max(W[x, y, z], 1.0)
+  --var n2 = int(n*n)
 
-  var l = i*w
-  var r = rpois(seed+z, x + O.x*y, l)/w
-  O[x, y, z] = r
+  var n2 = int(clamp(1.0/(4*W[x, y, z]^2), 1.0, 1000000.0))
+
+  var i = I[x, y, z]
+  if P[0]>0.5 then
+    i = YtoL(i)
+  end
+
+  var o = 0.0
+  if i<=0.0 then
+    o = 0.0
+  else
+    if i>=1.0 then
+      o = 1.0
+    else
+      if n2*i>100.0 or n2*(1.0-i)>100.0 then
+        -- normal approximation
+        var r = rnorm(seed+z, x, y)
+        var s = round(n2*i + r*sqrt(n2*i*(1-i)))
+        o = s/n2
+      else
+        -- uniform sampling
+        var s = 0
+
+        for k = 1, n2 do
+          var r = runif(seed+z, x + O.x*y, k)
+
+          if r<i then
+            s = s + 1
+          end
+        end
+
+        o = float(s)/n2
+      end
+    end
+
+    if P[0]>0.5 then
+      o = LtoY(o)
+
+      -- correction for average luminance
+      var f = (i/LtoY(i) - 1)/n2 + 1
+      o = o/f
+    end
+  end
+
+  O[x, y, z] = o
 end
 ]]
 
 local function execute()
-	local I, W, O = proc:getAllBuffers(3)
+	local I, W, P, O = proc:getAllBuffers(4)
   local seed = ffi.new("int[1]", math.random( -2147483648, 2147483647))
-	proc:executeKernel("random", proc:size3D(O), {I, W, O, seed})
+	proc:executeKernel("random", proc:size3D(O), {I, W, P, O, seed})
 end
 
 local function init(d, c, q)

@@ -19,7 +19,7 @@ local proc = require "lib.opencl.process.ivy".new()
 local ffi = require "ffi"
 
 local source = [[
-kernel random(I, W, O, seed)
+kernel random(I, W, P, O, seed)
   const x = get_global_id(0)
   const y = get_global_id(1)
   const z = get_global_id(2)
@@ -27,14 +27,23 @@ kernel random(I, W, O, seed)
   var i = I[x, y, z]
   var w = W[x, y, z]
 
-  O[x, y, z] = i + rnorm(seed+z, x, y)*w
+  if P[0]>0.5 then
+    i = YtoL(i)
+  end
+  var o = i + rnorm(seed+z, x, y)*w
+  if P[0]>0.5 then
+    o = LtoY(o)
+  end
+
+  O[x, y, z] = o
 end
 ]]
 
 local function execute()
-	local I, W, O = proc:getAllBuffers(3)
+	local I, W, P, O = proc:getAllBuffers(4)
+  debug.see(P)
   local seed = ffi.new("int[1]", math.random( -2147483648, 2147483647))
-	proc:executeKernel("random", proc:size3D(O), {I, W, O, seed})
+	proc:executeKernel("random", proc:size3D(O), {I, W, P, O, seed})
 end
 
 local function init(d, c, q)

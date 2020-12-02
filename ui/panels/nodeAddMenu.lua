@@ -167,11 +167,13 @@ overlayStats:addElem("addNode", 2, "Minimum", {ops, "stat", "minimum"})
 overlayStats:addElem("addNode", 3, "Mean", {ops, "stat", "mean"})
 overlayStats:addElem("addNode", 4, "SSD", {ops, "stat", "SSD"})
 overlayStats:addElem("addNode", 5, "SAD", {ops, "stat", "SAD"})
-overlayStats:addElem("addNode", 6, "Thermal Noise", {ops, "random_normal"})
-overlayStats:addElem("addNode", 7, "Shot Noise", {ops, "random_poisson"})
-overlayStats:addElem("addNode", 8, "Impulse Noise", {ops, "random_impulse"})
-overlayStats:addElem("addNode", 9, "Film Grain", {ops, "random_film"})
-overlayStats:addElem("addNode", 10, "Median", {ops, "median"})
+overlayStats:addElem("addNode", 6, "Gaussian Noise", {ops, "random_normal"})
+overlayStats:addElem("addNode", 7, "Poisson Noise", {ops, "random_poisson"})
+overlayStats:addElem("addNode", 8, "Binomial Noise", {ops, "random_binomial"})
+overlayStats:addElem("addNode", 9, "Impulse Noise", {ops, "random_impulse"})
+overlayStats:addElem("addNode", 10, "Uniform Noise", {ops, "random_uniform"})
+overlayStats:addElem("addNode", 11, "Film Grain", {ops, "random_film"})
+overlayStats:addElem("addNode", 12, "Median", {ops, "median"})
 
 
 
