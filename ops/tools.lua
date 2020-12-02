@@ -245,10 +245,14 @@ function tools.parse(ops, t)
 
 		if t.param then
 			for k, v in pairs(t.param) do
-				if v.type == "text" then
+				if v.type == "label" then
+					n:addElem("label", k, v.name)
+				elseif v.type == "text" then
 					n:addElem("text", k, v.left, v.right)
 				elseif v.type == "bool" then
 					n:addElem("bool", k, v.name, v.default)
+				elseif v.type == "int" then
+					n:addElem("int", k, v.name, v.min, v.max, v.default, v.step)
 				elseif v.type == "float" then
 					n:addElem("float", k, v.name, v.min, v.max, v.default)
 				end
