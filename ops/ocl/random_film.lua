@@ -42,7 +42,7 @@ function all(A, N)
   return true
 end
 
-kernel random(I, L, G, V, HQ, O, seed)
+kernel random(I, L, G, HQ, V, D, FF, O, seed)
   const x = get_global_id(0)
   const y = get_global_id(1)
   const z = get_global_id(2)
@@ -62,8 +62,10 @@ kernel random(I, L, G, V, HQ, O, seed)
     end
   end
 
-  for px = -1, 1 do
-    for py = -1, 1 do
+  var ff = int((FF[0]-1)*0.5)
+
+  for px = -ff, ff do
+    for py = -ff, ff do
 
       var idx = x+px + I.x*(y+py)
 
@@ -74,17 +76,20 @@ kernel random(I, L, G, V, HQ, O, seed)
       var ro = (G[x+px, y+py, z]*0.5)^2*N
       var rv = V[x+px, y+py, z]
 
+      var diffusion = max(D[x+px, y+py, z], 0.05)
+
       var c = 0
       for k = 1, n do
-        var ox = (rnorm(key, idx, k)*0.5 + px + 0.5) * N
-        var oy = (rnorm(key, idx, k+n)*0.5 + py + 0.5) * N
+        var ox = (rnorm(key, idx, k)*diffusion + px + 0.5) * N
+        var oy = (rnorm(key, idx, k+n)*diffusion + py + 0.5) * N
 
         var r = 0.0
-        if rv>0.01 then
+        if rv>0.001 then
           r = abs(ro + rv*ro*rnorm(key, k, idx))
         else
           r = ro
         end
+        r = min(r, float(ff*N))
         var r2 = r^2
 
         if ox>-r and ox<N+r and oy>-r and oy<N+r then
@@ -123,20 +128,20 @@ end
 ]]
 
 local function execute()
-	local I, L, G, V, HQ, O = proc:getAllBuffers(6)
-  local seed = ffi.new("int[1]", math.random( -2147483648, 2147483647))
+	local I, L, G, HQ, V, D, FF, O = proc:getAllBuffers(8)
+  local seed = ffi.new("int[1]", math.random(-2147483648, 2147483647))
 
   local size = proc:size3D(O)
   local x, y, z = size[1], size[2], size[3]
 
   proc:setWorkgroupSize({8, 8, 1})
 
-  local s = 512
+  local s = 256
   for ox = 0, x-1, s do
     for oy = 0, y-1, s do
       local sx = math.min(s, x-ox)
       local sy = math.min(s, y-oy)
-  	  proc:executeKernel("random", {sx, sy, z}, {ox, oy, 0}, {I, L, G, V, HQ, O, seed})
+  	  proc:executeKernel("random", {sx, sy, z}, {ox, oy, 0}, {I, L, G, HQ, V, D, FF, O, seed})
 
       messageCh:push{"info", ("[Film Grain]: %.1f%%"):format((ox*y + oy*sx)/(x*y)*100)}
       proc.queue:finish()
