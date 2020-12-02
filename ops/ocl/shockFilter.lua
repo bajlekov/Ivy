@@ -15,91 +15,101 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ]]
 
-local proc = require "lib.opencl.process".new()
+local proc = require "lib.opencl.process.ivy".new()
 
 local source = [[
-float gaussian(float x, float s) {
-	return exp(-0.5f*pown(x/s, 2));
-}
+function gaussian(x, s)
+	return exp(-0.5 * (x/s)^2 )
+end
 
-kernel void blur(global float *I, global float *T, global float *W) {
-	const int x = get_global_id(0);
-	const int y = get_global_id(1);
+kernel blur(I, T, W)
+	const x = get_global_id(0)
+	const y = get_global_id(1)
 
-	float w = $W[x, y];
+	var w = W[x, y]
 
-	// blur I
-	float v;
-	if (w==0.0f) {
-		v = $I[x, y, 0];
-	} else {
-		float g[4] = {gaussian(0, w), gaussian(1, w), gaussian(2, w), gaussian(3, w)};
-		float n = g[0] + 2*g[1] + 2*g[2] + 2*g[3];
-		g[0] /= n; g[1] /= n; g[2] /= n; g[3] /= n;
+	-- blur I
+	var v = 0.0
+	if (w==0.0)
+		v = I[x, y, 0]
+	else
+		var g = {gaussian(0, w), gaussian(1, w), gaussian(2, w), gaussian(3, w)}
+		var n = g[0] + 2*g[1] + 2*g[2] + 2*g[3]
+		g[0] = g[0]/n
+		g[1] = g[1]/n
+		g[2] = g[2]/n
+		g[3] = g[3]/n
 
-		v = 0;
-		for (int i = -3; i<=3; i++)
-			for (int j = -3; j<=3; j++)
-				v += $I[x+i, y+j, 0] * g[abs(i)]*g[abs(j)];
-	}
+		v = 0
+		for i = -3, 3 do
+			for j = -3, 3 do
+				v = v + I[x+i, y+j, 0] * g[abs(i)]*g[abs(j)]
+			end
+		end
+	end
 
-	$T[x, y, 0] = v;
-}
+	T[x, y, 0] = v
+end
 
-kernel void sharpen(global float *T, global float *O, global float *F) {
-	const int x = get_global_id(0);
-	const int y = get_global_id(1);
+kernel sharpen(T, O, F, oc)
+	const x = get_global_id(0)
+	const y = get_global_id(1)
 
-	float t = $T[x, y];
-	float xp = $T[x+1, y];
-	float xn = $T[x-1, y];
-	float yp = $T[x, y+1];
-	float yn = $T[x, y-1];
+	var t =  T[x, y]
+	var xp = T[x+1, y]
+	var xn = T[x-1, y]
+	var yp = T[x, y+1]
+	var yn = T[x, y-1]
 
-	float gx = xp - xn;
-	float gy = yp - yn;
-	float n = sqrt(pown(gx, 2) + pown(gy, 2));
-	n = (t > (xp+xn+yp+yn)*0.25f) ? n : -n;
-	$O[x, y, 0] = t + $F[x, y]*n;
-}
+	var gx = xp - xn
+	var gy = yp - yn
+	var n = sqrt(gx^2 + gy^2)
+	if t < (xp+xn+yp+yn)*0.25 then
+		n = -n
+	end
 
-kernel void post(global float *I, global float *O) {
-	const int x = get_global_id(0);
-	const int y = get_global_id(1);
+	var o = t + F[x, y]*n
+	o = overshoot_clamp(T, x, y, o, oc[0])
+	O[x, y, 0] = o
+end
 
-	$O[x, y, 1] = $I[x, y, 1];
-	$O[x, y, 2] = $I[x, y, 2];
-}
+kernel post(I, O, oc)
+	const x = get_global_id(0)
+	const y = get_global_id(1)
+
+	var o = O[x, y, 0]
+	var i = I[x, y, 0]
+
+	o = overshoot_clamp(I, x, y, o, oc[0])
+
+	O[x, y, 0] = o
+	O[x, y, 1] = I[x, y, 1]
+	O[x, y, 2] = I[x, y, 2]
+end
 ]]
 
 local function execute()
-	proc:getAllBuffers("I", "O", "W", "F") -- iterations, radius and strength
+	local I, O, W, F, oc = proc:getAllBuffers(5) -- iterations, radius and strength
 
-	local I = proc.buffers.I
-	local O = proc.buffers.O
-	do
-		local x, y, z = proc.buffers.I:shape()
-		proc.buffers.T = proc.buffers.I:new(x, y, 1)
+	local x, y, z = I:shape()
+	local T = I:new(x, y, 1)
+
+	proc:executeKernel("blur", proc:size2D(I), {I, T, W})
+	proc:executeKernel("sharpen", proc:size2D(I), {T, O, F, oc})
+
+	for n = 2, 25 do
+		proc:executeKernel("blur", proc:size2D(O), {O, T, W})
+		proc:executeKernel("sharpen", proc:size2D(O), {T, O, F, oc})
 	end
 
-	proc:executeKernel("blur", proc:size2D("I"), {"I", "T", "W"})
-	proc:executeKernel("sharpen", proc:size2D("I"), {"T", "O", "F"})
+	proc:executeKernel("post", proc:size2D(O), {I, O, oc})
 
-	proc.buffers.I = O
-	for n = 2, 3 do
-		proc:executeKernel("blur", proc:size2D("I"), {"I", "T", "W"})
-		proc:executeKernel("sharpen", proc:size2D("I"), {"T", "O", "F"})
-	end
-	proc.buffers.I = I
-
-	proc:executeKernel("post", proc:size2D("I"), {"I", "O"})
-
-	proc.buffers.T:free()
-	proc.buffers.T = nil
+	T:free()
 end
 
 local function init(d, c, q)
 	proc:init(d, c, q)
+	proc:loadSourceFile("overshoot.ivy")
 	proc:loadSourceString(source)
 	return execute
 end

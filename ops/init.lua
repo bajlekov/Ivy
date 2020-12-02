@@ -1363,12 +1363,13 @@ end
 
 local function shockFilterProcess(self)
 	self.procType = "dev"
-	local i, o, w, f
+	local i, o, w, f, oc
 	i = t.inputSourceBlack(self, 0)
 	o = t.autoOutput(self, 0, i:shape())
 	w = t.inputParam(self, 1)
 	f = t.inputParam(self, 2)
-	thread.ops.shockFilter({i, o, w, f}, self)
+	oc = t.plainParam(self, 3)
+	thread.ops.shockFilter({i, o, w, f, oc}, self)
 end
 
 function ops.shockFilter(x, y)
@@ -1377,6 +1378,7 @@ function ops.shockFilter(x, y)
 	n:addPortOut(0, "LAB")
 	n:addPortIn(1, "Y"):addElem("float", 1, "Radius", 0, 1, 0.5)
 	n:addPortIn(2, "Y"):addElem("float", 2, "Strength", 0, 1, 0.2)
+	n:addElem("float", 3, "Overshoot", 0, 2, 0.5)
 	n.process = shockFilterProcess
 	n:setPos(x, y)
 	return n
