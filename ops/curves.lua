@@ -422,7 +422,11 @@ return function(ops)
 		c:syncDev()
 		l = t.plainParam(self, 1)
 		o = t.autoOutput(self, 0, i:shape())
-		thread.ops.curveY({i, c, l, o}, self)
+		if self.elem[2].value then
+			thread.ops.curveYdetail({i, c, l, o}, self)
+		else
+			thread.ops.curveY({i, c, l, o}, self)
+		end
 	end
 
 	function ops.curveY(x, y)
@@ -430,6 +434,7 @@ return function(ops)
 		n:addPortIn(0, "XYZ")
 		n:addPortOut(0, "XYZ")
 		n:addElem("bool", 1, "Perceptual", true)
+		n:addElem("bool", 2, "Preserve Detail", false)
 		n.process = curveYProcess
 		n.data.curve = data:new(256, 1, 1)
 		require "ui.graph".curve(n)
