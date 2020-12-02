@@ -192,6 +192,11 @@ function data:new(x, y, z)
   return d
 end
 
+function data:set_cs(cs)
+  self.cs = cs
+  return self
+end
+
 function data:allocHost(transfer)
   self:lock()
   if self.buffer[0].dataHost==NULL then
@@ -477,6 +482,7 @@ function data:set(x, y, z, v)
   end
 	self.buffer[0].dataHost[x*self.sx + y*self.sy + z*self.sz] = v
   self:hostWritten()
+  return self
 end
 
 
