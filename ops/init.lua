@@ -1620,7 +1620,7 @@ function ops.nlmeans(x, y)
 	n:addElem("label", 4, "Advanced")
 	n:addElem("float", 5, "Gaussian Mix", 0, 1, 0)
 	n:addElem("float", 6, "Kernel Size", 1, 5, 3)
-	n:addElem("int", 7, "Range", 5, 25, 10)
+	n:addElem("int", 7, "Range", 5, 50, 10, 5)
 	n:addElem("bool", 8, "Random Sample", false)
 	n.process = nlmeansProcess
 	n:setPos(x, y)
