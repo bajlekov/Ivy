@@ -519,8 +519,8 @@ uniform int _nz = ceil((uniform float)_dim[5]/_dim[8]);
         }
         self.inference.borrow().scope.close();
 
-        for idx in 1..cond_list.len() {
-            let Cond { ref cond, ref body } = cond_list[idx];
+        for cond_item in cond_list.into_iter().skip(1) {
+            let Cond { ref cond, ref body } = cond_item;
 
             s.push_str(&format!("}} else if ({}) {{\n", self.gen_expr(cond)));
             assert!(self.inference.borrow().var_type(cond) == VarType::Bool); // type info available only after generation!
