@@ -37,29 +37,27 @@ kernel random(I, W, P, O, seed)
   var o = 0.0
   if i<=0.0 then
     o = 0.0
+  elseif i>=1.0 then
+    o = 1.0
   else
-    if i>=1.0 then
-      o = 1.0
+    if n2*i>100.0 or n2*(1.0-i)>100.0 then
+      -- normal approximation
+      var r = rnorm(seed+z, x, y)
+      var s = round(n2*i + r*sqrt(n2*i*(1-i)))
+      o = s/n2
     else
-      if n2*i>100.0 or n2*(1.0-i)>100.0 then
-        -- normal approximation
-        var r = rnorm(seed+z, x, y)
-        var s = round(n2*i + r*sqrt(n2*i*(1-i)))
-        o = s/n2
-      else
-        -- uniform sampling
-        var s = 0
+      -- uniform sampling
+      var s = 0
 
-        for k = 1, n2 do
-          var r = runif(seed+z, x + O.x*y, k)
+      for k = 1, n2 do
+        var r = runif(seed+z, x + O.x*y, k)
 
-          if r<i then
-            s = s + 1
-          end
+        if r<i then
+          s = s + 1
         end
-
-        o = float(s)/n2
       end
+
+      o = float(s)/n2
     end
 
     if P[0]>0.5 then

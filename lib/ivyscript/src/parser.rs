@@ -18,7 +18,7 @@
 use std::cell::Cell;
 
 use crate::ast::{
-    AssignOp, BinaryExpr, BinaryOp, ColorSpace, Expr, Index, Literal, Prop, Stmt, UnaryExpr,
+    AssignOp, BinaryExpr, BinaryOp, ColorSpace, Cond, Expr, Index, Literal, Prop, Stmt, UnaryExpr,
     UnaryOp,
 };
 
@@ -89,49 +89,75 @@ impl Parser {
         None
     }
 
-    fn if_branch(&self) -> Option<(Expr, Vec<Stmt>, Vec<Stmt>)> {
-        self.advance(); // skip if
-
-        let cond = self.expression();
-
-        if self.peek() == &TokenType::Then {
-            // skip optional do
-            self.advance();
-        }
-
-        let mut if_body = Vec::new();
+    fn if_branch(&self) -> Option<(Vec<Cond>, Vec<Stmt>)> {
+        let mut cond_list = Vec::new();
         let mut else_body = Vec::new();
 
-        'outer: loop {
-            if self.peek() == &TokenType::Else {
-                self.advance(); // skip else
-
-                loop {
-                    if self.peek() == &TokenType::End {
-                        self.advance();
-                        break 'outer;
-                    }
-                    match self.statement() {
-                        Stmt::Error => return None,
-                        Stmt::EOF => return None,
-                        s => else_body.push(s),
-                    }
-                }
-            }
-
-            if self.peek() == &TokenType::End {
-                self.advance();
-                break 'outer;
+        self.advance(); // skip if
+        let cond = self.expression();
+        let mut body = Vec::new();
+        if self.peek() == &TokenType::Then {
+            self.advance(); // skip optional then
+        }
+        loop {
+            match self.peek() {
+                &TokenType::ElseIf => break,
+                &TokenType::Else => break,
+                &TokenType::End => break,
+                _ => {}
             }
 
             match self.statement() {
                 Stmt::Error => return None,
                 Stmt::EOF => return None,
-                s => if_body.push(s),
+                s => body.push(s),
+            }
+        }
+        cond_list.push(Cond { cond, body });
+
+        while self.peek() == &TokenType::ElseIf {
+            self.advance(); // skip elseIf
+            let cond = self.expression();
+            let mut body = Vec::new();
+            if self.peek() == &TokenType::Then {
+                self.advance(); // skip optional then
+            }
+            loop {
+                match self.peek() {
+                    &TokenType::ElseIf => continue,
+                    &TokenType::Else => break,
+                    &TokenType::End => break,
+                    _ => {}
+                }
+
+                match self.statement() {
+                    Stmt::Error => return None,
+                    Stmt::EOF => return None,
+                    s => body.push(s),
+                }
+            }
+            cond_list.push(Cond { cond, body });
+        }
+
+        if self.peek() == &TokenType::Else {
+            self.advance(); // skip else
+            loop {
+                match self.peek() {
+                    &TokenType::End => break,
+                    _ => {}
+                }
+
+                match self.statement() {
+                    Stmt::Error => return None,
+                    Stmt::EOF => return None,
+                    s => else_body.push(s),
+                }
             }
         }
 
-        Some((cond, if_body, else_body))
+        self.advance(); // skip end
+
+        Some((cond_list, else_body))
     }
 
     fn while_loop(&self) -> Option<(Expr, Vec<Stmt>)> {
@@ -340,10 +366,9 @@ impl Parser {
             },
 
             TokenType::If => {
-                if let Some((cond, if_body, else_body)) = self.if_branch() {
+                if let Some((cond_list, else_body)) = self.if_branch() {
                     Stmt::IfElse {
-                        cond,
-                        if_body,
+                        cond_list,
                         else_body,
                     }
                 } else {

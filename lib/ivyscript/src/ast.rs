@@ -135,6 +135,12 @@ pub enum AssignOp {
 }
 
 #[derive(Debug)]
+pub struct Cond {
+    pub cond: Expr,
+    pub body: Vec<Stmt>,
+}
+
+#[derive(Debug)]
 pub enum Stmt {
     Var(String, Expr),
     Const(String, Expr),
@@ -148,8 +154,7 @@ pub enum Stmt {
     Break,
 
     IfElse {
-        cond: Expr,
-        if_body: Vec<Stmt>,
+        cond_list: Vec<Cond>,
         else_body: Vec<Stmt>,
     },
     For {

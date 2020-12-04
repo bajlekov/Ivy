@@ -18,7 +18,9 @@
 use std::cell::RefCell;
 use std::collections::{HashMap, HashSet};
 
-use crate::ast::{BinaryExpr, BinaryOp, Expr, Index, Literal, Prop, Stmt, UnaryExpr, UnaryOp};
+use crate::ast::{
+    BinaryExpr, BinaryOp, Cond, Expr, Index, Literal, Prop, Stmt, UnaryExpr, UnaryOp,
+};
 use crate::function_id::function_id;
 
 use crate::inference::{Inference, VarType};
@@ -365,10 +367,9 @@ impl<'a> Generator<'a> {
                 body,
             } => self.gen_for(var, from, to, step, body),
             Stmt::IfElse {
-                cond,
-                if_body,
+                cond_list,
                 else_body,
-            } => self.gen_if_else(cond, if_body, else_body),
+            } => self.gen_if_else(cond_list, else_body),
             Stmt::While { cond, body } => self.gen_while(cond, body),
             Stmt::Return(None) => {
                 if let Some(VarType::Unknown) = self.inference.borrow().scope.get("return") {
@@ -478,15 +479,32 @@ impl<'a> Generator<'a> {
         s
     }
 
-    fn gen_if_else(&'a self, cond: &Expr, if_body: &[Stmt], else_body: &[Stmt]) -> String {
+    fn gen_if_else(&'a self, cond_list: &[Cond], else_body: &[Stmt]) -> String {
+        // cond_list should have 1 or more entries
+
+        let Cond { ref cond, ref body } = cond_list[0];
+
         let mut s = format!("if ({}) {{\n", self.gen_expr(cond));
         assert!(self.inference.borrow().var_type(cond) == VarType::Bool); // type info available only after generation!
 
         self.inference.borrow().scope.open();
-        for v in if_body {
+        for v in body {
             s.push_str(&self.gen_stmt(v));
         }
         self.inference.borrow().scope.close();
+
+        for idx in 1..cond_list.len() {
+            let Cond { ref cond, ref body } = cond_list[idx];
+
+            s.push_str(&format!("}} else if ({}) {{\n", self.gen_expr(cond)));
+            assert!(self.inference.borrow().var_type(cond) == VarType::Bool); // type info available only after generation!
+
+            self.inference.borrow().scope.open();
+            for v in body {
+                s.push_str(&self.gen_stmt(v));
+            }
+            self.inference.borrow().scope.close();
+        }
 
         if !else_body.is_empty() {
             s.push_str("} else {\n");
