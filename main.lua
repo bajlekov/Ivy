@@ -809,7 +809,7 @@ function love.keypressed(key)
 	end
 
 	if key == "r" then
-		tempMessage = ""
+		message = ""
 		reloadDev = true
 		--TODO: reload native plugins too, by reinitiating all threads?
 	end
