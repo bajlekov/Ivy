@@ -297,12 +297,12 @@ impl Parser {
         self.advance(); // skip return
 
         let expr = match self.peek() {
-            TokenType::End | TokenType::Else => return None,
+            TokenType::End | TokenType::Else | TokenType::ElseIf => return None,
             _ => self.expression(),
         };
 
         match self.peek() {
-            TokenType::End | TokenType::Else => Some(expr),
+            TokenType::End | TokenType::Else | TokenType::ElseIf => Some(expr),
             _ => Some(Expr::Error),
         }
     }
