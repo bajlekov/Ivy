@@ -19,6 +19,7 @@ use std::ffi::{CStr, CString};
 
 mod ast;
 mod buf_idx;
+mod fragment;
 mod function_id;
 mod generator_ispc;
 mod generator_ocl;
