@@ -80,11 +80,18 @@ pub enum TokenType {
 
     Comment(String),
     EOF,
+    Error(String),
+}
+
+#[derive(Debug)]
+pub struct SourcePosition {
+    pub line: usize,
+    pub position: usize,
+    pub lexeme: String,
 }
 
 #[derive(Debug)]
 pub struct Token {
     pub token: TokenType,
-    pub lexeme: String,
-    pub line: usize,
+    pub position: SourcePosition,
 }

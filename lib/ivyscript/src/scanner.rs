@@ -15,6 +15,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+use crate::tokens::SourcePosition;
 use crate::tokens::Token;
 use crate::tokens::TokenType;
 
@@ -24,6 +25,7 @@ pub struct Scanner {
     start: usize,
     current: usize,
     line: usize,
+    line_start: usize, // starting character of current line
 }
 
 impl Scanner {
@@ -32,7 +34,8 @@ impl Scanner {
             source: source.chars().collect(),
             start: 0,
             current: 0,
-            line: 1,
+            line: 0,
+            line_start: 0,
         }
     }
 
@@ -50,8 +53,11 @@ impl Scanner {
 
         tokens.push(Token {
             token: TokenType::EOF,
-            lexeme: String::from(""),
-            line: self.line,
+            position: SourcePosition {
+                line: self.line + 1,
+                position: self.start - self.line_start + 1,
+                lexeme: String::from("[End of file]"),
+            },
         });
 
         tokens
@@ -102,25 +108,29 @@ impl Scanner {
                 self.advance();
             }
 
-            if let Ok(value) = self.source[self.start..self.current]
+            let value = self.source[self.start..self.current]
                 .iter()
-                .collect::<String>()
-                .parse::<f32>()
-            {
+                .collect::<String>();
+            if let Ok(value) = value.parse::<f32>() {
                 Some(TokenType::Float(value))
             } else {
-                eprintln!("[line {}] Unable to parse float", self.line);
-                None
+                Some(TokenType::Error(format!(
+                    "Unable to parse as floating point literal: '{}'",
+                    value
+                )))
             }
-        } else if let Ok(value) = self.source[self.start..self.current]
-            .iter()
-            .collect::<String>()
-            .parse::<i32>()
-        {
-            Some(TokenType::Int(value))
         } else {
-            eprintln!("[line {}] Unable to parse integer", self.line);
-            None
+            let value = self.source[self.start..self.current]
+                .iter()
+                .collect::<String>();
+            if let Ok(value) = value.parse::<i32>() {
+                Some(TokenType::Int(value))
+            } else {
+                Some(TokenType::Error(format!(
+                    "Unable to parse as integer literal: '{}'",
+                    value
+                )))
+            }
         }
     }
 
@@ -248,24 +258,25 @@ impl Scanner {
             ' ' | '\r' | '\t' => None,
             '\n' => {
                 self.line += 1;
+                self.line_start = self.current;
                 None
             }
             c if c.is_digit(10) => self.match_number(),
             c if c.is_alphabetic() => self.match_identifier(),
-            c => {
-                eprintln!("[line {}] Unexpected character: {}", self.line, c);
-                None
-            }
+            c => Some(TokenType::Error(format!("Unexpected character: '{}'", c))),
         };
 
         let lexeme = self.source[self.start..self.current]
             .iter()
             .collect::<String>();
-        if let Some(t) = token {
+        if let Some(token) = token {
             tokens.push(Token {
-                token: t,
-                lexeme,
-                line: self.line,
+                token,
+                position: SourcePosition {
+                    line: self.line + 1,
+                    position: self.start - self.line_start + 1,
+                    lexeme,
+                },
             });
         }
     }
