@@ -188,45 +188,57 @@ impl Scanner {
             ']' => TokenType::RightBracket,
             ',' => TokenType::Comma,
             '.' => TokenType::Dot,
-            '-' => if self.match_advance('-') {
-                // handle comments
-                let start = self.current;
-                while self.peek() != '\n' && !self.is_at_end() {
-                    self.advance();
-                }
+            '-' => {
+                if self.match_advance('-') {
+                    // handle comments
+                    let start = self.current;
+                    while self.peek() != '\n' && !self.is_at_end() {
+                        self.advance();
+                    }
 
-                let comment = self.source[start..self.current].iter().collect::<String>();
-                TokenType::Comment(comment)
-            } else if self.match_advance('=') {
-                TokenType::MinusEqual
-            } else {
-                TokenType::Minus
-            },
-            '+' => if self.match_advance('=') {
-                TokenType::PlusEqual
-            } else {
-                TokenType::Plus
-            },
-            '/' => if self.match_advance('=') {
-                TokenType::SlashEqual
-            } else {
-                TokenType::Slash
-            },
-            '*' => if self.match_advance('=') {
-                TokenType::StarEqual
-            } else {
-                TokenType::Star
-            },
-            '^' => if self.match_advance('=') {
-                TokenType::CaretEqual
-            } else {
-                TokenType::Caret
-            },
-            '%' => if self.match_advance('=') {
-                TokenType::PercentEqual
-            } else {
-                TokenType::Percent
-            },
+                    let comment = self.source[start..self.current].iter().collect::<String>();
+                    TokenType::Comment(comment)
+                } else if self.match_advance('=') {
+                    TokenType::MinusEqual
+                } else {
+                    TokenType::Minus
+                }
+            }
+            '+' => {
+                if self.match_advance('=') {
+                    TokenType::PlusEqual
+                } else {
+                    TokenType::Plus
+                }
+            }
+            '/' => {
+                if self.match_advance('=') {
+                    TokenType::SlashEqual
+                } else {
+                    TokenType::Slash
+                }
+            }
+            '*' => {
+                if self.match_advance('=') {
+                    TokenType::StarEqual
+                } else {
+                    TokenType::Star
+                }
+            }
+            '^' => {
+                if self.match_advance('=') {
+                    TokenType::CaretEqual
+                } else {
+                    TokenType::Caret
+                }
+            }
+            '%' => {
+                if self.match_advance('=') {
+                    TokenType::PercentEqual
+                } else {
+                    TokenType::Percent
+                }
+            }
             '!' => {
                 if self.match_advance('=') {
                     TokenType::NotEqual
@@ -241,21 +253,27 @@ impl Scanner {
                     TokenType::Not
                 }
             }
-            '=' => if self.match_advance('=') {
-                TokenType::EqualEqual
-            } else {
-                TokenType::Equal
-            },
-            '<' => if self.match_advance('=') {
-                TokenType::LessEqual
-            } else {
-                TokenType::Less
-            },
-            '>' => if self.match_advance('=') {
-                TokenType::GreaterEqual
-            } else {
-                TokenType::Greater
-            },
+            '=' => {
+                if self.match_advance('=') {
+                    TokenType::EqualEqual
+                } else {
+                    TokenType::Equal
+                }
+            }
+            '<' => {
+                if self.match_advance('=') {
+                    TokenType::LessEqual
+                } else {
+                    TokenType::Less
+                }
+            }
+            '>' => {
+                if self.match_advance('=') {
+                    TokenType::GreaterEqual
+                } else {
+                    TokenType::Greater
+                }
+            }
             ' ' | '\r' | '\t' => return Ok(()), // skip
             '\n' => {
                 self.line += 1;
@@ -272,7 +290,7 @@ impl Scanner {
         let lexeme = self.source[self.start..self.current]
             .iter()
             .collect::<String>();
-            
+
         tokens.push(Token {
             token,
             fragment: Fragment {

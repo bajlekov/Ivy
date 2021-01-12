@@ -69,7 +69,9 @@ pub extern "C" fn translator_new_ocl<'a>(source: *const i8) -> *mut Translator<'
             .enumerate()
             .skip(start)
             .take(7)
-            .for_each(|(l, s)| println!("{} {}: {}", if l == line { "=>" } else { "  " }, l+1, s));
+            .for_each(|(l, s)| {
+                println!("{} {}: {}", if l == line { "=>" } else { "  " }, l + 1, s)
+            });
     }
 
     let tokens = tokens.unwrap_or(Vec::new());
@@ -86,7 +88,9 @@ pub extern "C" fn translator_new_ocl<'a>(source: *const i8) -> *mut Translator<'
             .enumerate()
             .skip(start)
             .take(7)
-            .for_each(|(l, s)| println!("{} {}: {}", if l == line { "=>" } else { "  " }, l+1, s));
+            .for_each(|(l, s)| {
+                println!("{} {}: {}", if l == line { "=>" } else { "  " }, l + 1, s)
+            });
     }
     let ast = ast.unwrap_or(Vec::new());
 
@@ -133,7 +137,9 @@ pub extern "C" fn translator_new_ispc<'a>(source: *const i8) -> *mut Translator<
             .enumerate()
             .skip(start)
             .take(7)
-            .for_each(|(l, s)| println!("{} {}: {}", if l == line { "=>" } else { "  " }, l+1, s));
+            .for_each(|(l, s)| {
+                println!("{} {}: {}", if l == line { "=>" } else { "  " }, l + 1, s)
+            });
     }
     let tokens = tokens.unwrap_or(Vec::new());
 
@@ -149,7 +155,9 @@ pub extern "C" fn translator_new_ispc<'a>(source: *const i8) -> *mut Translator<
             .enumerate()
             .skip(start)
             .take(7)
-            .for_each(|(l, s)| println!("{} {}: {}", if l == line { "=>" } else { "  " }, l+1, s));
+            .for_each(|(l, s)| {
+                println!("{} {}: {}", if l == line { "=>" } else { "  " }, l + 1, s)
+            });
     }
     let ast = ast.unwrap_or(Vec::new());
 
