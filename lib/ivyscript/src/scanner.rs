@@ -15,7 +15,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-use crate::tokens::SourcePosition;
+use crate::fragment::Fragment;
 use crate::tokens::Token;
 use crate::tokens::TokenType;
 
@@ -43,24 +43,24 @@ impl Scanner {
         self.current >= self.source.len()
     }
 
-    pub fn scan(&mut self) -> Vec<Token> {
+    pub fn scan(&mut self) -> Result<Vec<Token>, (String, usize)> {
         let mut tokens = Vec::<Token>::new();
 
         while !self.is_at_end() {
             self.start = self.current;
-            self.scan_token(&mut tokens);
+            self.scan_token(&mut tokens)?;
         }
 
         tokens.push(Token {
             token: TokenType::EOF,
-            position: SourcePosition {
+            fragment: Fragment {
                 line: self.line + 1,
                 position: self.start - self.line_start + 1,
                 lexeme: String::from("[End of file]"),
             },
         });
 
-        tokens
+        Ok(tokens)
     }
 
     fn advance(&mut self) -> char {
@@ -96,7 +96,8 @@ impl Scanner {
         }
     }
 
-    fn match_number(&mut self) -> Option<TokenType> {
+    fn match_number(&mut self) -> Result<TokenType, (String, usize)> {
+        let line = self.line;
         while self.peek().is_digit(10) {
             self.advance();
         }
@@ -112,29 +113,29 @@ impl Scanner {
                 .iter()
                 .collect::<String>();
             if let Ok(value) = value.parse::<f32>() {
-                Some(TokenType::Float(value))
+                Ok(TokenType::Float(value))
             } else {
-                Some(TokenType::Error(format!(
-                    "Unable to parse as floating point literal: '{}'",
-                    value
-                )))
+                Err((
+                    format!("Unable to parse as floating point literal: '{}'", value),
+                    line,
+                ))
             }
         } else {
             let value = self.source[self.start..self.current]
                 .iter()
                 .collect::<String>();
             if let Ok(value) = value.parse::<i32>() {
-                Some(TokenType::Int(value))
+                Ok(TokenType::Int(value))
             } else {
-                Some(TokenType::Error(format!(
-                    "Unable to parse as integer literal: '{}'",
-                    value
-                )))
+                Err((
+                    format!("Unable to parse as integer literal: '{}'", value),
+                    line,
+                ))
             }
         }
     }
 
-    fn match_identifier(&mut self) -> Option<TokenType> {
+    fn match_identifier(&mut self) -> TokenType {
         while self.peek().is_alphanumeric() || self.peek() == '_' {
             self.advance();
         }
@@ -145,49 +146,49 @@ impl Scanner {
 
         // match keywords
         match value.as_ref() {
-            "and" => Some(TokenType::And),
-            "or" => Some(TokenType::Or),
-            "not" => Some(TokenType::Not),
+            "and" => TokenType::And,
+            "or" => TokenType::Or,
+            "not" => TokenType::Not,
 
-            "if" => Some(TokenType::If),
-            "then" => Some(TokenType::Then),
-            "else" => Some(TokenType::Else),
-            "elseif" => Some(TokenType::ElseIf),
+            "if" => TokenType::If,
+            "then" => TokenType::Then,
+            "else" => TokenType::Else,
+            "elseif" => TokenType::ElseIf,
 
-            "for" => Some(TokenType::For),
-            "while" => Some(TokenType::While),
-            "do" => Some(TokenType::Do),
+            "for" => TokenType::For,
+            "while" => TokenType::While,
+            "do" => TokenType::Do,
 
-            "false" => Some(TokenType::Bool(false)),
-            "true" => Some(TokenType::Bool(true)),
+            "false" => TokenType::Bool(false),
+            "true" => TokenType::Bool(true),
 
-            "function" => Some(TokenType::Function),
-            "kernel" => Some(TokenType::Kernel),
-            "return" => Some(TokenType::Return),
-            "continue" => Some(TokenType::Continue),
-            "break" => Some(TokenType::Break),
+            "function" => TokenType::Function,
+            "kernel" => TokenType::Kernel,
+            "return" => TokenType::Return,
+            "continue" => TokenType::Continue,
+            "break" => TokenType::Break,
 
-            "end" => Some(TokenType::End),
+            "end" => TokenType::End,
 
-            "var" => Some(TokenType::Var),
-            "const" => Some(TokenType::Const),
-            "local" => Some(TokenType::Local),
+            "var" => TokenType::Var,
+            "const" => TokenType::Const,
+            "local" => TokenType::Local,
 
-            v => Some(TokenType::Identifier(String::from(v))),
+            v => TokenType::Identifier(String::from(v)),
         }
     }
 
-    fn scan_token(&mut self, tokens: &mut Vec<Token>) {
+    fn scan_token(&mut self, tokens: &mut Vec<Token>) -> Result<(), (String, usize)> {
         let token = match self.advance() {
-            '(' => Some(TokenType::LeftParen),
-            ')' => Some(TokenType::RightParen),
-            '{' => Some(TokenType::LeftBrace),
-            '}' => Some(TokenType::RightBrace),
-            '[' => Some(TokenType::LeftBracket),
-            ']' => Some(TokenType::RightBracket),
-            ',' => Some(TokenType::Comma),
-            '.' => Some(TokenType::Dot),
-            '-' => Some(if self.match_advance('-') {
+            '(' => TokenType::LeftParen,
+            ')' => TokenType::RightParen,
+            '{' => TokenType::LeftBrace,
+            '}' => TokenType::RightBrace,
+            '[' => TokenType::LeftBracket,
+            ']' => TokenType::RightBracket,
+            ',' => TokenType::Comma,
+            '.' => TokenType::Dot,
+            '-' => if self.match_advance('-') {
                 // handle comments
                 let start = self.current;
                 while self.peek() != '\n' && !self.is_at_end() {
@@ -200,84 +201,87 @@ impl Scanner {
                 TokenType::MinusEqual
             } else {
                 TokenType::Minus
-            }),
-            '+' => Some(if self.match_advance('=') {
+            },
+            '+' => if self.match_advance('=') {
                 TokenType::PlusEqual
             } else {
                 TokenType::Plus
-            }),
-            '/' => Some(if self.match_advance('=') {
+            },
+            '/' => if self.match_advance('=') {
                 TokenType::SlashEqual
             } else {
                 TokenType::Slash
-            }),
-            '*' => Some(if self.match_advance('=') {
+            },
+            '*' => if self.match_advance('=') {
                 TokenType::StarEqual
             } else {
                 TokenType::Star
-            }),
-            '^' => Some(if self.match_advance('=') {
+            },
+            '^' => if self.match_advance('=') {
                 TokenType::CaretEqual
             } else {
                 TokenType::Caret
-            }),
-            '%' => Some(if self.match_advance('=') {
+            },
+            '%' => if self.match_advance('=') {
                 TokenType::PercentEqual
             } else {
                 TokenType::Percent
-            }),
+            },
             '!' => {
                 if self.match_advance('=') {
-                    Some(TokenType::NotEqual)
+                    TokenType::NotEqual
                 } else {
-                    None
+                    TokenType::Not
                 }
             }
             '~' => {
                 if self.match_advance('=') {
-                    Some(TokenType::NotEqual)
+                    TokenType::NotEqual
                 } else {
-                    None
+                    TokenType::Not
                 }
             }
-            '=' => Some(if self.match_advance('=') {
+            '=' => if self.match_advance('=') {
                 TokenType::EqualEqual
             } else {
                 TokenType::Equal
-            }),
-            '<' => Some(if self.match_advance('=') {
+            },
+            '<' => if self.match_advance('=') {
                 TokenType::LessEqual
             } else {
                 TokenType::Less
-            }),
-            '>' => Some(if self.match_advance('=') {
+            },
+            '>' => if self.match_advance('=') {
                 TokenType::GreaterEqual
             } else {
                 TokenType::Greater
-            }),
-            ' ' | '\r' | '\t' => None,
+            },
+            ' ' | '\r' | '\t' => return Ok(()), // skip
             '\n' => {
                 self.line += 1;
                 self.line_start = self.current;
-                None
+                return Ok(()); // skip
             }
-            c if c.is_digit(10) => self.match_number(),
+            c if c.is_digit(10) => self.match_number()?,
             c if c.is_alphabetic() => self.match_identifier(),
-            c => Some(TokenType::Error(format!("Unexpected character: '{}'", c))),
+            c => {
+                return Err((format!("Invalid character: '{}'", c), self.line));
+            }
         };
 
         let lexeme = self.source[self.start..self.current]
             .iter()
             .collect::<String>();
-        if let Some(token) = token {
-            tokens.push(Token {
-                token,
-                position: SourcePosition {
-                    line: self.line + 1,
-                    position: self.start - self.line_start + 1,
-                    lexeme,
-                },
-            });
-        }
+            
+        tokens.push(Token {
+            token,
+            fragment: Fragment {
+                line: self.line + 1,
+                position: self.start - self.line_start + 1,
+                lexeme,
+            },
+        });
+
+        Ok(())
     }
 }

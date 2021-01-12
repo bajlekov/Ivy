@@ -25,7 +25,6 @@ pub enum Expr {
     Grouping(Box<Expr>),
     Call(String, Vec<Expr>),
     Array(Vec<Expr>),
-    Error,
 }
 
 #[derive(Debug)]
@@ -182,5 +181,5 @@ pub enum Stmt {
 
     Comment(String),
     EOF,
-    Error,
+    //Error(String),
 }

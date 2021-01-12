@@ -15,6 +15,8 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+use crate::fragment::Fragment;
+
 #[derive(Debug, PartialEq)]
 pub enum TokenType {
     LeftParen,
@@ -80,18 +82,10 @@ pub enum TokenType {
 
     Comment(String),
     EOF,
-    Error(String),
-}
-
-#[derive(Debug)]
-pub struct SourcePosition {
-    pub line: usize,
-    pub position: usize,
-    pub lexeme: String,
 }
 
 #[derive(Debug)]
 pub struct Token {
     pub token: TokenType,
-    pub position: SourcePosition,
+    pub fragment: Fragment,
 }

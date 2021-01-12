@@ -54,11 +54,41 @@ pub extern "C" fn translator_new_ocl<'a>(source: *const i8) -> *mut Translator<'
         assert!(!source.is_null());
         CStr::from_ptr(source)
     };
-    let mut scanner = Scanner::new(source.to_str().unwrap_or("").to_string());
+
+    let source = source.to_str().unwrap_or("").to_string();
+
+    let mut scanner = Scanner::new(source.clone());
     let tokens = scanner.scan();
+    if let Err((err, line)) = &tokens {
+        println!("[Line {}]: {}", line, err);
+        let line = line - 1;
+
+        let start = (line - 3).max(0);
+        source
+            .lines()
+            .enumerate()
+            .skip(start)
+            .take(7)
+            .for_each(|(l, s)| println!("{} {}: {}", if l == line { "=>" } else { "  " }, l+1, s));
+    }
+
+    let tokens = tokens.unwrap_or(Vec::new());
 
     let parser = Parser::new(tokens);
     let ast = parser.parse();
+    if let Err((err, line)) = &ast {
+        println!("[Line {}]: {}", line, err);
+        let line = line - 1;
+
+        let start = (line - 3).max(0);
+        source
+            .lines()
+            .enumerate()
+            .skip(start)
+            .take(7)
+            .for_each(|(l, s)| println!("{} {}: {}", if l == line { "=>" } else { "  " }, l+1, s));
+    }
+    let ast = ast.unwrap_or(Vec::new());
 
     let generator = GeneratorOCL::new(ast);
 
@@ -88,11 +118,40 @@ pub extern "C" fn translator_new_ispc<'a>(source: *const i8) -> *mut Translator<
         assert!(!source.is_null());
         CStr::from_ptr(source)
     };
-    let mut scanner = Scanner::new(source.to_str().unwrap_or("").to_string());
+
+    let source = source.to_str().unwrap_or("").to_string();
+
+    let mut scanner = Scanner::new(source.clone());
     let tokens = scanner.scan();
+    if let Err((err, line)) = &tokens {
+        println!("[Line {}]: {}", line, err);
+        let line = line - 1;
+
+        let start = (line - 3).max(0);
+        source
+            .lines()
+            .enumerate()
+            .skip(start)
+            .take(7)
+            .for_each(|(l, s)| println!("{} {}: {}", if l == line { "=>" } else { "  " }, l+1, s));
+    }
+    let tokens = tokens.unwrap_or(Vec::new());
 
     let parser = Parser::new(tokens);
     let ast = parser.parse();
+    if let Err((err, line)) = &ast {
+        println!("[Line {}]: {}", line, err);
+        let line = line - 1;
+
+        let start = (line - 3).max(0);
+        source
+            .lines()
+            .enumerate()
+            .skip(start)
+            .take(7)
+            .for_each(|(l, s)| println!("{} {}: {}", if l == line { "=>" } else { "  " }, l+1, s));
+    }
+    let ast = ast.unwrap_or(Vec::new());
 
     let generator = GeneratorISPC::new(ast);
 
