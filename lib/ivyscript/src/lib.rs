@@ -64,7 +64,7 @@ pub extern "C" fn translator_new_ocl<'a>(source: *const i8) -> *mut Translator<'
         println!("[Line {}]: {}", line, err);
         let line = line - 1;
 
-        let start = (line - 3).max(0);
+        let start = if line >= 3 { line - 3 } else { 0 };
         source
             .lines()
             .enumerate()
@@ -83,7 +83,7 @@ pub extern "C" fn translator_new_ocl<'a>(source: *const i8) -> *mut Translator<'
         println!("[Line {}]: {}", line, err);
         let line = line - 1;
 
-        let start = (line - 3).max(0);
+        let start = if line >= 3 { line - 3 } else { 0 };
         source
             .lines()
             .enumerate()
@@ -132,7 +132,7 @@ pub extern "C" fn translator_new_ispc<'a>(source: *const i8) -> *mut Translator<
         println!("[Line {}]: {}", line, err);
         let line = line - 1;
 
-        let start = (line - 3).max(0);
+        let start = if line >= 3 { line - 3 } else { 0 };
         source
             .lines()
             .enumerate()
@@ -150,7 +150,7 @@ pub extern "C" fn translator_new_ispc<'a>(source: *const i8) -> *mut Translator<
         println!("[Line {}]: {}", line, err);
         let line = line - 1;
 
-        let start = (line - 3).max(0);
+        let start = if line >= 3 { line - 3 } else { 0 };
         source
             .lines()
             .enumerate()
