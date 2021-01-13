@@ -42,6 +42,32 @@ const I: VarType = VarType::Int;
 const F: VarType = VarType::Float;
 const V: VarType = VarType::Vec;
 
+impl std::fmt::Display for VarType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            VarType::Bool => write!(f, "Bool"),
+            VarType::Int => write!(f, "Int"),
+            VarType::Float => write!(f, "Float"),
+            VarType::Vec => write!(f, "Vec"),
+            VarType::BoolArray(d, l, ..) => {
+                write!(f, "{}D {}BoolArray", d, if *l { "local " } else { "" })
+            }
+            VarType::IntArray(d, l, ..) => {
+                write!(f, "{}D {}IntArray", d, if *l { "local " } else { "" })
+            }
+            VarType::FloatArray(d, l, ..) => {
+                write!(f, "{}D {}FloatArray", d, if *l { "local " } else { "" })
+            }
+            VarType::VecArray(d, l, ..) => {
+                write!(f, "{}D {}VecArray", d, if *l { "local " } else { "" })
+            }
+            VarType::Buffer { z, cs } => write!(f, "{}ch {} Buffer]", z, cs),
+            VarType::Unknown => write!(f, "Unknown"),
+            VarType::Void => write!(f, "Void"),
+        }
+    }
+}
+
 pub struct Inference<'a> {
     pub scope: ScopeTree,
     pub functions: Option<&'a RefCell<HashMap<String, (String, String, VarType)>>>,
@@ -234,7 +260,6 @@ impl<'a> Inference<'a> {
                     }
                 }
             }
-            _ => VarType::Unknown,
         }
     }
 

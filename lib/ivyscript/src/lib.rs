@@ -208,14 +208,17 @@ pub extern "C" fn translator_generate(t: *mut Translator, kernel: *const i8) -> 
 
     let source = match &t.generator {
         Generator::Ocl(g) => g.kernel(kernel, &t.inputs),
-        Generator::Ispc(g) => g.kernel(kernel, &t.inputs),
+        Generator::Ispc(g) => g
+            .kernel(kernel, &t.inputs)
+            .ok_or(String::from("ISPC generation error!")),
     };
 
-    if let Some(ocl) = source {
-        CString::new(ocl).unwrap().into_raw()
-    } else {
-        CString::new("").unwrap().into_raw()
+    if let Err(err) = &source {
+        println!("[Generator]: {}", err);
     }
+    let source = source.unwrap_or(String::from(""));
+
+    CString::new(source).unwrap().into_raw()
 }
 
 #[no_mangle]
