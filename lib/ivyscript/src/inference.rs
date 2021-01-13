@@ -34,6 +34,7 @@ pub enum VarType {
     VecArray(u8, bool, u64, u64, u64, u64),
     Buffer { z: u64, cs: ColorSpace },
     Unknown,
+    Void,
 }
 
 const B: VarType = VarType::Bool;
@@ -456,7 +457,7 @@ impl<'a> Inference<'a> {
             "normalize" => self.geom_1(vars, V),
 
             // memory barrier functions
-            "barrier" => Some(VarType::Unknown),
+            "barrier" => Some(VarType::Void),
 
             // atomics "atomic_add(buf, idx1, idx2, idx3, value)" etc.
             "atomic_add" => self.atomic_2(vars),

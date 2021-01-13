@@ -23,7 +23,7 @@ use crate::inference::VarType;
 #[derive(Debug)]
 struct Scope {
     parent: usize,
-    vars: HashMap<String, VarType>,
+    vars: HashMap<String, Option<VarType>>,
 }
 
 #[derive(Debug)]
@@ -50,7 +50,17 @@ impl ScopeTree {
 
     pub fn add(&self, id: &str, t: VarType) -> usize {
         let n = self.current.get();
-        self.scopes.borrow_mut()[n].vars.insert(id.to_string(), t);
+        self.scopes.borrow_mut()[n]
+            .vars
+            .insert(id.to_string(), Some(t));
+        n
+    }
+
+    pub fn placeholder(&self, id: &str) -> usize {
+        let n = self.current.get();
+        self.scopes.borrow_mut()[n]
+            .vars
+            .insert(id.to_string(), None);
         n
     }
 
@@ -59,7 +69,7 @@ impl ScopeTree {
         loop {
             let scope = &mut self.scopes.borrow_mut()[id];
             if scope.vars.get(var).is_some() {
-                scope.vars.insert(var.to_string(), t);
+                scope.vars.insert(var.to_string(), Some(t));
                 return id;
             } else {
                 if id == 0 {
@@ -75,7 +85,7 @@ impl ScopeTree {
         loop {
             let scope = &self.scopes.borrow()[id];
             if let Some(t) = scope.vars.get(var) {
-                return Some(*t);
+                return *t;
             } else {
                 if id == 0 {
                     return None;
