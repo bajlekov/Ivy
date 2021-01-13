@@ -78,7 +78,6 @@ pub enum TokenType {
 
     Var,
     Const,
-    Local,
 
     Comment(String),
     EOF,

@@ -172,7 +172,6 @@ impl Scanner {
 
             "var" => TokenType::Var,
             "const" => TokenType::Const,
-            "local" => TokenType::Local,
 
             v => TokenType::Identifier(String::from(v)),
         }

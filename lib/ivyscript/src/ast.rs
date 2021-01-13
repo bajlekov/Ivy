@@ -143,7 +143,6 @@ pub struct Cond {
 pub enum Stmt {
     Var(String, Expr),
     Const(String, Expr),
-    Local(String, Expr),
     Assign(Expr, Expr),
     AssignOp(Expr, AssignOp, Expr),
 

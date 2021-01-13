@@ -369,10 +369,6 @@ impl Parser {
                 (id, expr, _) => Stmt::Const(id, expr),
             },
 
-            TokenType::Local => match self.var_decl()? {
-                (id, expr, _) => Stmt::Local(id, expr),
-            },
-
             TokenType::Function => match self.fun_decl()? {
                 (id, args, body, _) => Stmt::Function { id, args, body },
             },

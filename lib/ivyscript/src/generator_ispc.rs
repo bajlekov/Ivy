@@ -363,7 +363,6 @@ uniform int _nz = ceil((uniform float)_dim[5]/_dim[8]);
         match stmt {
             Stmt::Var(id, expr) => self.gen_var(id, expr),
             Stmt::Const(id, expr) => format!("const {}", self.gen_var(id, expr)),
-            //Stmt::Local(id, expr) => format!("uniform {}", self.gen_var(id, expr)),
             Stmt::Assign(id, expr) => self.gen_assign(id, expr),
             Stmt::Call(id, args) => {
                 let args_str = args
