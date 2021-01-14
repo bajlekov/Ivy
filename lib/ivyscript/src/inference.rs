@@ -101,10 +101,12 @@ impl<'a> Inference<'a> {
                                 VarType::FloatArray(1, false, 0, 0, 0, 0)
                             }
                             VarType::Buffer { .. } => VarType::FloatArray(1, false, 0, 0, 0, 0),
-                            t => return Err(format!(
+                            t => {
+                                return Err(format!(
                                 "Variable '{}' of type '{}' does not support the '.ptr' property",
                                 id, t
-                            )),
+                            ))
+                            }
                         };
 
                         return Ok(t);
@@ -138,27 +140,31 @@ impl<'a> Inference<'a> {
                     ))
                 }
             },
-            Expr::Binary(b) => match (&(*b).op, self.var_type(&b.left)?, self.var_type(&b.right)?) {
-                (BinaryOp::And, B, B) => B,
-                (BinaryOp::Or, B, B) => B,
-                (BinaryOp::Equal, _, _) => B,
-                (BinaryOp::NotEqual, _, _) => B,
-                (BinaryOp::Greater, l, r) if (l == I || l == F) && (r == I || r == F) => B,
-                (BinaryOp::GreaterEqual, l, r) if (l == I || l == F) && (r == I || r == F) => B,
-                (BinaryOp::Less, l, r) if (l == I || l == F) && (r == I || r == F) => B,
-                (BinaryOp::LessEqual, l, r) if (l == I || l == F) && (r == I || r == F) => B,
-                (BinaryOp::Pow, l, r) => self.promote(self.promote(l, r)?, F)?,
-                (BinaryOp::Div, l, r) => self.promote(self.promote(l, r)?, F)?,
+            Expr::Binary(b) => {
+                match (&(*b).op, self.var_type(&b.left)?, self.var_type(&b.right)?) {
+                    (BinaryOp::And, B, B) => B,
+                    (BinaryOp::Or, B, B) => B,
+                    (BinaryOp::Equal, _, _) => B,
+                    (BinaryOp::NotEqual, _, _) => B,
+                    (BinaryOp::Greater, l, r) if (l == I || l == F) && (r == I || r == F) => B,
+                    (BinaryOp::GreaterEqual, l, r) if (l == I || l == F) && (r == I || r == F) => B,
+                    (BinaryOp::Less, l, r) if (l == I || l == F) && (r == I || r == F) => B,
+                    (BinaryOp::LessEqual, l, r) if (l == I || l == F) && (r == I || r == F) => B,
+                    (BinaryOp::Pow, l, r) => self.promote(self.promote(l, r)?, F)?,
+                    (BinaryOp::Div, l, r) => self.promote(self.promote(l, r)?, F)?,
 
-                (BinaryOp::Add, l, r) => self.promote_num(l, r)?,
-                (BinaryOp::Sub, l, r) => self.promote_num(l, r)?,
-                (BinaryOp::Mul, l, r) => self.promote_num(l, r)?,
-                (BinaryOp::Mod, l, r) => self.promote_num(l, r)?,
-                (op, l, r) => return Err(format!(
+                    (BinaryOp::Add, l, r) => self.promote_num(l, r)?,
+                    (BinaryOp::Sub, l, r) => self.promote_num(l, r)?,
+                    (BinaryOp::Mul, l, r) => self.promote_num(l, r)?,
+                    (BinaryOp::Mod, l, r) => self.promote_num(l, r)?,
+                    (op, l, r) => {
+                        return Err(format!(
                     "Unable to infer type of operation '{:?}' with arguments of type '{}' and '{}'",
                     op, l, r
-                )),
-            },
+                ))
+                    }
+                }
+            }
             Expr::Index(expr, idx) => match (self.var_type(expr)?, &**idx) {
                 (V, Index::Vec(_)) => F,
                 (VarType::Buffer { .. }, Index::Vec(_)) => I,
@@ -427,14 +433,18 @@ impl<'a> Inference<'a> {
         }
         match (self.is_num_vec(&vars[0])?, self.is_num_vec(&vars[1])?) {
             (true, true) => Ok(t),
-            (false, _) => return Err(format!(
+            (false, _) => {
+                return Err(format!(
                 "Expected numeric 1st argument to geometry function, found argument of type '{}'",
                 self.var_type(&vars[0])?
-            )),
-            (_, false) => return Err(format!(
+            ))
+            }
+            (_, false) => {
+                return Err(format!(
                 "Expected numeric 2nd argument to geometry function, found argument of type '{}'",
                 self.var_type(&vars[1])?
-            )),
+            ))
+            }
         }
     }
 
@@ -465,10 +475,12 @@ impl<'a> Inference<'a> {
         }
         match self.is_num(&vars[0])? {
             true => Ok(t),
-            false => return Err(format!(
+            false => {
+                return Err(format!(
                 "Expected numeric argument to color space function, found argument of type '{}'",
                 self.var_type(&vars[0])?
-            )),
+            ))
+            }
         }
     }
 
