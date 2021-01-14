@@ -51,7 +51,8 @@ pub fn function_id(name: &str, input: &[VarType]) -> String {
                     ColorSpace::L => "L",
                 }
             ),
-            _ => String::from("/*** Error: Unknown type ***/"),
+            VarType::Void => String::from("Void"),
+            VarType::Unknown => String::from("Unknown"),
         };
         id.push_str(&s);
     }
