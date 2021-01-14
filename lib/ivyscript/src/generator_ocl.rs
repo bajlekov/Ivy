@@ -355,8 +355,8 @@ impl<'a> Generator<'a> {
                 let vars = args
                     .iter()
                     .map(|e| self.inference.borrow().var_type(e))
-                    .collect::<Vec<VarType>>();
-                if self.inference.borrow().builtin(id, args).is_some() {
+                    .collect::<Result<Vec<_>, _>>()?;
+                if self.inference.borrow().builtin(id, args).is_ok() {
                     format!("{};\n", self.gen_call(id, &args_str, &vars)?)
                 } else {
                     let id = self.function(id, &vars)?;
@@ -390,22 +390,11 @@ impl<'a> Generator<'a> {
                 let expr_str = self.gen_expr(expr)?; // generate before assessing type!
 
                 // return value is either new, same as--, or promoted from the previous one
-                let new = self.inference.borrow().var_type(expr);
+                let new = self.inference.borrow().var_type(expr)?;
                 let old = self.inference.borrow().scope.get("return").unwrap_or(new);
-                let promoted = self.inference.borrow().promote(new, old);
+                let promoted = self.inference.borrow().promote(new, old)?;
 
-                if promoted == VarType::Unknown {
-                    if old == new {
-                        return Err(format!("Return type unknown for expression:\n{}", expr_str));
-                    } else {
-                        return Err(format!(
-                            "Return type '{}' inconsistent with previously used type '{}'",
-                            new, old
-                        ));
-                    }
-                } else {
-                    self.inference.borrow().scope.overwrite("return", promoted);
-                }
+                self.inference.borrow().scope.overwrite("return", promoted);
 
                 format!("return {};\n", expr_str)
             }
@@ -430,14 +419,14 @@ impl<'a> Generator<'a> {
 
         // infer var type
         // TODO: does code need to be generated before inference? e.g. function calls?
-        let from_type = self.inference.borrow().var_type(from);
-        let to_type = self.inference.borrow().var_type(to);
+        let from_type = self.inference.borrow().var_type(from)?;
+        let to_type = self.inference.borrow().var_type(to)?;
 
-        let mut var_type = self.inference.borrow().promote_num(from_type, to_type);
+        let mut var_type = self.inference.borrow().promote_num(from_type, to_type)?;
 
         if let Some(step) = &step {
-            let step_type = self.inference.borrow().var_type(step);
-            var_type = self.inference.borrow().promote_num(var_type, step_type);
+            let step_type = self.inference.borrow().var_type(step)?;
+            var_type = self.inference.borrow().promote_num(var_type, step_type)?;
             self.inference.borrow().scope.add(var, var_type);
 
             s = format!(
@@ -496,7 +485,7 @@ impl<'a> Generator<'a> {
         let Cond { ref cond, ref body } = cond_list[0];
 
         let mut s = format!("if ({}) {{\n", self.gen_expr(cond)?);
-        assert!(self.inference.borrow().var_type(cond) == VarType::Bool); // type info available only after generation!
+        assert!(self.inference.borrow().var_type(cond)? == VarType::Bool); // type info available only after generation!
 
         self.inference.borrow().scope.open();
         for v in body {
@@ -508,7 +497,7 @@ impl<'a> Generator<'a> {
             let Cond { ref cond, ref body } = cond_item;
 
             s.push_str(&format!("}} else if ({}) {{\n", self.gen_expr(cond)?));
-            assert!(self.inference.borrow().var_type(cond) == VarType::Bool); // type info available only after generation!
+            assert!(self.inference.borrow().var_type(cond)? == VarType::Bool); // type info available only after generation!
 
             self.inference.borrow().scope.open();
             for v in body {
@@ -531,7 +520,7 @@ impl<'a> Generator<'a> {
     }
 
     fn gen_while(&'a self, cond: &Expr, body: &[Stmt]) -> Result<String, String> {
-        assert!(self.inference.borrow().var_type(cond) == VarType::Bool);
+        assert!(self.inference.borrow().var_type(cond)? == VarType::Bool);
 
         let mut s = format!("while ({}) {{\n", self.gen_expr(cond)?);
 
@@ -564,7 +553,7 @@ impl<'a> Generator<'a> {
             _ => self.gen_expr(&expr)?,
         };
 
-        let var_type = self.inference.borrow().var_type(expr);
+        let var_type = self.inference.borrow().var_type(expr)?;
         self.inference.borrow().scope.add(id, var_type);
 
         let s = match var_type {
@@ -709,8 +698,8 @@ impl<'a> Generator<'a> {
                 let vars = args
                     .iter()
                     .map(|e| self.inference.borrow().var_type(e))
-                    .collect::<Vec<VarType>>();
-                if self.inference.borrow().builtin(id, args).is_some() {
+                    .collect::<Result<Vec<_>, _>>()?;
+                if self.inference.borrow().builtin(id, args).is_ok() {
                     self.gen_call(id, &args_str, &vars)?
                 } else {
                     let id = self.function(id, &vars)?;
@@ -765,7 +754,7 @@ impl<'a> Generator<'a> {
                 self.gen_expr(&expr.right)?
             ),
             BinaryOp::Div => {
-                if self.inference.borrow().var_type(&expr.left) == VarType::Int {
+                if self.inference.borrow().var_type(&expr.left)? == VarType::Int {
                     format!(
                         "((float){})/{}",
                         self.gen_expr(&expr.left)?,
@@ -790,13 +779,13 @@ impl<'a> Generator<'a> {
                 self.gen_expr(&expr.right)?
             ),
             BinaryOp::Pow => {
-                let call = if self.inference.borrow().var_type(&expr.right) == VarType::Int {
+                let call = if self.inference.borrow().var_type(&expr.right)? == VarType::Int {
                     "pown"
                 } else {
                     "pow"
                 };
 
-                if self.inference.borrow().var_type(&expr.left) == VarType::Int {
+                if self.inference.borrow().var_type(&expr.left)? == VarType::Int {
                     format!(
                         "{}((float)({}), {})",
                         call,
@@ -902,7 +891,7 @@ impl<'a> Generator<'a> {
                 if let Expr::Index(id, idx) = &**expr {
                     if let Expr::Identifier(name) = &**id {
                         if let Index::Array2D(a, b) = &**idx {
-                            let var = self.inference.borrow().var_type(id);
+                            let var = self.inference.borrow().var_type(id)?;
                             if let VarType::Buffer { z, cs } = var {
                                 let cs = format!("{}to{}", cs_from, cs);
                                 let a = self.gen_expr(a)?;
@@ -944,7 +933,7 @@ impl<'a> Generator<'a> {
                     ));
                 }
             } else if let Index::Array1D(a) = &**idx {
-                let var = self.inference.borrow().var_type(expr);
+                let var = self.inference.borrow().var_type(expr)?;
                 if let Expr::Identifier(name) = &**expr {
                     match var {
                         VarType::BoolArray(1, ..)
@@ -983,7 +972,7 @@ impl<'a> Generator<'a> {
                     ));
                 }
             } else if let Index::Array2D(a, b) = &**idx {
-                let var = self.inference.borrow().var_type(expr);
+                let var = self.inference.borrow().var_type(expr)?;
                 if let Expr::Identifier(name) = &**expr {
                     match var {
                         VarType::Buffer { z: 1, .. } => {
@@ -1039,7 +1028,7 @@ impl<'a> Generator<'a> {
                     ));
                 }
             } else if let Index::Array3D(a, b, c) = &**idx {
-                let var = self.inference.borrow().var_type(expr);
+                let var = self.inference.borrow().var_type(expr)?;
                 if let Expr::Identifier(name) = &**expr {
                     match var {
                         VarType::BoolArray(3, ..)
@@ -1080,7 +1069,7 @@ impl<'a> Generator<'a> {
                     ));
                 }
             } else if let Index::Array4D(a, b, c, d) = &**idx {
-                let var = self.inference.borrow().var_type(expr);
+                let var = self.inference.borrow().var_type(expr)?;
                 if let Expr::Identifier(name) = &**expr {
                     match var {
                         VarType::BoolArray(4, ..)
@@ -1143,7 +1132,7 @@ impl<'a> Generator<'a> {
 
         let s = match idx {
             Index::Vec(0) => {
-                let var = self.inference.borrow().var_type(expr);
+                let var = self.inference.borrow().var_type(expr)?;
                 match var {
                     VarType::Vec => format!("{}.x", self.gen_expr(expr)?),
                     VarType::Buffer { .. } => format!("___str_{}[0]", name),
@@ -1156,7 +1145,7 @@ impl<'a> Generator<'a> {
                 }
             }
             Index::Vec(1) => {
-                let var = self.inference.borrow().var_type(expr);
+                let var = self.inference.borrow().var_type(expr)?;
                 match var {
                     VarType::Vec => format!("{}.y", self.gen_expr(expr)?),
                     VarType::Buffer { .. } => format!("___str_{}[1]", name),
@@ -1169,7 +1158,7 @@ impl<'a> Generator<'a> {
                 }
             }
             Index::Vec(2) => {
-                let var = self.inference.borrow().var_type(expr);
+                let var = self.inference.borrow().var_type(expr)?;
                 match var {
                     VarType::Vec => format!("{}.z", self.gen_expr(expr)?),
                     VarType::Buffer { .. } => format!("___str_{}[2]", name),
@@ -1183,7 +1172,7 @@ impl<'a> Generator<'a> {
             }
             Index::Array1D(a) => {
                 if let Expr::Identifier(id) = expr {
-                    let var = self.inference.borrow().var_type(expr);
+                    let var = self.inference.borrow().var_type(expr)?;
                     match var {
                         VarType::Buffer { .. } => var.buf_idx_1d(id, &self.gen_expr(a)?),
                         VarType::BoolArray(1, ..)
@@ -1206,7 +1195,7 @@ impl<'a> Generator<'a> {
             }
             Index::Array2D(a, b) => {
                 if let Expr::Identifier(id) = expr {
-                    let var = self.inference.borrow().var_type(expr);
+                    let var = self.inference.borrow().var_type(expr)?;
                     match var {
                         VarType::Buffer { z: 1, .. } => {
                             var.buf_idx_3d(id, &self.gen_expr(a)?, &self.gen_expr(b)?, "0")
@@ -1237,7 +1226,7 @@ impl<'a> Generator<'a> {
             }
             Index::Array3D(a, b, c) => {
                 if let Expr::Identifier(id) = expr {
-                    let var = self.inference.borrow().var_type(expr);
+                    let var = self.inference.borrow().var_type(expr)?;
                     match var {
                         VarType::Buffer { .. } => var.buf_idx_3d(
                             id,
@@ -1271,7 +1260,7 @@ impl<'a> Generator<'a> {
             }
             Index::Array4D(a, b, c, d) => {
                 if let Expr::Identifier(id) = expr {
-                    let var = self.inference.borrow().var_type(expr);
+                    let var = self.inference.borrow().var_type(expr)?;
                     match var {
                         VarType::BoolArray(4, ..)
                         | VarType::IntArray(4, ..)
@@ -1301,7 +1290,7 @@ impl<'a> Generator<'a> {
             Index::ColorSpace(cs_to) => {
                 if let Expr::Index(expr, idx) = expr {
                     if let Expr::Identifier(id) = &**expr {
-                        let var = self.inference.borrow().var_type(expr);
+                        let var = self.inference.borrow().var_type(expr)?;
                         if let VarType::Buffer { z, cs, .. } = var {
                             let id = if let Index::Array2D(a, b) = &**idx {
                                 if z == 1 {
@@ -1338,7 +1327,7 @@ impl<'a> Generator<'a> {
             Index::Prop(prop) => {
                 if let Expr::Index(expr, idx) = expr {
                     if let Expr::Identifier(id) = &**expr {
-                        let var = self.inference.borrow().var_type(expr);
+                        let var = self.inference.borrow().var_type(expr)?;
                         let idx = &**idx;
                         match var {
                             VarType::Buffer { .. } => {
