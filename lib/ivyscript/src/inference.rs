@@ -101,7 +101,10 @@ impl<'a> Inference<'a> {
                                 VarType::FloatArray(1, false, 0, 0, 0, 0)
                             }
                             VarType::Buffer { .. } => VarType::FloatArray(1, false, 0, 0, 0, 0),
-                            t => return Err(format!("Variable '{}' of type '{}' does not support the '.ptr' property", id, t)),
+                            t => return Err(format!(
+                                "Variable '{}' of type '{}' does not support the '.ptr' property",
+                                id, t
+                            )),
                         };
 
                         return Ok(t);
@@ -128,28 +131,34 @@ impl<'a> Inference<'a> {
                 (UnaryOp::Neg, I) => I,
                 (UnaryOp::Neg, F) => F,
                 (UnaryOp::Neg, V) => V,
-                (op, t) => return Err(format!("Variable of type '{}' does not support unary operation '{:?}'", t, op)),
-            },
-            Expr::Binary(b) => {
-                match (&(*b).op, self.var_type(&b.left)?, self.var_type(&b.right)?) {
-                    (BinaryOp::And, B, B) => B,
-                    (BinaryOp::Or, B, B) => B,
-                    (BinaryOp::Equal, _, _) => B,
-                    (BinaryOp::NotEqual, _, _) => B,
-                    (BinaryOp::Greater, l, r) if (l == I || l == F) && (r == I || r == F) => B,
-                    (BinaryOp::GreaterEqual, l, r) if (l == I || l == F) && (r == I || r == F) => B,
-                    (BinaryOp::Less, l, r) if (l == I || l == F) && (r == I || r == F) => B,
-                    (BinaryOp::LessEqual, l, r) if (l == I || l == F) && (r == I || r == F) => B,
-                    (BinaryOp::Pow, l, r) => self.promote(self.promote(l, r)?, F)?,
-                    (BinaryOp::Div, l, r) => self.promote(self.promote(l, r)?, F)?,
-                    
-                    (BinaryOp::Add, l, r) => self.promote_num(l, r)?,
-                    (BinaryOp::Sub, l, r) => self.promote_num(l, r)?,
-                    (BinaryOp::Mul, l, r) => self.promote_num(l, r)?,
-                    (BinaryOp::Mod, l, r) => self.promote_num(l, r)?,
-                    (op, l, r) => return Err(format!("Unable to infer type of operation '{:?}' with arguments of type '{}' and '{}'", op, l, r))
+                (op, t) => {
+                    return Err(format!(
+                        "Variable of type '{}' does not support unary operation '{:?}'",
+                        t, op
+                    ))
                 }
-            }
+            },
+            Expr::Binary(b) => match (&(*b).op, self.var_type(&b.left)?, self.var_type(&b.right)?) {
+                (BinaryOp::And, B, B) => B,
+                (BinaryOp::Or, B, B) => B,
+                (BinaryOp::Equal, _, _) => B,
+                (BinaryOp::NotEqual, _, _) => B,
+                (BinaryOp::Greater, l, r) if (l == I || l == F) && (r == I || r == F) => B,
+                (BinaryOp::GreaterEqual, l, r) if (l == I || l == F) && (r == I || r == F) => B,
+                (BinaryOp::Less, l, r) if (l == I || l == F) && (r == I || r == F) => B,
+                (BinaryOp::LessEqual, l, r) if (l == I || l == F) && (r == I || r == F) => B,
+                (BinaryOp::Pow, l, r) => self.promote(self.promote(l, r)?, F)?,
+                (BinaryOp::Div, l, r) => self.promote(self.promote(l, r)?, F)?,
+
+                (BinaryOp::Add, l, r) => self.promote_num(l, r)?,
+                (BinaryOp::Sub, l, r) => self.promote_num(l, r)?,
+                (BinaryOp::Mul, l, r) => self.promote_num(l, r)?,
+                (BinaryOp::Mod, l, r) => self.promote_num(l, r)?,
+                (op, l, r) => return Err(format!(
+                    "Unable to infer type of operation '{:?}' with arguments of type '{}' and '{}'",
+                    op, l, r
+                )),
+            },
             Expr::Index(expr, idx) => match (self.var_type(expr)?, &**idx) {
                 (V, Index::Vec(_)) => F,
                 (VarType::Buffer { .. }, Index::Vec(_)) => I,
@@ -276,7 +285,12 @@ impl<'a> Inference<'a> {
             (I, I) => I,
             (F, F) | (I, F) | (F, I) => F,
             (V, V) | (V, F) | (F, V) | (V, I) | (I, V) => V,
-            (a, b) => return Err(format!("Unable to promote type '{}' and '{}' to a common numeric type", a, b)),
+            (a, b) => {
+                return Err(format!(
+                    "Unable to promote type '{}' and '{}' to a common numeric type",
+                    a, b
+                ))
+            }
         })
     }
 
@@ -286,7 +300,12 @@ impl<'a> Inference<'a> {
             (I, I) => I,
             (F, F) | (I, F) | (F, I) => F,
             (V, V) | (V, F) | (F, V) | (V, I) | (I, V) => V,
-            (a, b) => return Err(format!("Unable to promote type '{}' and '{}' to a common type", a, b)),
+            (a, b) => {
+                return Err(format!(
+                    "Unable to promote type '{}' and '{}' to a common type",
+                    a, b
+                ))
+            }
         })
     }
 
@@ -337,84 +356,145 @@ impl<'a> Inference<'a> {
     }
 
     fn math_1(&self, vars: &[Expr]) -> Result<VarType, String> {
-        if vars.len()!=1 {
-            return Err(format!("Expected 1 argument to math function, found {}", vars.len()));
+        if vars.len() != 1 {
+            return Err(format!(
+                "Expected 1 argument to math function, found {}",
+                vars.len()
+            ));
         }
         match self.is_num_vec(&vars[0])? {
             true => self.promote_num(self.var_type(&vars[0])?, F),
-            false => return Err(format!("Expected numeric argument to math function, found argument of type '{}'", self.var_type(&vars[0])?)),
+            false => {
+                return Err(format!(
+                    "Expected numeric argument to math function, found argument of type '{}'",
+                    self.var_type(&vars[0])?
+                ))
+            }
         }
     }
 
     fn math_2(&self, vars: &[Expr]) -> Result<VarType, String> {
-        if vars.len()!=2 {
-            return Err(format!("Expected 1 arguments to math function, found {}", vars.len()));
+        if vars.len() != 2 {
+            return Err(format!(
+                "Expected 1 arguments to math function, found {}",
+                vars.len()
+            ));
         }
         match (self.is_num_vec(&vars[0])?, self.is_num_vec(&vars[1])?) {
             (true, true) => self.promote_num(
                 self.promote_num(self.var_type(&vars[1])?, self.var_type(&vars[0])?)?,
                 F,
             ),
-            (false, _) => return Err(format!("Expected numeric 1st argument to math function, found argument of type '{}'", self.var_type(&vars[0])?)),
-            (_, false) => return Err(format!("Expected numeric 2nd argument to math function, found argument of type '{}'", self.var_type(&vars[1])?)),
+            (false, _) => {
+                return Err(format!(
+                    "Expected numeric 1st argument to math function, found argument of type '{}'",
+                    self.var_type(&vars[0])?
+                ))
+            }
+            (_, false) => {
+                return Err(format!(
+                    "Expected numeric 2nd argument to math function, found argument of type '{}'",
+                    self.var_type(&vars[1])?
+                ))
+            }
         }
     }
 
     fn geom_1(&self, vars: &[Expr], t: VarType) -> Result<VarType, String> {
-        if vars.len()!=1 {
-            return Err(format!("Expected 1 argument to geometry function, found {}", vars.len()));
+        if vars.len() != 1 {
+            return Err(format!(
+                "Expected 1 argument to geometry function, found {}",
+                vars.len()
+            ));
         }
         match self.is_num_vec(&vars[0])? {
             true => Ok(t),
-            false => return Err(format!("Expected numeric argument to geometry function, found argument of type '{}'", self.var_type(&vars[0])?)),
+            false => {
+                return Err(format!(
+                    "Expected numeric argument to geometry function, found argument of type '{}'",
+                    self.var_type(&vars[0])?
+                ))
+            }
         }
     }
 
     fn geom_2(&self, vars: &[Expr], t: VarType) -> Result<VarType, String> {
-        if vars.len()!=2 {
-            return Err(format!("Expected 2 arguments to geometry function, found {}", vars.len()));
+        if vars.len() != 2 {
+            return Err(format!(
+                "Expected 2 arguments to geometry function, found {}",
+                vars.len()
+            ));
         }
         match (self.is_num_vec(&vars[0])?, self.is_num_vec(&vars[1])?) {
             (true, true) => Ok(t),
-            (false, _) => return Err(format!("Expected numeric 1st argument to geometry function, found argument of type '{}'", self.var_type(&vars[0])?)),
-            (_, false) => return Err(format!("Expected numeric 2nd argument to geometry function, found argument of type '{}'", self.var_type(&vars[1])?)),
+            (false, _) => return Err(format!(
+                "Expected numeric 1st argument to geometry function, found argument of type '{}'",
+                self.var_type(&vars[0])?
+            )),
+            (_, false) => return Err(format!(
+                "Expected numeric 2nd argument to geometry function, found argument of type '{}'",
+                self.var_type(&vars[1])?
+            )),
         }
     }
 
     fn cs_v(&self, vars: &[Expr], t: VarType) -> Result<VarType, String> {
-        if vars.len()!=1 {
-            return Err(format!("Expected 1 argument to color space function, found {}", vars.len()));
+        if vars.len() != 1 {
+            return Err(format!(
+                "Expected 1 argument to color space function, found {}",
+                vars.len()
+            ));
         }
         match self.is_num_vec(&vars[0])? {
             true => Ok(t),
-            false => return Err(format!("Expected numeric argument to geometry function, found argument of type '{}'", self.var_type(&vars[0])?)),
+            false => {
+                return Err(format!(
+                    "Expected numeric argument to geometry function, found argument of type '{}'",
+                    self.var_type(&vars[0])?
+                ))
+            }
         }
     }
 
     fn cs_f(&self, vars: &[Expr], t: VarType) -> Result<VarType, String> {
-        if vars.len()!=1 {
-            return Err(format!("Expected 1 argument to color space function, found {}", vars.len()));
+        if vars.len() != 1 {
+            return Err(format!(
+                "Expected 1 argument to color space function, found {}",
+                vars.len()
+            ));
         }
         match self.is_num(&vars[0])? {
             true => Ok(t),
-            false => return Err(format!("Expected numeric argument to color space function, found argument of type '{}'", self.var_type(&vars[0])?)),
+            false => return Err(format!(
+                "Expected numeric argument to color space function, found argument of type '{}'",
+                self.var_type(&vars[0])?
+            )),
         }
     }
 
     fn atomic_1(&self, vars: &[Expr]) -> Result<VarType, String> {
-        if vars.len()!=1 {
-            return Err(format!("Expected 1 argument to atomic function, found {}", vars.len()));
+        if vars.len() != 1 {
+            return Err(format!(
+                "Expected 1 argument to atomic function, found {}",
+                vars.len()
+            ));
         }
         match self.var_type(&vars[0])? {
             VarType::FloatArray(1, ..) => Ok(F),
             VarType::IntArray(1, ..) => Ok(I),
-            t => Err(format!("Unable to perform atomic operation on variable of type '{}'", t)),
+            t => Err(format!(
+                "Unable to perform atomic operation on variable of type '{}'",
+                t
+            )),
         }
     }
 
     fn atomic_2(&self, vars: &[Expr]) -> Result<VarType, String> {
-        if vars.len()!=2 {
-            return Err(format!("Expected 2 arguments to atomic function, found {}", vars.len()));
+        if vars.len() != 2 {
+            return Err(format!(
+                "Expected 2 arguments to atomic function, found {}",
+                vars.len()
+            ));
         }
         // TODO: check 2nd variable
         match (self.var_type(&vars[0])?, self.var_type(&vars[1])?) {
