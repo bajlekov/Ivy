@@ -815,12 +815,36 @@ function love.keypressed(key)
 	end
 
 	if key == "s" then
+    local ts = displayScale
+    local tx = imageOffset:get(0, 0, 0, 0)
+    local ty = imageOffset:get(0, 0, 1, 0)
+
+    scrollable = false
+    displayScale = false
+    imageOffset:set(0, 0, 0, 0)
+    imageOffset:set(0, 0, 1, 0)
+
+    loadInputImage = true
+  	dirtyImage = true
+
+    love.update()
+    while not processReady do
+      love.update()
+      love.timer.sleep(1/60)
+    end
+    love.draw()
+
 		require "ui.notice".blocking("Saving image: out.png")
 
 		previewImage.imageData:encode("png", "out.png")
 		local path = love.filesystem.getSaveDirectory( )
 		os.remove("out.png")
 		os.rename(path.."/out.png", "out.png")
+
+    scrollable = true
+    displayScale = ts
+    imageOffset:set(0, 0, 0, tx)
+    imageOffset:set(0, 0, 1, ty)
 	end
 
 	if key == "q" then
