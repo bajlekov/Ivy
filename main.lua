@@ -815,6 +815,8 @@ function love.keypressed(key)
 	end
 
 	if key == "s" then
+    require "ui.notice".blocking("Saving image: out.png")
+
     local ts = displayScale
     local tx = imageOffset:get(0, 0, 0, 0)
     local ty = imageOffset:get(0, 0, 1, 0)
@@ -833,8 +835,7 @@ function love.keypressed(key)
       love.timer.sleep(1/60)
     end
     love.draw()
-
-		require "ui.notice".blocking("Saving image: out.png")
+    require "ui.notice".blocking("Saving image: out.png")
 
 		previewImage.imageData:encode("png", "out.png")
 		local path = love.filesystem.getSaveDirectory( )
