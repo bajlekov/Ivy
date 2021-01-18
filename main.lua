@@ -148,7 +148,7 @@ local RAW_SRGBmatrix
 local RAW_WBmultipliers
 local RAW_PREmultipliers
 
-local imageOffset = data:new(1, 1, 13)
+local imageOffset = data:new(1, 1, 16)
 local previewImage
 
 local loadInputImage = true
@@ -208,7 +208,7 @@ function love.filedropped(file)
 	imageOffset:set(0, 0, 0, 0) -- x offset
 	imageOffset:set(0, 0, 1, 0) -- y offset
 	imageOffset:set(0, 0, 2, 1) -- scale
-	local A, B, C, BR, CR, VR, BB, CB, VB = require("tools.lensfun")(exifData.LensModel or exifData.CameraModelName, exifData.FocalLength)
+	local A, B, C, BR, CR, VR, BB, CB, VB, K1, K2, K3 = require("tools.lensfun")(exifData.LensModel or exifData.CameraModelName, exifData.FocalLength, exifData.Aperture)
 	imageOffset:set(0, 0, 3, A)
 	imageOffset:set(0, 0, 4, B)
 	imageOffset:set(0, 0, 5, C)
@@ -218,6 +218,9 @@ function love.filedropped(file)
 	imageOffset:set(0, 0, 9, BB or 0)
 	imageOffset:set(0, 0, 10, CB or 0)
 	imageOffset:set(0, 0, 11, VB or 1)
+  imageOffset:set(0, 0, 12, K1 or 0)
+  imageOffset:set(0, 0, 13, K2 or 0)
+  imageOffset:set(0, 0, 14, K3 or 0)
 
 	-- calculate distortion correction optimal scale
 	do
@@ -234,7 +237,7 @@ function love.filedropped(file)
       rr = math.min(rr1, rr2, rr)
 		end
 
-		imageOffset:set(0, 0, 12, rr)
+		imageOffset:set(0, 0, 15, rr)
 	end
 	imageOffset:syncDev()
 
@@ -300,6 +303,7 @@ local hist
 --local correctDistortion
 panels.info.elem[15].onChange = function() loadInputImage = true end
 panels.info.elem[16].onChange = function() loadInputImage = true end
+panels.info.elem[17].onChange = function() loadInputImage = true end
 panels.info.elem[18].onChange = function() loadInputImage = true end
 panels.info.elem[19].onChange = function() loadInputImage = true end
 panels.info.elem[20].onChange = function() loadInputImage = true end
@@ -401,9 +405,10 @@ function love.update()
 
 			--thread.ops.cropCorrectFisheye({originalImage, input.imageData, imageOffset}, "dev")
 
-			if panels.info.elem[15].value or panels.info.elem[16].value then
+			if panels.info.elem[15].value or panels.info.elem[16].value or panels.info.elem[17].value then
 				flags:set(0, 0, 0, panels.info.elem[15].value and 1 or 0)
 				flags:set(0, 0, 1, panels.info.elem[16].value and 1 or 0)
+        flags:set(0, 0, 2, panels.info.elem[17].value and 1 or 0)
 				thread.ops.cropCorrect({originalImage, pipeline.input.imageData, imageOffset, flags}, "dev")
 			else
 				thread.ops.crop({originalImage, pipeline.input.imageData, imageOffset}, "dev")

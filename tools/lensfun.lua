@@ -202,12 +202,45 @@ local function interpolate(data, fl)
 	return o
 end
 
-return function(lens, fl)
-	local A, B, C, BR, CR, VR, BB, CB, VB = 0, 0, 0, 0, 0, 1, 0, 0, 1
+local function interpolate2(data, fl, ap)
+	local below, above = 0, math.huge
+	local min, max = math.huge, 0
+	for k, v in pairs(data) do
+		if k < min then min = k end
+		if k > max then max = k end
 
-	if not lens then return A, B, C, BR, CR, VR, BB, CB, VB end
+		if k < fl then
+			if (fl - k) < (fl - below) then below = k end
+		elseif k > fl then
+			if (k - fl) < (above - fl) then above = k end
+		end
+	end
+
+	if fl <= min then return data[min] end
+	if fl >= max then return data[max] end
+
+	assert(below > 0)
+	assert(above < math.huge)
+
+	local o = {}
+	local factor = (fl - below) / (above - below)
+
+	local data_below = interpolate(data[below], ap)
+	local data_above = interpolate(data[above], ap)
+
+	for k, v in ipairs(data_below) do
+		o[k] = data_below[k] + factor * (data_above[k] - data_below[k])
+	end
+	return o
+end
+
+return function(lens, fl, ap)
+	local A, B, C, BR, CR, VR, BB, CB, VB, K1, K2, K3 = 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0
+
+	if not lens then return A, B, C, BR, CR, VR, BB, CB, VB, K1, K2, K3 end
 
 	fl = tonumber(fl)
+	ap = tonumber(ap)
 	assert(type(lens) == "string")
 	lens = lens:gsub("%c*$", "") -- remove embedded zeros
 
@@ -227,7 +260,19 @@ return function(lens, fl)
 				BR, CR, VR, BB, CB, VB = unpack(interpolate(data[lens].tca, fl))
 			end
 		end
+
+		if data[lens].vignetting then
+			if data[lens].vignetting[fl] then
+				if data[lens].vignetting[fl][ap] then
+					K1, K2, K3 = unpack(data[lens].vignetting[fl][ap])
+				else
+					K1, K2, K3 = unpack(interpolate(data[lens].vignetting[fl], ap))
+				end
+			else
+				K1, K2, K3 = unpack(interpolate2(data[lens].vignetting, fl, ap))
+			end
+		end
 	end
 
-	return A, B, C, BR, CR, VR, BB, CB, VB
+	return A, B, C, BR, CR, VR, BB, CB, VB, K1, K2, K3
 end

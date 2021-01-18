@@ -18,7 +18,7 @@
 local proc = require "lib.opencl.process.ivy".new()
 
 local source = [[
-function rd(ru, A, B, C, BR, CR, VR)
+function rd_calc(ru, A, B, C, BR, CR, VR)
   ru = ru*(A*ru*ru*ru + B*ru*ru + C*ru + (1.0-A-B-C))
 	return ru*(BR*ru*ru + CR*ru + VR)
 end
@@ -41,7 +41,7 @@ kernel cropCorrect(I, O, offset, flags)
   	A = offset[3]
   	B = offset[4]
   	C = offset[5]
-		gs = offset[12]
+		gs = offset[15]
 	end
 
 	var BR = 0.0
@@ -73,11 +73,22 @@ kernel cropCorrect(I, O, offset, flags)
 
   var r = sqrt(cxn^2 + cyn^2)
 
-  var sd = rd(r, A, B, C, BR, CR, VR) / max(r, 0.000001)*gs
+  var rd = rd_calc(r, A, B, C, BR, CR, VR)*gs
+  var sd = rd / max(r, 0.000001)
   cx = sd*cxn*fn_1 + x_2
   cy = sd*cyn*fn_1 + y_2
 
-  O[x, y, z] = bicubic_z(I, cx, cy, z)
+  if flags[2]>0.5 then
+    var o = bicubic_z(I, cx, cy, z)
+    var K1 = offset[12]
+    var K2 = offset[13]
+    var K3 = offset[14]
+    rd = rd/2
+    o = o / (1 + K1*rd^2 + K2*rd^4 + K3*rd^6)
+    O[x, y, z] = o
+  else
+    O[x, y, z] = bicubic_z(I, cx, cy, z)
+  end
 
 	if cx<0 or cy<0 or cx>I.x-1 or cy>I.y-1 then
 		O[x, y, z] = 0.0
