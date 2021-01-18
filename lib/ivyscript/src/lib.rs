@@ -223,7 +223,7 @@ pub extern "C" fn translator_generate(t: *mut Translator, kernel: *const i8) -> 
 }
 
 #[no_mangle]
-pub extern "C" fn translator_get_id(t: *mut Translator, name: *const i8) -> *mut i8 {
+pub extern "C" fn translator_get_id(t: *mut Translator, name: *const i8) -> *const i8 {
     let t = unsafe {
         assert!(!t.is_null());
         &mut *t

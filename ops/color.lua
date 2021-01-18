@@ -25,18 +25,18 @@ local function xyz(V)
 	if V^3>E then
 		return V^3
 	else
-		return (116*V - 16)/K;
+		return (116*V - 16)/K
 	end
 end
 
 local function LAB_XYZ(l, a, b)
 	local x, y, z
 	y = (l + 0.16)/1.16
-	x = a*0.2 + y;
-	z = y - b*0.5;
-	x = wp_x*xyz(x);
-	y = wp_y*xyz(y);
-	z = wp_z*xyz(z);
+	x = a*0.2 + y
+	z = y - b*0.5
+	x = wp_x*xyz(x)
+	y = wp_y*xyz(y)
+	z = wp_z*xyz(z)
 	return x, y, z
 end
 

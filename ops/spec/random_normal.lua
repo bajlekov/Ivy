@@ -1,5 +1,5 @@
 return {
-	name = "Thermal Noise",
+	name = "Gaussian Noise",
 	procName = "random_normal",
 	input = {
 		[0] = {cs = "LRGB"},

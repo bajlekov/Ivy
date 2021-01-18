@@ -15,6 +15,9 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ]]
 
+-- gcc -shared tinyfiledialogs.c -o tfd.dll -lcomdlg32 -lole32
+
+
 local ffi = require "ffi"
 
 local fileDialog = {}

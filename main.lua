@@ -218,9 +218,9 @@ function love.filedropped(file)
 	imageOffset:set(0, 0, 9, BB or 0)
 	imageOffset:set(0, 0, 10, CB or 0)
 	imageOffset:set(0, 0, 11, VB or 1)
-  imageOffset:set(0, 0, 12, K1 or 0)
-  imageOffset:set(0, 0, 13, K2 or 0)
-  imageOffset:set(0, 0, 14, K3 or 0)
+	imageOffset:set(0, 0, 12, K1 or 0)
+	imageOffset:set(0, 0, 13, K2 or 0)
+	imageOffset:set(0, 0, 14, K3 or 0)
 
 	-- calculate distortion correction optimal scale
 	do
@@ -334,40 +334,6 @@ function love.update()
 			local node = node.list[id]
 			if node and node.state == "processing" then
 				node.state = "ready"
-			end
-
-			-- deallocate link data after node is complete
-			-- not useful as, due to processing queue, all buffers are initialized at the start
-			-- this would require full synchronization
-
-			-- FIXME: use static deallocation scheme!
-			if not settings.linkCache then
-				debug.tic()
-				for i = 0, node.elem.n do
-					if node.portIn[i] and node.portIn[i].link then
-						local link = node.portIn[i].link
-						local old = true
-						if link.portIn.parent.protected then
-							old = false
-						else
-							for p in pairs(link.portOut) do
-								if p.parent.state~="ready" or p.parent.protected then
-									old = false
-									break
-								end
-							end
-						end
-						if old then
-							link.data:free()
-							link.data = nil
-							for k, v in pairs(link.dataCS) do
-								v:free()
-							end
-							link.dataCS = {}
-						end
-					end
-				end
-				debug.toc("link cache clear")
 			end
 
 			assert(id == currentID)

@@ -70,7 +70,7 @@ kernel mixDetail(B, D1a, D1b, D2a, D2b, O)
   var o = b + a*d1 + (1-a)*d2
   var o_y = LtoY(o)
   var i = D2a[x, y]
-  O[x, y] = max(i*o_y/i.y, 0.0)
+  O[x, y] = i*o_y/i.y
 end
 ]]
 

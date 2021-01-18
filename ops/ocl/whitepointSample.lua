@@ -38,7 +38,7 @@ kernel sample(I, P, S)
   const x = P[0]
   const y = P[1]
 
-  var s = vec(0.0);
+  var s = vec(0.0)
 	for i = -2, 2 do
 		for j = -2, 2 do
 			s = s + I[x+i, y+j]

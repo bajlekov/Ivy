@@ -40,7 +40,7 @@ do
 end
 
 function raw.read(name)
-	local rawData = libraw.libraw_init(0);
+	local rawData = libraw.libraw_init(0)
 	if type(name) ~= "string" then
 		name = name:getFilename()
 	end

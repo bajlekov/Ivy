@@ -125,7 +125,7 @@ mod test {
     use super::*;
 
     #[test]
-    fn test_add() {
+    fn scope_add() {
         let key1 = String::from("abc");
         let key2 = String::from("def");
 

@@ -159,6 +159,7 @@ function process:getKernel(name, buffers)
 				return kernel
 			end
 		else
+			print("ERROR ["..name.."]: \nIvyScript unable to parse source!")
 			messageCh:push{"error", "ERROR ["..name.."]: \nIvyScript unable to parse source!"}
 			return nil
 		end

@@ -52,7 +52,7 @@ kernel horizontal(dHdx, O, S, h)
 		var ix = O[x-1, y]
 		var a = exp( -sqrt(2.0) / (S[x, y]*h) )
 		var v = a ^ dHdx[x, y]
-    O[x, y] = io + v * (ix - io)
+		O[x, y] = io + v * (ix - io)
 	end
 
 	for x = O.x - 2, 0, -1 do
@@ -60,7 +60,7 @@ kernel horizontal(dHdx, O, S, h)
 		var ix = O[x+1, y]
 		var a = exp( -sqrt(2.0) / (S[x+1, y]*h) )
 		var v = a ^ dHdx[x+1, y]
-    O[x, y] = io + v * (ix - io)
+		O[x, y] = io + v * (ix - io)
 	end
 end
 
@@ -72,7 +72,7 @@ kernel vertical(dVdy, O, S, h)
 		var iy = O[x, y-1]
 		var a = exp( -sqrt(2.0) / (S[x, y]*h) )
 		var v = a ^ dVdy[x, y]
-    $O[x, y] = io + v * (iy - io)
+		O[x, y] = io + v * (iy - io)
 	end
 
 	for y = O.y - 2, 0, -1 do
