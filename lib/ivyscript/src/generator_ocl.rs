@@ -535,18 +535,21 @@ impl<'a> Generator<'a> {
     }
 
     fn gen_var(&'a self, id: &str, expr: &Expr) -> Result<String, String> {
+        let no_init = String::new();
         let expr_str = match expr {
             Expr::Call(f, _) => match f.as_ref() {
-                "array" => String::new(),
-                "bool_array" => String::new(),
-                "int_array" => String::new(),
-                "float_array" => String::new(),
-                "vec_array" => String::new(),
-                "local_array" => String::new(),
-                "local_bool_array" => String::new(),
-                "local_int_array" => String::new(),
-                "local_float_array" => String::new(),
-                "local_vec_array" => String::new(),
+                "array" => no_init,
+                "bool_array" => no_init,
+                "int_array" => no_init,
+                "float_array" => no_init,
+                "vec_array" => no_init,
+                "local_array" => no_init,
+                "local_bool_array" => no_init,
+                "local_int_array" => no_init,
+                "local_float_array" => no_init,
+                "local_vec_array" => no_init,
+                "zero" => String::from("0"),
+                "one" => String::from("1"),
                 _ => self.gen_expr(&expr)?,
             },
             Expr::Array(_) => format!(" = {}", self.gen_expr(&expr)?),

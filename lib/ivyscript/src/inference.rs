@@ -529,6 +529,10 @@ impl<'a> Inference<'a> {
             "get_group_id" if vars.len() == 1 && self.is_int_lit(&vars[0]) => I,
             "get_global_offset" if vars.len() == 1 && self.is_int_lit(&vars[0]) => I,
 
+            // type-inferred 0 and 1
+            "zero" if vars.len() == 1 && self.is_num_vec(&vars[0])? => self.var_type(&vars[0])?,
+            "one" if vars.len() == 1 && self.is_num_vec(&vars[0])? => self.var_type(&vars[0])?,
+
             // OpenCL math built-in functions: clamp, degrees, max, min, mix, radians, step, smoothstep, sign
             "clamp" if vars.len() == 3 => {
                 let v = self.var_type(&vars[0])?;
