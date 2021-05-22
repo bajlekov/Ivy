@@ -20,13 +20,50 @@ local style = require("ui.style")
 local draw = {}
 
 function draw.curve(graph, x, y, w, h)
+	h = h - 20 -- offset for curve toggles, possibly make this dynamic
 	love.graphics.setColor(style.gray3)
 
 	love.graphics.rectangle("fill", x, y, w, h, 3, 3)
+	
+	-- curve type toggles
+	do
+		local y = y + 152
+		local h = 18
+
+		local p0 = x + 2.5
+		local p1 = x + 2.5 + math.round((w - 5) * 0.25)
+		local p2 = x + 2.5 + math.round((w - 5) * 0.50)
+		local p3 = x + 2.5 + math.round((w - 5) * 0.75)
+		local p4 = x + 2.5 + w - 5
+		love.graphics.rectangle("fill", x, y, w, h, 3, 3) -- background
+		love.graphics.setColor(style.gray5)
+
+		if graph.curve.type=="linear" then
+			love.graphics.rectangle("fill", p0,   y+2.5, p1-p0-1, h-5)
+		elseif graph.curve.type=="bezier" then
+			love.graphics.rectangle("fill", p1+1, y+2.5, p2-p1-2, h-5)
+		elseif graph.curve.type=="hermite" then
+			love.graphics.rectangle("fill", p2+1, y+2.5, p3-p2-2, h-5)
+		elseif graph.curve.type=="cubic" then
+			love.graphics.rectangle("fill", p3+1, y+2.5, p4-p3-1, h-5)
+		end
+
+		love.graphics.rectangle("line", p0,   y+2.5, p1-p0-1, h-5)
+		love.graphics.rectangle("line", p1+1, y+2.5, p2-p1-2, h-5)
+		love.graphics.rectangle("line", p2+1, y+2.5, p3-p2-2, h-5)
+		love.graphics.rectangle("line", p3+1, y+2.5, p4-p3-1, h-5)
+		
+		love.graphics.setColor(style.gray9)
+		love.graphics.setFont(style.smallFont)
+		love.graphics.printf("Linear", p0,   y+4, p1-p0-1, "center")
+		love.graphics.printf("Bezier", p1+1, y+4, p2-p1-2, "center")
+		love.graphics.printf("Hermite", p2+1, y+4, p3-p2-2, "center")
+		love.graphics.printf("Cubic", p3+1, y+4, p4-p3-1, "center")
+	end
 
 	if graph.background then
 		love.graphics.setColor(0.8, 0.8, 0.8, 1)
-		love.graphics.draw(graph.background, x+2, y+2, 0, 146/512, 146/512)
+		love.graphics.draw(graph.background, x+2.5, y+2.5, 0, (w-5)/512, (h-5)/512)
 	end
 
 	love.graphics.setLineWidth(0.7)

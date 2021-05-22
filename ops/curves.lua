@@ -182,7 +182,7 @@ return function(ops)
 		n:addPortOut(0, "LCH")
 		n.process = curveHLProcess
 		n.data.curve = data:new(256, 1, 1)
-		require "ui.graph".curve(n, 0.5, 0.5)
+		require "ui.graph".curve(n, 0.5, 0.5, true)
 		n.graph.background = background_HL
 		n:setPos(x, y)
 		return n
@@ -203,7 +203,7 @@ return function(ops)
 		n:addPortOut(0, "LCH")
 		n.process = curveHCProcess
 		n.data.curve = data:new(256, 1, 1)
-		require "ui.graph".curve(n, 0.5, 0.5)
+		require "ui.graph".curve(n, 0.5, 0.5, true)
 		n.graph.background = background_HC
 		n:setPos(x, y)
 		return n
@@ -224,7 +224,7 @@ return function(ops)
 		n:addPortOut(0, "LCH")
 		n.process = curveHHProcess
 		n.data.curve = data:new(256, 1, 1)
-		require "ui.graph".curve(n, 0.5, 0.5)
+		require "ui.graph".curve(n, 0.5, 0.5, true)
 		n.graph.background = background_HH
 		n:setPos(x, y)
 		return n

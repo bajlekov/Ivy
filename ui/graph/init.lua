@@ -42,10 +42,12 @@ function graph:press(x, y, mouse)
 end
 
 local function updateCurve(graph, channel, curve)
-	graph.parent.dirty = true
 	local data = graph.parent.data.curve
 	local curve = curve or graph.curve
 	local channel = (channel or graph.channel or 1) - 1
+
+	graph.parent.dirty = true
+	curve.recalculate = true
 
 	local py = 0
 	for px = 0, 255 do
@@ -55,20 +57,20 @@ local function updateCurve(graph, channel, curve)
 	end
 end
 
-function graph.curve(node, a, b)
-	local graph = graph.new(node, 150, 150)
+function graph.curve(node, a, b, c)
+	local graph = graph.new(node, 150, 170)
 	graph.type = "curve"
-	graph.curve = require (settings.cubicSpline and "tools.curveCubic" or "tools.curveBezier"):new(a, b)
+	graph.curve = require "tools.curve":new(a, b, c)
 	updateCurve(graph)
 	graph.updateCurve = updateCurve
 end
 
 function graph.curveRGB(node)
-	local graph = graph.new(node, 150, 150)
+	local graph = graph.new(node, 150, 170)
 	graph.type = "curve"
-	graph.curveR = require (settings.cubicSpline and "tools.curveCubic" or "tools.curveBezier"):new()
-	graph.curveG = require (settings.cubicSpline and "tools.curveCubic" or "tools.curveBezier"):new()
-	graph.curveB = require (settings.cubicSpline and "tools.curveCubic" or "tools.curveBezier"):new()
+	graph.curveR = require "tools.curve":new()
+	graph.curveG = require "tools.curve":new()
+	graph.curveB = require "tools.curve":new()
 
 	updateCurve(graph, 1, graph.curveR)
 	updateCurve(graph, 2, graph.curveG)

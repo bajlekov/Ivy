@@ -24,29 +24,49 @@ event.release = {}
 
 local pt = nil
 function event.press.curve(graph, mouse)
-	local x = (graph.px - 2) / 146
-	local y = 1 - (graph.py - 2) / 146
-	pt = graph.curve:getPt(x, y)
+	if graph.py<150 then
+		local x = (graph.px - 2) / 146
+		local y = 1 - (graph.py - 2) / 146
 
-	if mouse.button==1 then
-		cursor.sizeA()
-		if not pt then
-			pt = graph.curve:addPt(x, y)
+		pt = graph.curve:getPt(x, y)
+
+		if mouse.button==1 then
+			cursor.sizeA()
+			if not pt then
+				pt = graph.curve:addPt(x, y)
+				graph:updateCurve()
+			end
+		end
+
+		if pt and mouse.button==2 then
+			graph.curve:removePt(pt)
 			graph:updateCurve()
 		end
+		return
 	end
 
-
-
-	if pt and mouse.button==2 then
-		graph.curve:removePt(pt)
+	local p0 = 2
+	local p1 = 2 + math.round(146 * 0.25)
+	local p2 = 2 + math.round(146 * 0.50)
+	local p3 = 2 + math.round(146 * 0.75)
+	local p4 = 2 + 146
+	if graph.py>=154 and graph.py<168 then
+		if graph.px>=p0 and graph.px<p1-1 then
+			graph.curve.type = "linear"
+		elseif graph.px>=p1 and graph.px<p2 then
+			graph.curve.type = "bezier"
+		elseif graph.px>=p2+1 and graph.px<p3-1 then
+			graph.curve.type = "hermite"
+		elseif graph.px>=p3 and graph.px<p4 then
+			graph.curve.type = "cubic"
+		end
 		graph:updateCurve()
 	end
 end
 
 local factor = 1/146
 function event.move.curve(graph, mouse)
-	if mouse.button==1 and pt then
+	if mouse.button==1 and pt and graph.py<150 then
 		local shift = love.keyboard.isDown("lshift") or love.keyboard.isDown("rshift")
 		graph.curve:movePt(pt, mouse.dx * factor * (shift and 0.1 or 1), -mouse.dy * factor * (shift and 0.1 or 1))
 		graph:updateCurve()
