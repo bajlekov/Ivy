@@ -102,7 +102,7 @@ local function sample(self, x)
 		local ox = x - self.points[n].x
 		local dx = self.points[n - 1].x - self.points[n].x
 		local dy = self.points[n - 1].y - self.points[n].y
-		return self.points[n].y + ox * dy / math.max(dx, eps)
+		return self.points[n].y + ox * dy / math.min(dx, -eps)
 	end
 
 	if #self.points == 3 then -- bezier interpolation of 3 points
