@@ -42,7 +42,7 @@ kernel take(O, S, D, M, P, idx)
 	var dx = floor(P[0, idx, 2]) + xo -- destination x
 	var dy = floor(P[0, idx, 3]) + yo -- destination y
 
-	S[x, y] = bicubic(O, sx, sy)
+	S[x, y] = lanczos(O, sx, sy)
 	D[x, y] = O[dx, dy]
 
 	var d = sqrt((xo)^2 + (yo)^2) -- distance from center
@@ -174,7 +174,7 @@ end
 local function init(d, c, q)
 	proc:init(d, c, q)
 	proc:loadSourceFile("pyr_c_3d.ivy")
-	proc:loadSourceFile("bicubic.ivy")
+	proc:loadSourceFile("lanczos.ivy")
 	proc:loadSourceString(source)
 	return execute
 end

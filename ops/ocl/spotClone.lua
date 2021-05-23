@@ -46,7 +46,7 @@ kernel spotClone(I, O, P, idx)
 	var d = sqrt((xo)^2 + (yo)^2) -- distance from center
 	var mask = range(1.0-f*0.5, f*0.5, d/s)
 
-	var o = bicubic_z(O, dx, dy, z)
+	var o = lanczos_z(O, dx, dy, z)
 	var i = I[sx, sy, z]
 
 	O[dx, dy, z] = mix(o, i, mask)
@@ -68,7 +68,7 @@ end
 
 local function init(d, c, q)
 	proc:init(d, c, q)
-	proc:loadSourceFile("bicubic.ivy")
+	proc:loadSourceFile("lanczos.ivy")
 	proc:loadSourceString(source)
 	return execute
 end

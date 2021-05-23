@@ -79,7 +79,7 @@ kernel cropCorrect(I, O, offset, flags)
   cy = sd*cyn*fn_1 + y_2
 
   if flags[2]>0.5 then
-    var o = bicubic_z(I, cx, cy, z)
+    var o = lanczos_z(I, cx, cy, z)
     var K1 = offset[12]
     var K2 = offset[13]
     var K3 = offset[14]
@@ -87,7 +87,7 @@ kernel cropCorrect(I, O, offset, flags)
     o = o / (1 + K1*rd^2 + K2*rd^4 + K3*rd^6)
     O[x, y, z] = o
   else
-    O[x, y, z] = bicubic_z(I, cx, cy, z)
+    O[x, y, z] = lanczos_z(I, cx, cy, z)
   end
 
 	if cx<0 or cy<0 or cx>I.x-1 or cy>I.y-1 then
@@ -103,7 +103,7 @@ end
 
 local function init(d, c, q)
 	proc:init(d, c, q)
-  proc:loadSourceFile("bicubic.ivy")
+  proc:loadSourceFile("lanczos.ivy")
 	proc:loadSourceString(source)
 	return execute
 end

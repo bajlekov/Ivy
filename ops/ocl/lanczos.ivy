@@ -1,0 +1,150 @@
+function sinc(x)
+  var x_pi = x * float(M_PI)
+  if x==0.0 then
+    return 1.0
+  else
+    return sin(x_pi)/(x_pi)
+  end
+end
+
+function lanczos3(x)
+  if x==0.0 then
+    return 1
+  elseif x<-3.0 or x>3.0 then
+    return 0.0
+  else
+    return sinc(x)*sinc(x/3.0)
+  end
+end
+
+function filterLanczos(y0, y1, y2, y3, y4, y5, x)
+  var x0 = -2.0 - x
+  var x1 = -1.0 - x
+  var x2 = 0.0 - x
+  var x3 = 1.0 - x
+  var x4 = 2.0 - x
+  var x5 = 3.0 - x
+  return
+    lanczos3(x0)*y0 +
+    lanczos3(x1)*y1 +
+    lanczos3(x2)*y2 +
+    lanczos3(x3)*y3 +
+    lanczos3(x4)*y4 +
+    lanczos3(x5)*y5
+end
+
+function lanczos(I, x, y)
+	var xm = int(floor(x))
+	var xf = x - xm
+	var ym = int(floor(y))
+	var yf = y - ym
+
+  return filterLanczos(
+    filterLanczos(
+      I[xm-2, ym-2],
+      I[xm-2, ym-1],
+      I[xm-2, ym  ],
+      I[xm-2, ym+1],
+      I[xm-2, ym+2],
+      I[xm-2, ym+3],
+      yf),
+    filterLanczos(
+      I[xm-1, ym-2],
+			I[xm-1, ym-1],
+			I[xm-1, ym  ],
+			I[xm-1, ym+1],
+			I[xm-1, ym+2],
+      I[xm-1, ym+3],
+			yf),
+    filterLanczos(
+      I[xm+0, ym-2],
+      I[xm+0, ym-1],
+      I[xm+0, ym  ],
+      I[xm+0, ym+1],
+      I[xm+0, ym+2],
+      I[xm+0, ym+3],
+			yf),
+    filterLanczos(
+      I[xm+1, ym-2],
+      I[xm+1, ym-1],
+      I[xm+1, ym  ],
+      I[xm+1, ym+1],
+      I[xm+1, ym+2],
+      I[xm+1, ym+3],
+			yf),
+    filterLanczos(
+      I[xm+2, ym-2],
+      I[xm+2, ym-1],
+      I[xm+2, ym  ],
+      I[xm+2, ym+1],
+      I[xm+2, ym+2],
+      I[xm+2, ym+3],
+			yf),
+    filterLanczos(
+      I[xm+3, ym-2],
+      I[xm+3, ym-1],
+      I[xm+3, ym  ],
+      I[xm+3, ym+1],
+      I[xm+3, ym+2],
+      I[xm+3, ym+3],
+      yf),
+    xf)
+end
+
+function lanczos_z(I, x, y, z)
+	var xm = int(floor(x))
+	var xf = x - xm
+	var ym = int(floor(y))
+	var yf = y - ym
+
+  return filterLanczos(
+    filterLanczos(
+      I[xm-2, ym-2, z],
+      I[xm-2, ym-1, z],
+      I[xm-2, ym  , z],
+      I[xm-2, ym+1, z],
+      I[xm-2, ym+2, z],
+      I[xm-2, ym+3, z],
+      yf),
+    filterLanczos(
+      I[xm-1, ym-2, z],
+			I[xm-1, ym-1, z],
+			I[xm-1, ym  , z],
+			I[xm-1, ym+1, z],
+			I[xm-1, ym+2, z],
+      I[xm-1, ym+3, z],
+			yf),
+    filterLanczos(
+      I[xm+0, ym-2, z],
+      I[xm+0, ym-1, z],
+      I[xm+0, ym  , z],
+      I[xm+0, ym+1, z],
+      I[xm+0, ym+2, z],
+      I[xm+0, ym+3, z],
+			yf),
+    filterLanczos(
+      I[xm+1, ym-2, z],
+      I[xm+1, ym-1, z],
+      I[xm+1, ym  , z],
+      I[xm+1, ym+1, z],
+      I[xm+1, ym+2, z],
+      I[xm+1, ym+3, z],
+			yf),
+    filterLanczos(
+      I[xm+2, ym-2, z],
+      I[xm+2, ym-1, z],
+      I[xm+2, ym  , z],
+      I[xm+2, ym+1, z],
+      I[xm+2, ym+2, z],
+      I[xm+2, ym+3, z],
+			yf),
+    filterLanczos(
+      I[xm+3, ym-2, z],
+      I[xm+3, ym-1, z],
+      I[xm+3, ym  , z],
+      I[xm+3, ym+1, z],
+      I[xm+3, ym+2, z],
+      I[xm+3, ym+3, z],
+      yf),
+    xf)
+end
