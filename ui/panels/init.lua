@@ -1,5 +1,5 @@
 --[[
-  Copyright (C) 2011-2020 G. Bajlekov
+  Copyright (C) 2011-2021 G. Bajlekov
 
     Ivy is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -171,7 +171,7 @@ helpMenu:addElem("button", 2, "About", function(x, y)
 	local about = Overlay:new("About")
 	about:addElem("label", 2, "Ivy")
 	about:addElem("label", 3, "Version: 0.0.0-ALPHA")
-	about:addElem("label", 4, "(C) 2011-2020 G. Bajlekov")
+	about:addElem("label", 4, "(C) 2011-2021 G. Bajlekov")
 	about:addElem("label", 6, "GNU General Public License v3.0 or later")
 	about:addElem("text", 8, [[
 Ivy is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version. This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
@@ -299,7 +299,7 @@ overlayHistogram:addElem("button", 5, "OK")
 histPanel:addElem("dropdown", 2, "Visibility", overlayHistogram)
 
 
-status.centerText = "Ivy (C) 2011-2020 G. Bajlekov"
+status.centerText = "Ivy (C) 2011-2021 G. Bajlekov"
 local major, minor, revision = love.getVersion()
 local loveVersion = string.format("LÖVE %d.%d.%d", major, minor, revision)
 status.rightText = loveVersion.."/"..jit.version.." on "..jit.os.." "..jit.arch
