@@ -15,20 +15,32 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ]]
 
-local proc = require "lib.opencl.process.ivy".new()
-local blur = require "ops.ocl.macro.blur"
+local ffi = require "ffi"
+local data = require "data"
+local downsize = require "tools.downsize"
 
-local function execute()
-	local I, O, n = proc:getAllBuffers(3)
-
-	local n = n:get(0, 0, 0)
-	blur.execute(proc, I, O, n)
+local function init(proc)
+  proc:loadSourceFile("pyr.ivy")
 end
 
-local function init(d, c, q)
-	proc:init(d, c, q)
-	blur.init(proc)
-	return execute
+local function execute(proc, I, O, n)
+  local G = {}
+  
+	G[0] = I
+	for i = 1, n do
+		G[i] = data:new(downsize(G[i-1]:shape()))
+		proc:executeKernel("pyrDown", proc:size3D(G[i]), {G[i-1], G[i]})
+	end
+
+	G[0] = O
+	for i = n, 1, -1 do
+		proc:executeKernel("pyrUp", proc:size3D(G[i]), {G[i], G[i-1]})
+		G[i]:free()
+		G[i] = nil
+	end
 end
 
-return init
+return{
+  init = init,
+  execute = execute,
+}
