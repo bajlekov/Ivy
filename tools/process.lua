@@ -88,9 +88,19 @@ function process.load(file, append)
 			-- curve handling
 			if v.elem.graph and v.elem.graph.type=="curve" then
 				v.node.graph.curve.points = v.elem.graph.pts
-				if v.node.graph.curveR then v.node.graph.curveR.points = v.elem.graph.ptsR end
-				if v.node.graph.curveG then v.node.graph.curveG.points = v.elem.graph.ptsG end
-				if v.node.graph.curveB then v.node.graph.curveB.points = v.elem.graph.ptsB end
+				v.node.graph.curve.type = v.elem.graph.curveType
+				if v.node.graph.curveR then
+					v.node.graph.curveR.points = v.elem.graph.ptsR
+					v.node.graph.curveR.type = v.elem.graph.curveTypeR
+				end
+				if v.node.graph.curveG then
+					v.node.graph.curveG.points = v.elem.graph.ptsG
+					v.node.graph.curveG.type = v.elem.graph.curveTypeG
+				end
+				if v.node.graph.curveB then
+					v.node.graph.curveB.points = v.elem.graph.ptsB
+					v.node.graph.curveB.type = v.elem.graph.curveTypeB
+				end
 				v.node.graph.channel = v.elem.graph.channel
 
 				if v.node.graph.updateCurve then
@@ -197,9 +207,13 @@ function process.save(name)
 
 			if t.graph.type=="curve" then
 				e.graph.pts = t.graph.curve.points
+				e.graph.curveType = t.graph.curve.type
 				e.graph.ptsR = t.graph.curveR and t.graph.curveR.points
 				e.graph.ptsG = t.graph.curveG and t.graph.curveG.points
 				e.graph.ptsB = t.graph.curveB and t.graph.curveB.points
+				e.graph.curveTypeR = t.graph.curveR and t.graph.curveR.type
+				e.graph.curveTypeG = t.graph.curveG and t.graph.curveG.type
+				e.graph.curveTypeB = t.graph.curveB and t.graph.curveB.type
 				e.graph.channel = t.graph.channel
 			end
 
