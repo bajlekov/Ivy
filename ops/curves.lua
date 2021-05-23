@@ -315,7 +315,7 @@ return function(ops)
 		n:addElem("bool", 1, "Chroma modulation", true)
 		n.process = hueMaskProcess
 		n.data.curve = data:new(256, 1, 1)
-		require "ui.graph".curve(n, 1, 1)
+		require "ui.graph".curve(n, 1, 1, true)
 		n.graph.background = background_H
 		n:setPos(x, y)
 		return n

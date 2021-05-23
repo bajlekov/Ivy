@@ -35,7 +35,7 @@ return function(ops)
 		local s = t.autoTempBuffer(self, - 2, 1, 1, 3) -- [r, g, b]
 		p:set(0, 0, 0, ox)
 		p:set(0, 0, 1, oy)
-		p:toDevice()
+		p:syncDev()
 
 		if update or self.elem[3].value then
 			thread.ops.colorSample({i, p, s}, self)
@@ -69,7 +69,7 @@ return function(ops)
 		local s = t.autoTempBuffer(self, - 2, 1, 1, 3) -- [r, g, b]
 		p:set(0, 0, 0, ox)
 		p:set(0, 0, 1, oy)
-		p:toDevice()
+		p:syncDev()
 
 		if update or self.elem[3].value then
 			thread.ops.colorSample({i, p, s}, self)
@@ -103,7 +103,7 @@ return function(ops)
 		local s = t.autoTempBuffer(self, - 2, 1, 1, 3) -- [r, g, b]
 		p:set(0, 0, 0, ox)
 		p:set(0, 0, 1, oy)
-		p:toDevice()
+		p:syncDev()
 
 		if update or self.elem[3].value then
 			thread.ops.colorSample({i, p, s}, self)
@@ -138,7 +138,7 @@ return function(ops)
 		p:set(0, 0, 0, ox)
 		p:set(0, 0, 1, oy)
 		p:set(0, 0, 2, scale)
-		p:toDevice()
+		p:syncDev()
 
 		thread.ops.distanceSelect({i, d, p, o, m}, self)
 	end
@@ -171,7 +171,7 @@ return function(ops)
 		p:set(0, 0, 0, ox)
 		p:set(0, 0, 1, oy)
 		p:set(0, 0, 2, scale)
-		p:toDevice()
+		p:syncDev()
 
 		if update or self.elem[4].value then
 			thread.ops.colorSample({i, p, s}, self)
@@ -206,7 +206,7 @@ return function(ops)
 		local s = t.autoTempBuffer(self, - 2, 1, 1, 3) -- [r, g, b]
 		p:set(0, 0, 0, ox)
 		p:set(0, 0, 1, oy)
-		p:toDevice()
+		p:syncDev()
 
 		if update or self.elem[3].value then
 			thread.ops.colorSample({i, p, s}, self)
@@ -214,7 +214,7 @@ return function(ops)
 		thread.ops.colorSelect({i, r, s, o, m}, self)
 		if self.portOut[5].link then
 			local o = t.autoOutputSink(self, 5, 1, 1, 3)
-			thread.ops._copy({s, o}, self)
+			thread.ops.copy({s, o}, self)
 		end
 	end
 
