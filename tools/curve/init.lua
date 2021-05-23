@@ -132,9 +132,8 @@ local pts = {}
 function curve:drawLines(x, y, w, h, n)
 	if #pts~=n then pts = {} end
 
-	local py = 0
 	for px = 0, n or 255 do
-		py = self:sample(px/(n or 255)) or py
+		local py = self:sample(px/(n or 255))
 		py = math.clamp(py, 0, 1)
 		pts[px*2+1] = x + px/(n or 255)*w
 		pts[px*2+2] = y + h - py*h
