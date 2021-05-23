@@ -103,6 +103,7 @@ style.linkDragColor = style.orange
 
 
 -- post-process
+style.smallFont = love.graphics.newFont(style.elemFont, 10)
 style.titleFont = love.graphics.newFont(style.titleFont, style.titleHeight - style.nodeBorder*3)
 style.elemFont = love.graphics.newFont(style.elemFont, style.elemHeight - style.elemBorder*2)
 style.labelFont = love.graphics.newFont(style.labelFont, style.elemHeight - style.elemBorder*2)
