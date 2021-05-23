@@ -32,7 +32,7 @@ pub enum VarType {
     IntArray(u8, bool, u64, u64, u64, u64),
     FloatArray(u8, bool, u64, u64, u64, u64),
     VecArray(u8, bool, u64, u64, u64, u64),
-    Buffer { z: u64, cs: ColorSpace },
+    Buffer { x1y1: bool, z: u64, cs: ColorSpace },
     Void,
     Unknown,
 }
@@ -61,7 +61,8 @@ impl std::fmt::Display for VarType {
             VarType::VecArray(d, l, ..) => {
                 write!(f, "{}D {}VecArray", d, if *l { "local " } else { "" })
             }
-            VarType::Buffer { z, cs } => write!(f, "{}ch {} Buffer]", z, cs),
+            VarType::Buffer { z, cs, x1y1: true } => write!(f, "{}ch {} x1y1 Buffer", z, cs),
+            VarType::Buffer { z, cs, x1y1: false } => write!(f, "{}ch {} Buffer", z, cs),
             VarType::Void => write!(f, "Void"),
             VarType::Unknown => write!(f, "Unknown"),
         }

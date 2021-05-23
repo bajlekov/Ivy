@@ -38,8 +38,8 @@ pub fn function_id(name: &str, input: &[VarType]) -> String {
                 format!("LFA{}_{}_{}_{}_{}_", n, x, y, z, w)
             }
             VarType::VecArray(n, true, x, y, z, w) => format!("LVA{}_{}_{}_{}_{}_", n, x, y, z, w),
-            VarType::Buffer { z, cs } => format!(
-                "BUF{}{}_",
+            VarType::Buffer { z, cs, x1y1 } => format!(
+                "BUF{}{}{}_",
                 z,
                 match cs {
                     ColorSpace::SRGB => "SRGB",
@@ -49,6 +49,10 @@ pub fn function_id(name: &str, input: &[VarType]) -> String {
                     ColorSpace::LCH => "LCH",
                     ColorSpace::Y => "Y",
                     ColorSpace::L => "L",
+                },
+                match x1y1 {
+                    true => "1",
+                    false => "",
                 }
             ),
             VarType::Void => String::from("Void"),

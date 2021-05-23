@@ -23,7 +23,7 @@ impl VarType {
     }
 
     pub fn idx_1d(&self, id: &str, ix: &str) -> String {
-        if let VarType::Buffer { .. } = self {
+        if let VarType::Buffer { x1y1: false, .. } = self {
             format!(
                 "clamp((int)({ix}), 0, {cx})",
                 ix = ix,
@@ -31,6 +31,12 @@ impl VarType {
                     "(___str_{}[0] * ___str_{}[1] * ___str_{}[2] - 1)",
                     id, id, id
                 )
+            )
+        } else if let VarType::Buffer { x1y1: true, .. } = self {
+            format!(
+                "clamp((int)({ix}), 0, {cx})",
+                ix = ix,
+                cx = format!("(___str_{}[2] - 1)", id)
             )
         } else {
             String::from("// ERROR!!!\n")
@@ -51,7 +57,7 @@ impl VarType {
     }
 
     pub fn idx_3d(&self, id: &str, ix: &str, iy: &str, iz: &str) -> String {
-        if let VarType::Buffer { .. } = self {
+        if let VarType::Buffer { x1y1: false, .. } = self {
             format!(
             "(clamp((int)({ix}), 0, {cx})*{sx} + clamp((int)({iy}), 0, {cy})*{sy} + clamp((int)({iz}), 0, {cz})*{sz})",
             ix = ix,
@@ -63,6 +69,12 @@ impl VarType {
             sx = format!("(___str_{}[3])", id),
             sy = format!("(___str_{}[4])", id),
             sz = format!("(___str_{}[5])", id),
+            )
+        } else if let VarType::Buffer { x1y1: true, .. } = self {
+            format!(
+                "(clamp((int)({iz}), 0, {cz}))",
+                iz = iz,
+                cz = format!("(___str_{}[2] - 1)", id),
             )
         } else {
             String::from("// ERROR!!!\n")

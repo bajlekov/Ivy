@@ -268,7 +268,7 @@ pub extern "C" fn translator_add_float(t: *mut Translator) -> u64 {
 }
 
 #[no_mangle]
-pub extern "C" fn translator_add_buffer_srgb(t: *mut Translator, z: u64) -> u64 {
+pub extern "C" fn translator_add_buffer_srgb(t: *mut Translator, x: u64, y: u64, z: u64) -> u64 {
     let t = unsafe {
         assert!(!t.is_null());
         &mut *t
@@ -276,12 +276,13 @@ pub extern "C" fn translator_add_buffer_srgb(t: *mut Translator, z: u64) -> u64 
     t.inputs.push(VarType::Buffer {
         z,
         cs: ColorSpace::SRGB,
+        x1y1: if x == 1 && y == 1 { true } else { false },
     });
     t.inputs.len() as u64
 }
 
 #[no_mangle]
-pub extern "C" fn translator_add_buffer_lrgb(t: *mut Translator, z: u64) -> u64 {
+pub extern "C" fn translator_add_buffer_lrgb(t: *mut Translator, x: u64, y: u64, z: u64) -> u64 {
     let t = unsafe {
         assert!(!t.is_null());
         &mut *t
@@ -289,12 +290,13 @@ pub extern "C" fn translator_add_buffer_lrgb(t: *mut Translator, z: u64) -> u64 
     t.inputs.push(VarType::Buffer {
         z,
         cs: ColorSpace::LRGB,
+        x1y1: if x == 1 && y == 1 { true } else { false },
     });
     t.inputs.len() as u64
 }
 
 #[no_mangle]
-pub extern "C" fn translator_add_buffer_xyz(t: *mut Translator, z: u64) -> u64 {
+pub extern "C" fn translator_add_buffer_xyz(t: *mut Translator, x: u64, y: u64, z: u64) -> u64 {
     let t = unsafe {
         assert!(!t.is_null());
         &mut *t
@@ -302,12 +304,13 @@ pub extern "C" fn translator_add_buffer_xyz(t: *mut Translator, z: u64) -> u64 {
     t.inputs.push(VarType::Buffer {
         z,
         cs: ColorSpace::XYZ,
+        x1y1: if x == 1 && y == 1 { true } else { false },
     });
     t.inputs.len() as u64
 }
 
 #[no_mangle]
-pub extern "C" fn translator_add_buffer_lab(t: *mut Translator, z: u64) -> u64 {
+pub extern "C" fn translator_add_buffer_lab(t: *mut Translator, x: u64, y: u64, z: u64) -> u64 {
     let t = unsafe {
         assert!(!t.is_null());
         &mut *t
@@ -315,12 +318,13 @@ pub extern "C" fn translator_add_buffer_lab(t: *mut Translator, z: u64) -> u64 {
     t.inputs.push(VarType::Buffer {
         z,
         cs: ColorSpace::LAB,
+        x1y1: if x == 1 && y == 1 { true } else { false },
     });
     t.inputs.len() as u64
 }
 
 #[no_mangle]
-pub extern "C" fn translator_add_buffer_lch(t: *mut Translator, z: u64) -> u64 {
+pub extern "C" fn translator_add_buffer_lch(t: *mut Translator, x: u64, y: u64, z: u64) -> u64 {
     let t = unsafe {
         assert!(!t.is_null());
         &mut *t
@@ -328,12 +332,13 @@ pub extern "C" fn translator_add_buffer_lch(t: *mut Translator, z: u64) -> u64 {
     t.inputs.push(VarType::Buffer {
         z,
         cs: ColorSpace::LCH,
+        x1y1: if x == 1 && y == 1 { true } else { false },
     });
     t.inputs.len() as u64
 }
 
 #[no_mangle]
-pub extern "C" fn translator_add_buffer_y(t: *mut Translator, z: u64) -> u64 {
+pub extern "C" fn translator_add_buffer_y(t: *mut Translator, x: u64, y: u64, z: u64) -> u64 {
     let t = unsafe {
         assert!(!t.is_null());
         &mut *t
@@ -341,12 +346,13 @@ pub extern "C" fn translator_add_buffer_y(t: *mut Translator, z: u64) -> u64 {
     t.inputs.push(VarType::Buffer {
         z,
         cs: ColorSpace::Y,
+        x1y1: if x == 1 && y == 1 { true } else { false },
     });
     t.inputs.len() as u64
 }
 
 #[no_mangle]
-pub extern "C" fn translator_add_buffer_l(t: *mut Translator, z: u64) -> u64 {
+pub extern "C" fn translator_add_buffer_l(t: *mut Translator, x: u64, y: u64, z: u64) -> u64 {
     let t = unsafe {
         assert!(!t.is_null());
         &mut *t
@@ -354,6 +360,10 @@ pub extern "C" fn translator_add_buffer_l(t: *mut Translator, z: u64) -> u64 {
     t.inputs.push(VarType::Buffer {
         z,
         cs: ColorSpace::L,
+        x1y1: if x == 1 && y == 1 { true } else { false },
     });
     t.inputs.len() as u64
 }
+
+#[cfg(test)]
+mod test;

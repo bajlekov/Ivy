@@ -895,14 +895,18 @@ impl<'a> Generator<'a> {
                     if let Expr::Identifier(name) = &**id {
                         if let Index::Array2D(a, b) = &**idx {
                             let var = self.inference.borrow().var_type(id)?;
-                            if let VarType::Buffer { z, cs } = var {
+                            if let VarType::Buffer { z, cs, x1y1 } = var {
                                 let cs = format!("{}to{}", cs_from, cs);
                                 let a = self.gen_expr(a)?;
                                 let b = self.gen_expr(b)?;
-                                let guard = format!(
-                                    "if ({}>=0 && {}<___str_{}[0] && {}>=0 && {}<___str_{}[1]) ",
-                                    a, a, name, b, b, name
-                                );
+                                let guard = if x1y1 {
+                                    format!("if ({}==0 && {}==0) ", a, b,)
+                                } else {
+                                    format!(
+                                        "if ({}>=0 && {}<___str_{}[0] && {}>=0 && {}<___str_{}[1]) ",
+                                        a, a, name, b, b, name
+                                    )
+                                };
                                 let val = self.gen_expr(val)?;
                                 if z == 3 {
                                     let id_x = var.buf_idx_3d(name, &a, &b, "0");
@@ -950,14 +954,15 @@ impl<'a> Generator<'a> {
                                 self.gen_expr(val)?
                             )
                         }
-                        VarType::Buffer { .. } => {
+                        VarType::Buffer { x1y1, .. } => {
                             let a = self.gen_expr(a)?;
                             let val = self.gen_expr(val)?;
-                            let guard = format!(
-                                "if ({}>=0 && {}<(___str_{}[0] * ___str_{}[1] * ___str_{}[2])) ",
-                                a, a, name, name, name
-                            );
-
+                            let guard = if x1y1 {
+                                format!("if ({}>=0 && {}<___str_{}[2]) ", a, a, name,)
+                            } else {
+                                format!("if ({}>=0 && {}<(___str_{}[0] * ___str_{}[1] * ___str_{}[2])) ",
+                                a, a, name, name, name)
+                            };
                             let id = var.buf_idx_1d(name, &a);
                             format!("{} {} = {};\n", guard, id, val)
                         }
@@ -978,25 +983,33 @@ impl<'a> Generator<'a> {
                 let var = self.inference.borrow().var_type(expr)?;
                 if let Expr::Identifier(name) = &**expr {
                     match var {
-                        VarType::Buffer { z: 1, .. } => {
+                        VarType::Buffer { z: 1, x1y1, .. } => {
                             let a = self.gen_expr(a)?;
                             let b = self.gen_expr(b)?;
-                            let guard = format!(
-                                "if ({}>=0 && {}<___str_{}[0] && {}>=0 && {}<___str_{}[1]) ",
-                                a, a, name, b, b, name
-                            );
+                            let guard = if x1y1 {
+                                format!("if ({}==0 && {}==0) ", a, b,)
+                            } else {
+                                format!(
+                                    "if ({}>=0 && {}<___str_{}[0] && {}>=0 && {}<___str_{}[1]) ",
+                                    a, a, name, b, b, name
+                                )
+                            };
                             let val = self.gen_expr(val)?;
 
                             let id = var.buf_idx_3d(name, &a, &b, "0");
                             format!("{} {} = {};\n", guard, id, val)
                         }
-                        VarType::Buffer { z: 3, .. } => {
+                        VarType::Buffer { z: 3, x1y1, .. } => {
                             let a = self.gen_expr(a)?;
                             let b = self.gen_expr(b)?;
-                            let guard = format!(
-                                "if ({}>=0 && {}<___str_{}[0] && {}>=0 && {}<___str_{}[1]) ",
-                                a, a, name, b, b, name
-                            );
+                            let guard = if x1y1 {
+                                format!("if ({}==0 && {}==0) ", a, b,)
+                            } else {
+                                format!(
+                                    "if ({}>=0 && {}<___str_{}[0] && {}>=0 && {}<___str_{}[1]) ",
+                                    a, a, name, b, b, name
+                                )
+                            };
                             let val = self.gen_expr(val)?;
 
                             let id_x = var.buf_idx_3d(name, &a, &b, "0");
@@ -1045,14 +1058,21 @@ impl<'a> Generator<'a> {
                             self.gen_expr(c)?,
                             self.gen_expr(val)?
                         ),
-                        VarType::Buffer { .. } => {
+                        VarType::Buffer { x1y1, .. } => {
                             let a = self.gen_expr(a)?;
                             let b = self.gen_expr(b)?;
                             let c = self.gen_expr(c)?;
-                            let guard = format!(
-                                "if ({}>=0 && {}<___str_{}[0] && {}>=0 && {}<___str_{}[1] && {}>=0 && {}<___str_{}[2]) ",
-                                a, a, name, b, b, name, c, c, name
-                            );
+                            let guard = if x1y1 {
+                                format!(
+                                    "if ({}==0 && {}==0 && {}>=0 && {}<___str_{}[2]) ",
+                                    a, b, c, c, name
+                                )
+                            } else {
+                                format!(
+                                    "if ({}>=0 && {}<___str_{}[0] && {}>=0 && {}<___str_{}[1] && {}>=0 && {}<___str_{}[2]) ",
+                                    a, a, name, b, b, name, c, c, name
+                                )
+                            };
                             let val = self.gen_expr(val)?;
 
                             let id = var.buf_idx_3d(name, &a, &b, &c);

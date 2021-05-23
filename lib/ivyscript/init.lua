@@ -24,19 +24,19 @@ ffi.cdef([[
     typedef struct translator translator_t;
 
     translator_t *translator_new_ocl(const char *);
-    translator_t *translator_new_ispc(const char *);
+    //translator_t *translator_new_ispc(const char *);
     char *translator_generate(translator_t *, const char *);
     void translator_free(translator_t *);
 
     void translator_clear_inputs(translator_t *);
 
-    uint64_t translator_add_buffer_srgb(translator_t *, uint64_t);
-    uint64_t translator_add_buffer_lrgb(translator_t *, uint64_t);
-    uint64_t translator_add_buffer_xyz(translator_t *, uint64_t);
-    uint64_t translator_add_buffer_lab(translator_t *, uint64_t);
-    uint64_t translator_add_buffer_lch(translator_t *, uint64_t);
-    uint64_t translator_add_buffer_y(translator_t *, uint64_t);
-    uint64_t translator_add_buffer_l(translator_t *, uint64_t);
+    uint64_t translator_add_buffer_srgb(translator_t *, uint64_t, uint64_t, uint64_t);
+    uint64_t translator_add_buffer_lrgb(translator_t *, uint64_t, uint64_t, uint64_t);
+    uint64_t translator_add_buffer_xyz(translator_t *, uint64_t, uint64_t, uint64_t);
+    uint64_t translator_add_buffer_lab(translator_t *, uint64_t, uint64_t, uint64_t);
+    uint64_t translator_add_buffer_lch(translator_t *, uint64_t, uint64_t, uint64_t);
+    uint64_t translator_add_buffer_y(translator_t *, uint64_t, uint64_t, uint64_t);
+    uint64_t translator_add_buffer_l(translator_t *, uint64_t, uint64_t, uint64_t);
     uint64_t translator_add_int(translator_t *);
     uint64_t translator_add_float(translator_t *);
 
@@ -52,7 +52,7 @@ end
 
 local targetList = {
   OCL = lib.translator_new_ocl,
-  ISPC = lib.translator_new_ispc,
+  --ISPC = lib.translator_new_ispc,
 }
 
 function ivy.new(source, target)
@@ -84,7 +84,7 @@ local cs = {
 }
 
 function ivy:addBuffer(buf)
-  return cs[buf.cs](self.t, buf.z)
+  return cs[buf.cs](self.t, buf.x, buf.y, buf.z)
 end
 
 function ivy:addInt()
