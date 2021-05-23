@@ -21,10 +21,10 @@ local source = [[
 const G7 = {0.009033, 0.018476, 0.033851, 0.055555, 0.08167, 0.107545, 0.126854, 0.134032, 0.126854, 0.107545, 0.08167, 0.055555, 0.033851, 0.018476, 0.009033}
 
 kernel paintSmart(O, I, P)
-  const x = get_global_id(0)
-  const y = get_global_id(1)
+	const x = get_global_id(0)
+	const y = get_global_id(1)
 
-	var px = P[0] -- brush
+	var px = P[0] -- brush 
 	var py = P[1] -- brush
 	var ps = P[4] -- brush size
 
@@ -34,39 +34,37 @@ kernel paintSmart(O, I, P)
 	if ix<0 or ix>=O.x or iy<0 or iy>=O.y then return end -- clamp to image
 
 	var mask = 0.0
+	var sw = P[6]*P[7]*0.5
+	var sm = P[6] - sw
+	var sx = P[9]
+	var sy = P[10]
 
-  -- negative values disable smart paint
+		-- negative values disable smart paint
 	if P[6]<0.0 then
 		mask = 1.0
 	else
-    if P[8]<0.5 then
-		  var sx = P[9]
-		  var sy = P[10]
-		  var i = I[ix, iy]
-		  var s = I[sx, sy]
-		  var d = sqrt( (i.x-s.x)^2 + (i.y-s.y)^2 + (i.z-s.z)^2 )
-      var w = P[6]*P[7]*0.5
-		  mask = range(P[6] - w, w, d)
-	  else
-		  var sx = P[9]
-		  var sy = P[10]
-		  var d = 0.0
-		  -- collect 15x15 area around sample
-		  for j = -7, 7 do
-			  for k = -7, 7 do
-				  var i = I[ix+j, iy+k]
-				  var s = I[sx+j, sy+k]
-				  d = d + ((i.x-s.x)^2 + (i.y-s.y)^2 + (i.z-s.z)^2)*G7[j+7]*G7[k+7]
-			  end
-      end
-      var w = P[6]*P[7]*0.5
-		  mask = range(P[6] - w, w, sqrt(d))
-    end
-  end
+		if P[8]<0.5 then
+			var i = I[ix, iy]
+			var s = I[sx, sy]
+			var d = sqrt( (i.x-s.x)^2 + (i.y-s.y)^2 + (i.z-s.z)^2 )
+			mask = range(sm, sw, d)
+		else
+			-- collect 15x15 area around sample
+			for j = -7, 7 do
+				for k = -7, 7 do
+					var i = I[ix+j, iy+k]
+					var s = I[sx+j, sy+k]
+			var d = sqrt((i.x-s.x)^2 + (i.y-s.y)^2 + (i.z-s.z)^2)
+			d = range(sm, sw, d)*G7[j+7]*G7[k+7]
+					mask = mask + d
+				end
+			end
+		end
+	end
 
 	var d = sqrt( (x-ps)^2 + (y-ps)^2 ) -- distance from center
-  var w = P[5]*ps*0.5
-  var brush = range(ps - w, w + 1.0, d)
+	var w = P[5]*ps*0.5
+	var brush = range(ps - w, w + 1.0, d)
 
 	var f = mask*brush*P[3]
 	var o = O[ix, iy]
