@@ -534,8 +534,10 @@ local function localLaplacianProcess(self)
 	local r = t.inputParam(self, 2)
 	local o = t.autoOutput(self, 0, i:shape())
 	local hq = t.plainParam(self, 3)
+	local s = t.inputParam(self, 5)
+	local h = t.inputParam(self, 6)
 
-	thread.ops.localLaplacian({i, d, r, o, hq}, self)
+	thread.ops.localLaplacian_protect({i, d, r, o, hq, s, h}, self)
 end
 
 function ops.localLaplacian(x, y)
@@ -544,6 +546,9 @@ function ops.localLaplacian(x, y)
 	n:addPortIn(1, "Y"):addElem("float", 1, "Detail", -1, 1, 0)
 	n:addPortIn(2, "Y"):addElem("float", 2, "Range", 0, 1, 0.2)
 	n:addElem("bool", 3, "HQ", false)
+	n:addElem("label", 4, "Protect:")
+	n:addPortIn(5, "Y"):addElem("float", 5, "Shadows", 0, 1, 0)
+	n:addPortIn(6, "Y"):addElem("float", 6, "Highlights", 0, 1, 0)
 	n.process = localLaplacianProcess
 	n:setPos(x, y)
 	return n

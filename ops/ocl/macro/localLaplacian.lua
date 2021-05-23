@@ -6,32 +6,35 @@ local function init(proc)
   proc:loadSourceFile("localLaplacian.ivy", "pyr_c_2d.ivy")
 end
 
-local function execute(proc, I, D, R, O, lvl)
+local function execute(proc, I, D, R, O, lvl, post)
+  post = post or post==nil
   -- allocate buffers
   local T = {}
   local G = {}
   local L = {}
 
+  local n = 16
+
   local x, y, z = I:shape()
 
   T[1] = data:new(x, y, 1)
   L[1] = T[1]:new()
-  for i = 2, 8 do
+  for i = 2, n do
     T[i] = data:new(downsize(T[i-1]))
     L[i] = T[i]:new()
     G[i-1] = T[i]:new()
   end
-  T[9] = data:new(downsize(T[8]))
-  G[8] = T[9]:new()
+  T[n+1] = data:new(downsize(T[n]))
+  G[n] = T[n+1]:new()
 
   -- clear L output pyramid
-  for i = 1, 8 do
+  for i = 1, n do
     proc:executeKernel("zero_LL", proc:size2D(L[i]), {L[i]})
   end
 
   -- generate gaussian pyramid
   proc:executeKernel("pyrDown", proc:size2D(G[1]), {I, G[1]})
-  for i = 2, 8 do
+  for i = 2, n do
     proc:executeKernel("pyrDown", proc:size2D(G[i]), {G[i-1], G[i]})
   end
 
@@ -49,28 +52,30 @@ local function execute(proc, I, D, R, O, lvl)
     -- generate transformed laplacian pyramid
     proc:executeKernel("pyrDown", proc:size2D(T[2]), {O, T[2]})
     proc:executeKernel("pyrUpL", proc:size2D(T[2]), {O, T[2], T[1]})
-    for i = 2, 8 do
+    for i = 2, n do
       proc:executeKernel("pyrDown", proc:size2D(T[i+1]), {T[i], T[i+1]})
       proc:executeKernel("pyrUpL", proc:size2D(T[i+1]), {T[i], T[i+1], T[i]})
     end
 
     -- apply appropriate laplacians from T to L according to G
     proc:executeKernel("apply_LL", proc:size2D(T[1]), {I, T[1], L[1], cl_i, cl_lvl})
-    for i = 2, 8 do
+    for i = 2, n do
       proc:executeKernel("apply_LL", proc:size2D(T[i]), {G[i-1], T[i], L[i], cl_i, cl_lvl})
     end
 
   end
 
   -- combine L + G pyramids
-  for i = 8, 2, -1 do
+  for i = n, 2, -1 do
     proc:executeKernel("pyrUpG", proc:size2D(G[i]), {L[i], G[i], G[i-1], data.one})
   end
   proc:executeKernel("pyrUpG", proc:size2D(G[1]), {L[1], G[1], O, data.one})
 
-  proc:executeKernel("post_LL", proc:size2D(I), {I, O})
+  if post then
+    proc:executeKernel("post_LL", proc:size2D(I), {I, O})
+  end
 
-  for i = 1, 8 do
+  for i = 1, n do
     T[i]:free()
     T[i] = nil
     L[i]:free()
@@ -78,6 +83,8 @@ local function execute(proc, I, D, R, O, lvl)
     G[i]:free()
     G[i] = nil
   end
+  T[n+1]:free()
+  T[n+1] = nil
 end
 
 return{
