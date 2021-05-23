@@ -22,10 +22,9 @@ function gaussian(x, s)
 	return exp(-0.5 * (x/s)^2 )
 end
 
-function blur(T, x, y, w)
-	var t = 0.0
+function blur_norm(T, x, y, w)
 	if w==0.0 then
-		t = T[x, y, 0]
+		return T[x, y, 0]
 	else
 		var g = {gaussian(0, w), gaussian(1, w), gaussian(2, w), gaussian(3, w)}
 		var n = g[0] + 2*g[1] + 2*g[2] + 2*g[3]
@@ -34,35 +33,68 @@ function blur(T, x, y, w)
 		g[2] = g[2]/n
 		g[3] = g[3]/n
 
-		t = 0
+		var t = 0.0
 		for i = -3, 3 do
 			for j = -3, 3 do
-				t = t + T[x+i, y+j, 0] * g[abs(i)]*g[abs(j)]
+				t = t + LtoY(T[x+i, y+j, 0]) * g[abs(i)]*g[abs(j)]
 			end
 		end
-	end
 
-	return t
+		return YtoL(t)
+	end
 end
 
-kernel blur_div(I, T, O, W)
+function blur_rect(T, x, y, w)
+	w = clamp(w*0.5, 0.0, 1.0)
+	if w==0.0 then
+		return T[x, y, 0]
+	else
+		var s = LtoY(T[x+0, y+0, 0])
+		s = s + LtoY(T[x+0, y+1, 0])*w
+		s = s + LtoY(T[x+0, y-1, 0])*w
+		s = s + LtoY(T[x+1, y+0, 0])*w
+		s = s + LtoY(T[x-1, y+0, 0])*w
+		s = s + LtoY(T[x+1, y+1, 0])*w*w
+		s = s + LtoY(T[x+1, y-1, 0])*w*w
+		s = s + LtoY(T[x-1, y-1, 0])*w*w
+		s = s + LtoY(T[x-1, y+1, 0])*w*w
+
+		return YtoL(s/(1 + 4*w + 4*w*w))
+	end
+end
+
+kernel blur_div(I, T, O, W, aa)
 	const x = get_global_id(0)
 	const y = get_global_id(1)
 
 	var w = W[x, y]
-	var t = blur(T, x, y, w)
+	var t = 0.0
+	if aa[0]>0.5 then
+		t = blur_rect(T, x, y, w)
+	else
+		t = blur_norm(T, x, y, w)
+	end
 
 	O[x, y, 0] = I[x, y, 0]/(t + 0.000001)
 end
 
-kernel blur_mul(I, T, O, W)
+kernel blur_mul(I, T, O, W, D, aa)
 	const x = get_global_id(0)
 	const y = get_global_id(1)
 
 	var w = W[x, y]
-	var t = blur(T, x, y, w)
+	var t = 0.0
+	if aa[0]>0.5 then
+		t = blur_rect(T, x, y, w)
+	else
+		t = blur_norm(T, x, y, w)
+	end
 
-	O[x, y, 0] = I[x, y, 0]*t
+	var f = range(D[x, y]^3, D[x, y]^3, abs(t-1.0))
+	t = f + (1.0-f)*t
+
+	var o = I[x, y, 0]*t
+	O[x, y, 0] = o
 end
 
 kernel post(I, O, F, oc)
@@ -74,8 +106,7 @@ kernel post(I, O, F, oc)
 	var f = F[x, y]
 
 	o = i + f*(o-i)
-
-	o = overshoot_clamp(I, x, y, o, oc[0])
+	o = overshoot_rolloff(I, x, y, o, oc[0])
 
 	O[x, y, 0] = o
 	O[x, y, 1] = I[x, y, 1]
@@ -84,17 +115,18 @@ end
 ]]
 
 local function execute()
-	local I, O, W, F, oc = proc:getAllBuffers(5) -- iterations, radius and strength
+	local I, O, W, F, D, oc, it, aa = proc:getAllBuffers(8) -- iterations, radius and strength
 
 	local x, y, z = I:shape()
 	local T = I:new(x, y, 1)
 
-	proc:executeKernel("blur_div", proc:size2D(I), {I, I, T, W})
-	proc:executeKernel("blur_mul", proc:size2D(I), {I, T, O, W})
+	proc:executeKernel("blur_div", proc:size2D(I), {I, I, T, W, aa})
+	proc:executeKernel("blur_mul", proc:size2D(I), {I, T, O, W, D, aa})
 
-	for n = 2, 5 do
-		proc:executeKernel("blur_div", proc:size2D(I), {I, O, T, W})
-		proc:executeKernel("blur_mul", proc:size2D(I), {I, T, O, W})
+	-- iterations slider
+	for n = 2, it:get(0, 0, 0) do
+		proc:executeKernel("blur_div", proc:size2D(I), {I, O, T, W, aa})
+		proc:executeKernel("blur_mul", proc:size2D(I), {O, T, O, W, D, aa})
 	end
 
 	proc:executeKernel("post", proc:size2D(I), {I, O, F, oc})

@@ -1340,22 +1340,30 @@ end
 
 local function RLdeconvolutionProcess(self)
 	self.procType = "dev"
-	local i, o, w, f, oc
+	local i, o, w, f, d, oc, it, aa
 	i = t.inputSourceBlack(self, 0)
 	o = t.autoOutput(self, 0, i:shape())
 	w = t.inputParam(self, 1)
 	f = t.inputParam(self, 2)
-	oc = t.plainParam(self, 3)
-	thread.ops.RLdeconvolution({i, o, w, f, oc}, self)
+	d = t.inputParam(self, 3)
+	local oc_val = math.tan(self.elem[4].value*0.5*math.pi)
+	oc = t.autoTempBuffer(self, 4, 1, 1, 1)
+	it = t.plainParam(self, 5)
+	aa = t.plainParam(self, 6)
+	oc:set(0, 0, 0, oc_val):syncDev()
+	thread.ops.RLdeconvolution({i, o, w, f, d, oc, it, aa}, self)
 end
 
 function ops.RLdeconvolution(x, y)
 	local n = node:new("RL-Deconv.")
 	n:addPortIn(0, "LAB")
 	n:addPortOut(0, "LAB")
-	n:addPortIn(1, "Y"):addElem("float", 1, "Radius", 0, 2, 0.75)
-	n:addPortIn(2, "Y"):addElem("float", 2, "Strength", 0, 20, 5)
-	n:addElem("float", 3, "Overshoot", 0, 2, 0.5)
+	n:addPortIn(1, "Y"):addElem("float", 1, "Radius", 0, 2, 0.8)
+	n:addPortIn(2, "Y"):addElem("float", 2, "Strength", 0, 5, 2)
+	n:addPortIn(3, "Y"):addElem("float", 3, "Dampen", 0, 0.5, 0)
+	n:addElem("float", 4, "Overshoot", 0, 1, 0.5)
+	n:addElem("int", 5, "Iterations", 5, 50, 10, 5)
+	n:addElem("bool", 6, "OLPF kernel", false)
 	n.process = RLdeconvolutionProcess
 	n:setPos(x, y)
 	return n
