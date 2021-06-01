@@ -32,10 +32,9 @@ pub struct Generator<'a> {
     functions: RefCell<HashMap<String, &'a Stmt>>,
     kernels: RefCell<HashMap<String, &'a Stmt>>,
     generated_constants: RefCell<Option<String>>,
-    generated_functions: RefCell<HashMap<String, (String, String, VarType)>>, // collect specialized functions: (declaration, definition, return value)
+    generated_functions: RefCell<HashMap<String, (String, String, VarType, HashSet<String>)>>, // collect specialized functions: (declaration, definition, return value, dependencies)
     generated_kernels: RefCell<HashMap<String, String>>, // collect specialized kernels: (kernel)
-    used_functions: RefCell<HashSet<String>>,
-    temp: RefCell<String>,
+    dependencies: RefCell<Vec<HashSet<String>>>, // collects dependencies of currently parsed function in a stack
 }
 
 // helper function for generating up to 4D array indices
@@ -61,8 +60,7 @@ impl<'a> Generator<'a> {
             generated_constants: RefCell::new(None),
             generated_functions: RefCell::new(HashMap::new()),
             generated_kernels: RefCell::new(HashMap::new()),
-            used_functions: RefCell::new(HashSet::new()),
-            temp: RefCell::new(String::new()),
+            dependencies: RefCell::new(Vec::new()),
         }
     }
 
@@ -72,44 +70,42 @@ impl<'a> Generator<'a> {
                 Stmt::Const(id, expr) => {
                     self.constants.borrow_mut().insert(id.clone(), &expr);
                 }
-                Stmt::Function { id, args, .. } => {
-                    let id = format!("___{}_{}", args.len(), id);
-                    self.functions.borrow_mut().insert(id, &stmt);
+                Stmt::Function { id, .. } => {
+                    self.functions.borrow_mut().insert(id.clone(), &stmt);
                 }
                 Stmt::Kernel { id, .. } => {
                     self.kernels.borrow_mut().insert(id.clone(), &stmt);
                 }
-                _ => {}
+                Stmt::Comment(..) => { },
+                Stmt::EOF => {},
+                _ => panic!("Unexpected statement in file scope!"),
+
             }
         }
     }
 
     fn function(&'a self, name: &str, input: &[VarType]) -> Result<String, String> {
         let id = function_id(name, input);
-        let name = format!("___{}_{}", input.len(), name);
 
-        if let Some((decl, def, _)) = self.generated_functions.borrow().get(&id) {
-            if !self.used_functions.borrow().contains(&id) {
-                let temp = self.temp.borrow().clone();
-                let temp = format!("{}\n{}\n{}\n", decl, temp, def);
-                self.temp.replace(temp);
-                self.used_functions.borrow_mut().insert(id.clone());
-            }
-
+        if self.generated_functions.borrow().contains_key(&id) {
             return Ok(id);
         }
 
-        let kernel_scope = self.inference.borrow().scope.current.get();
-        self.inference.borrow().scope.open();
-        self.inference.borrow().scope.set_parent(0);
-
-        self.inference.borrow().scope.placeholder("return");
-
         // parse function
-        if let Some(Stmt::Function { args, body, .. }) = self.functions.borrow().get(&name) {
-            let mut def = String::from("(\n");
-            let mut decl;
+        if let Some(Stmt::Function { args, body, .. }) = self.functions.borrow().get(name) {
+            // new function scope, keep outer scope reference to restore at the end
+            let outer_scope = self.inference.borrow().scope.current.get();
+            self.inference.borrow().scope.open();
+            self.inference.borrow().scope.set_parent(0); // no parent scope
+            self.inference.borrow().scope.placeholder("return");
 
+            // new frame on the dependency stack
+            self.dependencies.borrow_mut().push(HashSet::new());
+
+            let mut definition = String::from("(\n");
+            let mut declaration;
+
+            // generate argument signatures
             for (k, v) in args.iter().enumerate() {
                 let arg = match input[k] {
                     VarType::Buffer { .. } => {
@@ -158,104 +154,99 @@ impl<'a> Generator<'a> {
                     }
                 };
 
+                self.inference.borrow().scope.add(v, input[k]); // add argument to scope
+
+                // comma-separate arguments
                 if k < args.len() - 1 {
-                    def.push_str(&format!("\t{},\n", arg));
+                    definition.push_str(&format!("\t{},\n", arg));
                 } else {
-                    def.push_str(&format!("\t{}\n", arg));
+                    definition.push_str(&format!("\t{}\n", arg));
                 }
-
-                self.inference.borrow().scope.add(v, input[k]);
             }
+            definition.push_str(")");
 
-            def.push_str(")");
+            declaration = definition.clone(); // copy function signature into declaration
 
-            decl = def.clone();
-
-            def.push_str(" {\n");
-
+            // construct function body
+            definition.push_str(" {\n");
             for v in body {
-                def.push_str(&self.gen_stmt(v)?);
+                definition.push_str(&self.gen_stmt(v)?);
             }
 
+            // get function return type
             let ret_type = self
                 .inference
                 .borrow()
                 .scope
                 .get("return")
                 .unwrap_or(VarType::Void); // use void return type if none specified
+            let ret_string = match ret_type {
+                VarType::Bool => "bool",
+                VarType::Int => "int",
+                VarType::Float => "float",
+                VarType::Vec => "float3",
+                VarType::Void => "void",
+                _ => return Err(format!("Unknown return type of function '{}'", name)),
+            };
+            self.inference.borrow().scope.close();
+            self.inference.borrow().scope.set_current(outer_scope);
 
-            def = format!(
-                "{} {} {}}}",
-                match ret_type {
-                    VarType::Bool => "bool",
-                    VarType::Int => "int",
-                    VarType::Float => "float",
-                    VarType::Vec => "float3",
-                    VarType::Void => "void",
-                    _ => return Err(format!("Unknown return type of function '{}'", name)),
-                },
-                id,
-                def
-            );
+            // collect function dependencies from stack
+            let deps = self
+                .dependencies
+                .borrow_mut()
+                .pop()
+                .ok_or::<String>(format!("No dependency frame found!"))?;
 
-            decl = format!(
-                "{} {} {};",
-                match ret_type {
-                    VarType::Bool => "bool",
-                    VarType::Int => "int",
-                    VarType::Float => "float",
-                    VarType::Vec => "float3",
-                    VarType::Void => "void",
-                    _ => return Err(format!("Unknown return type of function '{}'", name)),
-                },
-                id,
-                decl
-            );
+            // add function return type to definition
+            definition = format!("{} {} {}}}", ret_string, id, definition);
 
-            let temp = self.temp.borrow().clone();
-            let temp = format!("{}\n{}\n{}\n", &decl, temp, &def);
-            self.temp.replace(temp);
-            self.used_functions.borrow_mut().insert(id.clone());
+            // add function return type to declaration
+            declaration = format!("{} {} {};", ret_string, id, declaration);
 
             // register generated_functions
             self.generated_functions
                 .borrow_mut()
-                .insert(id.clone(), (decl, def, ret_type));
+                .insert(id.clone(), (declaration, definition, ret_type, deps));
+
+            Ok(id)
+        } else {
+            Err(format!("Function '{}' not found", id))
         }
-
-        self.inference.borrow().scope.close();
-        self.inference.borrow().scope.set_current(kernel_scope);
-
-        Ok(id)
     }
 
     pub fn kernel(&'a self, name: &str, input: &[VarType]) -> Result<String, String> {
-        self.inference.borrow().scope.clear();
-        self.inference.borrow_mut().functions = Some(&self.generated_functions);
-
-        if self.generated_constants.borrow().is_none() {
-            let mut s = String::new();
-            for (k, v) in self.constants.borrow().iter() {
-                s.push_str(&format!("constant {}", self.gen_var(k, v)?));
-            }
-            self.generated_constants.replace(Some(s));
-        }
-
         let id = function_id(name, input);
+
         if let Some(k) = self.generated_kernels.borrow().get(&id) {
             return Ok(k.clone());
         }
 
+        self.inference.borrow_mut().functions = Some(&self.generated_functions); // link generated functions to inference engine
+        self.inference.borrow().scope.clear(); // clear leftover scopes
+        *self.dependencies.borrow_mut() = vec![]; // clear the dependency stack
+
+        // parse constants
+        if self.generated_constants.borrow().is_none() {
+            let mut consts = String::new();
+            for (k, v) in self.constants.borrow().iter() {
+                consts.push_str(&format!("constant {}", self.gen_var(k, v)?));
+            }
+            self.generated_constants.replace(Some(consts));
+        }
+
         if let Some(Stmt::Kernel { id, args, body }) = self.kernels.borrow().get(name) {
-            let mut s = format!("kernel void {} (\n", id);
+            // new kernel scope with void return type
             self.inference.borrow().scope.open();
             self.inference.borrow().scope.add("return", VarType::Void); // explicitly expect void return type for kernels
 
-            self.temp
-                .replace(self.generated_constants.borrow().clone().unwrap());
-            self.used_functions.borrow_mut().clear();
+            // new frame on the dependency stack
+            self.dependencies.borrow_mut().push(HashSet::new());
 
+            // construct kernel signature
+            let mut kernel = format!("kernel void {} (\n", id);
             for (k, v) in args.iter().enumerate() {
+                // construct argument signature
                 let arg = format!(
                     "{}{}",
                     match input[k] {
@@ -274,39 +265,93 @@ impl<'a> Generator<'a> {
                     v
                 );
 
+                self.inference.borrow().scope.add(v, input[k]); // add argument to scope
+
+                // comma-separate arguments
                 if k < args.len() - 1 {
-                    s.push_str(&format!("\t{},\n", arg));
+                    kernel.push_str(&format!("\t{},\n", arg));
                 } else {
-                    s.push_str(&format!("\t{}\n", arg));
+                    kernel.push_str(&format!("\t{}\n", arg));
                 }
-
-                self.inference.borrow().scope.add(v, input[k]);
             }
-
-            s.push_str(") {\n");
-
+            kernel.push_str(") {\n");
+            // construct kernel body
             for v in body {
-                s.push_str(&self.gen_stmt(v)?);
+                kernel.push_str(&self.gen_stmt(v)?);
             }
+            kernel.push_str("}");
 
+            // check whether return value is of type void
             if self.inference.borrow().scope.get("return") != Some(VarType::Void) {
                 return Err(format!(
                     "Expected return value of type 'Void' for kernel '{}'",
                     name
                 ));
             }
-
             self.inference.borrow().scope.close();
-            s.push_str("}");
 
+            // add includes, constants and function dependencies
+            let (deps_declarations, deps_definitions) = self.gen_dependencies()?; // pops dependencies frame
             Ok(format!(
-                "#include \"cs.cl\"\n{}\n{}",
-                self.temp.borrow().clone(),
-                s
+                "#include \"cs.cl\"\n{}\n{}\n{}\n{}",
+                self.generated_constants
+                    .borrow()
+                    .as_ref()
+                    .unwrap_or(&format!("")),
+                deps_declarations,
+                deps_definitions,
+                kernel
             ))
         } else {
             Err(format!("Kernel '{}' not found in source", name))
         }
+    }
+
+    fn gen_dependencies(&self) -> Result<(String, String), String> {
+        let mut satisfied = HashSet::new(); // dependencies which are already satisfied, eventually becomes the final list of dependencies
+        let mut deps = self
+            .dependencies
+            .borrow_mut()
+            .pop()
+            .ok_or::<String>(format!("No dependency frame found!"))?
+            .into_iter()
+            .collect::<Vec<_>>();
+
+        // get nested dependencies
+        while let Some(id) = deps.pop() {
+            let deps_nested = self
+                .generated_functions
+                .borrow()
+                .get(&id)
+                .ok_or::<String>(format!("No function dependency '{}' found", &id))?
+                .3
+                .clone();
+            satisfied.insert(id);
+
+            deps_nested.into_iter().for_each(|id| {
+                if satisfied.get(&id).is_none() {
+                    deps.push(id);
+                }
+            })
+        }
+
+        let deps = satisfied;
+
+        let mut declarations = String::new();
+        let mut definitions = String::new();
+        for id in deps.iter() {
+            let function = self.generated_functions.borrow();
+            let function = function
+                .get(id)
+                .ok_or::<String>(format!("No function dependency '{}' found", id))?;
+
+            declarations.push_str(&function.0);
+            declarations.push_str("\n\n");
+            definitions.push_str(&function.1);
+            definitions.push_str("\n\n");
+        }
+
+        Ok((declarations, definitions))
     }
 
     fn gen_stmt(&'a self, stmt: &Stmt) -> Result<String, String> {
@@ -604,6 +649,11 @@ impl<'a> Generator<'a> {
                     self.gen_call(id, &args_str, &vars)?
                 } else {
                     let id = self.function(id, &vars)?;
+                    self.dependencies
+                        .borrow_mut()
+                        .last_mut()
+                        .ok_or::<String>(format!("No dependency frame found!"))?
+                        .insert(id.clone());
                     self.gen_call(&id, &args_str, &vars)?
                 }
             }

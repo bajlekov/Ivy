@@ -16,7 +16,7 @@
 */
 
 use std::cell::RefCell;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use crate::ast::{BinaryOp, ColorSpace, Expr, Index, Literal, Prop, UnaryOp};
 use crate::function_id::function_id;
@@ -71,7 +71,7 @@ impl std::fmt::Display for VarType {
 
 pub struct Inference<'a> {
     pub scope: ScopeTree,
-    pub functions: Option<&'a RefCell<HashMap<String, (String, String, VarType)>>>,
+    pub functions: Option<&'a RefCell<HashMap<String, (String, String, VarType, HashSet<String>)>>>,
 }
 
 impl<'a> Inference<'a> {
@@ -352,7 +352,7 @@ impl<'a> Inference<'a> {
         let id = function_id(id, &vars);
 
         if let Some(f) = self.functions {
-            if let Some((_, _, v)) = f.borrow().get(&id) {
+            if let Some((_, _, v, _)) = f.borrow().get(&id) {
                 Ok(*v)
             } else {
                 Err(format!("Function '{}' is not defined", id))
