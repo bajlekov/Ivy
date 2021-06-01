@@ -92,6 +92,11 @@ local function spotmask(p1, p2, p3) -- size, fall-off, rotation
 		return spots
 	end
 
+	function o.addSpot(...)
+		local args = {...}
+		return addSpot(...)
+	end
+
 	local function spotReleaseCallback(mouse)
 		dragN = false
 		dragT = false

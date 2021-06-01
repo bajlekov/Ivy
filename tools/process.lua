@@ -85,6 +85,13 @@ function process.load(file, append)
 				end
 			end
 
+			if v.spots then
+				local widget = v.node.widget
+				for k, v in ipairs(v.spots) do
+					widget.addSpot(v.sx, v.sy, v.dx, v.dy, v.size, v.falloff, v.rotation)
+				end
+			end
+
 			-- curve handling
 			if v.graph and v.graph.type=="curve" then
 				v.node.graph.curve.points = v.graph.pts
@@ -201,6 +208,10 @@ function process.save(name)
 			if t.elem[i] and t.elem[i].value~=nil then
 				e[i] = t.elem[i].value
 			end
+		end
+
+		if t.widget then
+			n.spots = t.widget:getSpots()
 		end
 
 		if t.graph then
