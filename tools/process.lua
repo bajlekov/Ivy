@@ -22,7 +22,7 @@ local ops = require "ops"
 local node = require "ui.node"
 local link = require "ui.node.link"
 
-local serpent = require("lib.serpent")
+local serpent = require "lib.serpent"
 
 local pipeline = require "tools.pipeline"
 
@@ -86,22 +86,22 @@ function process.load(file, append)
 			end
 
 			-- curve handling
-			if v.elem.graph and v.elem.graph.type=="curve" then
-				v.node.graph.curve.points = v.elem.graph.pts
-				v.node.graph.curve.type = v.elem.graph.curveType
+			if v.graph and v.graph.type=="curve" then
+				v.node.graph.curve.points = v.graph.pts
+				v.node.graph.curve.type = v.graph.curveType
 				if v.node.graph.curveR then
-					v.node.graph.curveR.points = v.elem.graph.ptsR
-					v.node.graph.curveR.type = v.elem.graph.curveTypeR
+					v.node.graph.curveR.points = v.graph.ptsR
+					v.node.graph.curveR.type = v.graph.curveTypeR
 				end
 				if v.node.graph.curveG then
-					v.node.graph.curveG.points = v.elem.graph.ptsG
-					v.node.graph.curveG.type = v.elem.graph.curveTypeG
+					v.node.graph.curveG.points = v.graph.ptsG
+					v.node.graph.curveG.type = v.graph.curveTypeG
 				end
 				if v.node.graph.curveB then
-					v.node.graph.curveB.points = v.elem.graph.ptsB
-					v.node.graph.curveB.type = v.elem.graph.curveTypeB
+					v.node.graph.curveB.points = v.graph.ptsB
+					v.node.graph.curveB.type = v.graph.curveTypeB
 				end
-				v.node.graph.channel = v.elem.graph.channel
+				v.node.graph.channel = v.graph.channel
 
 				if v.node.graph.updateCurve then
 					v.node.graph:updateCurve()
@@ -111,14 +111,14 @@ function process.load(file, append)
 				end
 			end
 
-			if v.elem.graph and v.elem.graph.type=="equalizer" then
-				v.node.graph.pts = v.elem.graph.pts
-				v.node.graph.channel = v.elem.graph.channel
+			if v.graph and v.graph.type=="equalizer" then
+				v.node.graph.pts = v.graph.pts
+				v.node.graph.channel = v.graph.channel
 			end
 
-			if v.elem.graph and v.elem.graph.type=="colorwheel" then
-				v.node.graph.x = v.elem.graph.x
-				v.node.graph.y = v.elem.graph.y
+			if v.graph and v.graph.type=="colorwheel" then
+				v.node.graph.x = v.graph.x
+				v.node.graph.y = v.graph.y
 			end
 		end
 
@@ -194,7 +194,9 @@ function process.save(name)
 			elem = {}
 		}
 
+		local n = process.nodes[id(t.id)]
 		local e = process.nodes[id(t.id)].elem
+		
 		for i = 0, t.elem.n do
 			if t.elem[i] and t.elem[i].value~=nil then
 				e[i] = t.elem[i].value
@@ -202,29 +204,29 @@ function process.save(name)
 		end
 
 		if t.graph then
-			e.graph = {}
-			e.graph.type = t.graph.type
+			n.graph = {}
+			n.graph.type = t.graph.type
 
 			if t.graph.type=="curve" then
-				e.graph.pts = t.graph.curve.points
-				e.graph.curveType = t.graph.curve.type
-				e.graph.ptsR = t.graph.curveR and t.graph.curveR.points
-				e.graph.ptsG = t.graph.curveG and t.graph.curveG.points
-				e.graph.ptsB = t.graph.curveB and t.graph.curveB.points
-				e.graph.curveTypeR = t.graph.curveR and t.graph.curveR.type
-				e.graph.curveTypeG = t.graph.curveG and t.graph.curveG.type
-				e.graph.curveTypeB = t.graph.curveB and t.graph.curveB.type
-				e.graph.channel = t.graph.channel
+				n.graph.pts = t.graph.curve.points
+				n.graph.curveType = t.graph.curve.type
+				n.graph.ptsR = t.graph.curveR and t.graph.curveR.points
+				n.graph.ptsG = t.graph.curveG and t.graph.curveG.points
+				n.graph.ptsB = t.graph.curveB and t.graph.curveB.points
+				n.graph.curveTypeR = t.graph.curveR and t.graph.curveR.type
+				n.graph.curveTypeG = t.graph.curveG and t.graph.curveG.type
+				n.graph.curveTypeB = t.graph.curveB and t.graph.curveB.type
+				n.graph.channel = t.graph.channel
 			end
 
 			if t.graph.type=="equalizer" then
-				e.graph.pts = t.graph.pts
-				e.graph.channel = t.graph.channel
+				n.graph.pts = t.graph.pts
+				n.graph.channel = t.graph.channel
 			end
 
 			if t.graph.type=="colorwheel" then
-				e.graph.x = t.graph.x
-				e.graph.y = t.graph.y
+				n.graph.x = t.graph.x
+				n.graph.y = t.graph.y
 			end
 		end
 
