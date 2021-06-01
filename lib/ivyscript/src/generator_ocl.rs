@@ -38,14 +38,19 @@ pub struct Generator<'a> {
 }
 
 // helper function for generating up to 4D array indices
-fn idx4(dim: u8, a: u64, b: u64, c: u64, d: u64) -> String {
-    match dim {
+fn idx4(dim: u8, a: u64, b: u64, c: u64, d: u64) -> Result<String, String> {
+    Ok(match dim {
         1 => format!("[{}]", a),
         2 => format!("[{}][{}]", a, b),
         3 => format!("[{}][{}][{}]", a, b, c),
         4 => format!("[{}][{}][{}][{}]", a, b, c, d),
-        n => panic!("Array dimensions must be between 1 and 4, found: {}", n),
-    }
+        n => {
+            return Err(format!(
+                "Array dimensions must be between 1 and 4, found: {}",
+                n
+            ))
+        }
+    })
 }
 
 impl<'a> Generator<'a> {
@@ -76,10 +81,9 @@ impl<'a> Generator<'a> {
                 Stmt::Kernel { id, .. } => {
                     self.kernels.borrow_mut().insert(id.clone(), &stmt);
                 }
-                Stmt::Comment(..) => { },
-                Stmt::EOF => {},
+                Stmt::Comment(..) => {}
+                Stmt::EOF => {}
                 _ => panic!("Unexpected statement in file scope!"),
-
             }
         }
     }
@@ -119,7 +123,7 @@ impl<'a> Generator<'a> {
                             "{}bool {}{}",
                             if l { "local " } else { "" },
                             v,
-                            idx4(n, a, b, c, d)
+                            idx4(n, a, b, c, d)?
                         )
                     }
                     VarType::IntArray(n, l, a, b, c, d) => {
@@ -127,7 +131,7 @@ impl<'a> Generator<'a> {
                             "{}int {}{}",
                             if l { "local " } else { "" },
                             v,
-                            idx4(n, a, b, c, d)
+                            idx4(n, a, b, c, d)?
                         )
                     }
                     VarType::FloatArray(n, l, a, b, c, d) => {
@@ -135,7 +139,7 @@ impl<'a> Generator<'a> {
                             "{}float {}{}",
                             if l { "local " } else { "" },
                             v,
-                            idx4(n, a, b, c, d)
+                            idx4(n, a, b, c, d)?
                         )
                     }
                     VarType::VecArray(n, l, a, b, c, d) => {
@@ -143,7 +147,7 @@ impl<'a> Generator<'a> {
                             "{}float3 {}{}",
                             if l { "local " } else { "" },
                             v,
-                            idx4(n, a, b, c, d)
+                            idx4(n, a, b, c, d)?
                         )
                     }
                     t => {
@@ -582,7 +586,7 @@ impl<'a> Generator<'a> {
                     "{}bool {} {}{};\n",
                     if l { "local " } else { "" },
                     id,
-                    idx4(n, a, b, c, d),
+                    idx4(n, a, b, c, d)?,
                     expr_str
                 )
             }
@@ -591,7 +595,7 @@ impl<'a> Generator<'a> {
                     "{}int {} {}{};\n",
                     if l { "local " } else { "" },
                     id,
-                    idx4(n, a, b, c, d),
+                    idx4(n, a, b, c, d)?,
                     expr_str
                 )
             }
@@ -600,7 +604,7 @@ impl<'a> Generator<'a> {
                     "{}float {} {}{};\n",
                     if l { "local " } else { "" },
                     id,
-                    idx4(n, a, b, c, d),
+                    idx4(n, a, b, c, d)?,
                     expr_str
                 )
             }
@@ -609,7 +613,7 @@ impl<'a> Generator<'a> {
                     "{}float3 {} {}{};\n",
                     if l { "local " } else { "" },
                     id,
-                    idx4(n, a, b, c, d),
+                    idx4(n, a, b, c, d)?,
                     expr_str
                 )
             }

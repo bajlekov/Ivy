@@ -60,7 +60,7 @@ pub fn function_id(name: &str, input: &[VarType]) -> String {
         };
         id.push_str(&s);
     }
-    id.push_str("___");
+    id.push_str("__");
     id.push_str(name);
     id
 }
