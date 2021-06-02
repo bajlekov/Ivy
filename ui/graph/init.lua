@@ -61,6 +61,7 @@ function graph.curve(node, a, b, c)
 	local graph = graph.new(node, 200, 220)
 	graph.type = "curve"
 	graph.curve = require "tools.curve":new(a, b, c)
+	graph.curve.parent = graph
 	updateCurve(graph)
 	graph.updateCurve = updateCurve
 end
@@ -71,7 +72,9 @@ function graph.curveRGB(node)
 	graph.curveR = require "tools.curve":new()
 	graph.curveG = require "tools.curve":new()
 	graph.curveB = require "tools.curve":new()
-
+	graph.curveR.parent = graph
+	graph.curveG.parent = graph
+	graph.curveB.parent = graph
 	updateCurve(graph, 1, graph.curveR)
 	updateCurve(graph, 2, graph.curveG)
 	updateCurve(graph, 3, graph.curveB)
