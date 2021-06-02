@@ -941,40 +941,89 @@ function ops.mix(x, y)
 	return n
 end
 
-ops.clut = {}
-local function genClut(lut)
-	local function clutProcess(self)
+do
+	local clutEnum = {"Precisa", "Vista", "Astia", "Provia", "Sensia", "Superia", "Velvia", "Ektachrome", "Kodachrome", "Portra"}
+	local loadedClut = 0
+
+	local function clutColorProcess(self)
 		self.procType = "dev"
+
+		local lutValue = self.elem[1].value
+		if self.data.clutLoaded ~= lutValue then
+			local lut = clutEnum[lutValue]
+			require "ui.notice".blocking("Loading look: "..lut)
+			self.data.lut = require("io.native").read("looks/"..lut..".png"):syncDev()
+			self.data.clutLoaded = lutValue
+		end
+
 		assert(self.portOut[0].link)
 		local p1, p2, p3, p4
 		p1 = t.inputSourceBlack(self, 0)
 		p2 = self.data.lut or data.zero
 		p3 = t.autoOutput(self, 0, p1:shape())
-		p4 = t.inputParam(self, 1)
+		p4 = t.inputParam(self, 2)
 		thread.ops.clut({p1, p2, p3, p4}, self)
 	end
 
-	ops.clut[lut] = function(x, y)
-		local n = node:new(lut)
+	function ops.clutColor(x, y)
+		local n = node:new("Color LUT")
 
+		local lut = clutEnum[1]
 		require "ui.notice".blocking("Loading look: "..lut)
 		n.data.lut = require("io.native").read("looks/"..lut..".png"):syncDev()
+		n.data.clutLoaded = 1
 
 		n:addPortIn(0, "LRGB"):addPortOut(0, "LRGB")
-		n:addPortIn(1, "Y"):addElem("float", 1, "Mix", 0, 2, 1)
+		n:addElem("enum", 1, "LUT", clutEnum, 1)
+		n:addPortIn(2, "Y"):addElem("float", 2, "Mix", 0, 2, 1)
 
-		n.process = clutProcess
-		--n.w = 200
+		n.process = clutColorProcess
 		n:setPos(x, y)
 		return n
 	end
 end
 
-local clut = {"Precisa", "Vista", "Astia", "Provia", "Sensia", "Superia", "Velvia", "Ektachrome", "Kodachrome", "Portra", "Neopan", "Delta", "Tri-X"}
-for k, v in ipairs(clut) do
-	genClut(v)
-end
+do
+	local clutEnum = {"Neopan", "Delta", "Tri-X"}
+	local loadedClut = 0
 
+	local function clutBWProcess(self)
+		self.procType = "dev"
+
+		local lutValue = self.elem[1].value
+		if self.data.clutLoaded ~= lutValue then
+			local lut = clutEnum[lutValue]
+			require "ui.notice".blocking("Loading look: "..lut)
+			self.data.lut = require("io.native").read("looks/"..lut..".png"):syncDev()
+			self.data.clutLoaded = lutValue
+		end
+
+		assert(self.portOut[0].link)
+		local p1, p2, p3, p4
+		p1 = t.inputSourceBlack(self, 0)
+		p2 = self.data.lut or data.zero
+		p3 = t.autoOutput(self, 0, p1:shape())
+		p4 = t.inputParam(self, 2)
+		thread.ops.clut({p1, p2, p3, p4}, self)
+	end
+
+	function ops.clutBW(x, y)
+		local n = node:new("B/W LUT")
+
+		local lut = clutEnum[1]
+		require "ui.notice".blocking("Loading look: "..lut)
+		n.data.lut = require("io.native").read("looks/"..lut..".png"):syncDev()
+		n.data.clutLoaded = 1
+
+		n:addPortIn(0, "LRGB"):addPortOut(0, "LRGB")
+		n:addElem("enum", 1, "LUT", clutEnum, 1)
+		n:addPortIn(2, "Y"):addElem("float", 2, "Mix", 0, 1, 1)
+
+		n.process = clutBWProcess
+		n:setPos(x, y)
+		return n
+	end
+end
 
 local function loadImage(image)
 	require "ui.notice".blocking("Loading image: "..(type(image) == "string" and image or image:getFilename()), true)

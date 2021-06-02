@@ -130,19 +130,9 @@ overlayMask:addElem("addNode", 6, "Blue-Yellow Mask", {ops, "blueYellowMask"})
 overlayMask:addElem("addNode", 7, "Mix", {ops, "mix"})
 overlayMask:addElem("addNode", 8, "Smart Mix", {ops, "smartMix"})
 
-local clutColor = {"Precisa", "Vista", "Astia", "Provia", "Sensia", "Superia", "Velvia", "Ektachrome", "Kodachrome", "Portra"}
-local clutBW = {"Neopan", "Delta", "Tri-X"}
-local overlayColor = Overlay:new("Color:")
-for k, v in ipairs(clutColor) do
-	overlayColor:addElem("addNode", k, v, {ops, "clut", v})
-end
-local overlayBW = Overlay:new("Black & White")
-for k, v in ipairs(clutBW) do
-	overlayBW:addElem("addNode", k, v, {ops, "clut", v})
-end
 local overlayCLUT = Overlay:new("Looks:")
-overlayCLUT:addElem("menu", 1, "Color", overlayColor)
-overlayCLUT:addElem("menu", 2, "Black & White", overlayBW)
+overlayCLUT:addElem("addNode", 1, "Color LUT", {ops, "clutColor"})
+overlayCLUT:addElem("addNode", 2, "B/W LUT", {ops, "clutBW"})
 
 local overlayColor = Overlay:new("Color:")
 overlayColor:addElem("addNode", 1, "Lift", {ops, "color_lift"})
