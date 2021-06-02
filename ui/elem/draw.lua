@@ -162,8 +162,6 @@ function draw.int(elem, x, y, w, h)
 
 	love.graphics.setColor(style.elemFontColor)
 	love.graphics.setFont(style.elemFont)
-	--love.graphics.printf(elem.name..":", x + 2, y + 2, w/3*2 - 2, "right")
-	--love.graphics.printf(string.format("%d", elem.value), x + w/3*2 + 2, y + 2, w/3 - 8, "center")
 	love.graphics.printf(string.format("%s: %d", elem.name, elem.value), x + 2, y + 2, w - 4, "center")
 
 	love.graphics.setLineWidth(0.65)
@@ -213,6 +211,36 @@ function draw.bool(elem, x, y, w, h)
 	love.graphics.setColor(style.elemFontColor)
 	love.graphics.setFont(style.elemFont)
 	love.graphics.printf(elem.name, x + 2, y + 2, w - 4, "left")
+end
+
+function draw.enum(elem, x, y, w, h)
+	love.graphics.setColor(style.elemColor)
+	drawRounded(x, y, w, h, elem.first, elem.last, elem.parent.style=="toolbar")
+	local p1 = (elem.value - 1)/(#elem.enum)
+	local p2 = 1/(#elem.enum)
+	love.graphics.setColor(tint(style.elemHighlightColor, elem.tint))
+	love.graphics.setScissor( x + w*p1, y, math.ceil(w*p2), h)
+	drawRounded(x, y, w, h, elem.first, elem.last, elem.parent.style=="toolbar")
+	love.graphics.setScissor( )
+
+	love.graphics.setColor(style.elemFontColor)
+	love.graphics.setFont(style.elemFont)
+	love.graphics.printf(tostring(elem.enum[elem.value]), x + 2, y + 2, w - 4, "center")
+
+	love.graphics.setLineWidth(0.65)
+	love.graphics.setLineJoin("none")
+
+	local x1 = x + w - h + 4
+	local y1 = y + 3
+	local x2 = x1 + h - 8
+	local y2 = y1 + h - 6
+	local y3 = y1 + (h - 6) * 0.5
+	love.graphics.line(x1 + 0.5, y1 + 0.5, x2 - 0.5, y3, x1 + 0.5, y2 - 0.5)
+	local x1 = x + h - 4
+	local x2 = x1 - h + 8
+	love.graphics.line(x1 - 0.5, y1 + 0.5, x2 + 0.5, y3, x1 - 0.5, y2 - 0.5)
+
+	love.graphics.setLineWidth(1)
 end
 
 function draw.color(elem, x, y, w, h)

@@ -116,6 +116,31 @@ function event.release.bool(elem, mouse)
 	end
 end
 
+function event.press.enum(elem, mouse)
+	if mouse.button == 2 then
+		elem.value = elem.default
+		dirty(elem)
+		elem.tint = style.orange
+		return
+	end
+
+	if mouse.button == 1 then
+		local value = elem.value
+		if mouse.x - mouse.ex > (elem.parent.w or style.nodeWidth) / 2 then
+			value = value + 1
+		else
+			value = value - 1
+		end
+		if value < 1 then value = #elem.enum end
+		if value > #elem.enum then value = 1 end
+		elem.value = value
+		dirty(elem)
+		elem.tint = style.orange
+		return
+	end
+end
+function event.release.enum(elem) elem.tint = nil end
+
 function event.press.button(elem, mouse)
 	if mouse.button == 1 then
 		elem.tint = style.blue
