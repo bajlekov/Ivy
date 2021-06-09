@@ -39,8 +39,8 @@ local function tweak(mode, p1, p2, p3)
 	local function tweakDragCallback(mouse)
 		node.dirty = true
 		update = true
-		dx = dx + (cs and mouse.dx / 10 or mouse.dx)
-		dy = dy + (cs and mouse.dy / 10 or mouse.dy)
+		dx = dx + (mouse.shift and mouse.dx / 10 or mouse.dx)
+		dy = dy + (mouse.shift and mouse.dy / 10 or mouse.dy)
 		cx, cy = widget.imageCoord(mouse.lx - mouse.ox + mouse.x, mouse.ly - mouse.oy + mouse.y)
 		table.insert(path, {x = cx, y = cy, ctrl = mouse.ctrl, alt = mouse.alt, shift = mouse.shift})
 	end
