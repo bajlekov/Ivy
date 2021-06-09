@@ -50,6 +50,39 @@ return function(ops)
   	return n
   end
 
+	local function scriptProcess(self)
+		self.procType = "dev"
+		local i = t.inputSourceBlack(self, 0)
+		local x, y, z = i:shape()
+		local o = t.autoOutput(self, 0, x, y, z)
+
+		if z == 1 then
+			o.cs = "Y"
+		elseif z == 3 then
+			o.cs = "XYZ"
+		end
+
+		thread.ops.script_Y_cond({i, o}, self)
+		dataCh:push(self.elem[2].value)
+		dataCh:push(self.elem[4].value)
+		dataCh:push(self.elem[6].value)
+	end
+
+	function ops.scriptY_cond(x, y)
+		local n = node:new("Script Y Cond")
+		n:addPortIn(0, "ANY")
+		n:addPortOut(0, "ANY")
+		n:addElem("text", 1, "Condition:")
+		n:addElem("textinput", 2, "true")
+		n:addElem("text", 3, "True:")
+		n:addElem("textinput", 4, "i")
+		n:addElem("text", 5, "False:")
+		n:addElem("textinput", 6, "0")
+		n.process = scriptProcess
+		n:setPos(x, y)
+		return n
+	end
+
   local function scriptProcess(self)
   	self.procType = "dev"
   	local i = t.inputSourceBlack(self, 0)
