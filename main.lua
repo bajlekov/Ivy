@@ -14,9 +14,9 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ]]
-
-print([[    Ivy
-    Copyright (C) 2019  Galin Bajlekov
+print(
+	[[    Ivy
+	Copyright (C) 2011-2021 G. Bajlekov
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -37,7 +37,6 @@ require "setup"
 local ffi = require "ffi"
 
 local serpent = require("lib.serpent")
-
 
 global("settings")
 if love.filesystem.isFused() then
@@ -74,8 +73,8 @@ love.window.setTitle("Ivy: Initializing...")
 love.window.setIcon(love.image.newImageData("res/icon.png"))
 
 love.window.maximize()
+love.graphics.clear(style.backgroundColor)
 require "ui.notice".blocking("Initializing ...", true)
-
 
 local oclPlatform = false
 local oclDevice = false
@@ -86,7 +85,7 @@ do
 	local cl = require("lib.opencl")
 
 	local platforms = cl.get_platforms()
-	assert(#platforms>0, "No OpenCL platform found!")
+	assert(#platforms > 0, "No OpenCL platform found!")
 	if oclPlatform > #platforms then
 		oclPlatform = 1
 		settings.openclPlatform = 1
@@ -100,11 +99,11 @@ do
 	end
 
 	local function mem(n)
-		return math.floor((n / 1024 / 1024)).."MB"
+		return math.floor((n / 1024 / 1024)) .. "MB"
 	end
 
 	local function tab(t)
-		return "[ "..table.concat(t, ", ").." ]"
+		return "[ " .. table.concat(t, ", ") .. " ]"
 	end
 
 	local platforms = cl.get_platforms()
@@ -152,7 +151,13 @@ do
 	settings.nodeAutoConnect = autoconnect
 end
 
-if not pcall(function() require "tools.process".load("process.lua") end) then
+if
+	not pcall(
+		function()
+			require "tools.process".load("process.lua")
+		end
+	)
+ then
 	require "tools.process".new()
 end
 
@@ -160,7 +165,6 @@ pipeline.output.data.histogram = data:new(256, 1, 4):allocHost()
 
 local nodeDFS = require "ui.node.dfs"
 local cycles = nodeDFS(node)
-
 
 local exifData
 local originalImage
@@ -217,16 +221,24 @@ local dirtyImage = true
 local processReady = true
 
 function love.filedropped(file)
-	require "ui.notice".blocking("Loading image: "..(type(file) == "string" and file or file:getFilename()), true)
+	love.graphics.clear(style.backgroundColor)
+	require "ui.notice".blocking("Loading image: " .. (type(file) == "string" and file or file:getFilename()), true)
 	assert(file, "ERROR: File loading failed")
 
-	originalImage, RAW_SRGBmatrix, RAW_WBmultipliers, RAW_PREmultipliers = require("io."..settings.imageLoader).read(file)
+	originalImage, RAW_SRGBmatrix, RAW_WBmultipliers, RAW_PREmultipliers =
+		require("io." .. settings.imageLoader).read(file)
 	originalImage:syncDev()
-	if RAW_SRGBmatrix then RAW_SRGBmatrix:syncDev() end
-	if RAW_WBmultipliers then RAW_WBmultipliers:syncDev() end
-	if RAW_PREmultipliers then RAW_PREmultipliers:syncDev() end
+	if RAW_SRGBmatrix then
+		RAW_SRGBmatrix:syncDev()
+	end
+	if RAW_WBmultipliers then
+		RAW_WBmultipliers:syncDev()
+	end
+	if RAW_PREmultipliers then
+		RAW_PREmultipliers:syncDev()
+	end
 
-	love.window.setTitle("Ivy: "..( type(file) == "string" and file or file:getFilename() ))
+	love.window.setTitle("Ivy: " .. (type(file) == "string" and file or file:getFilename()))
 	exifData = require("io.exif").read(file)
 
 	local fileName = type(file) == "string" and file or file:getFilename() or "-"
@@ -234,7 +246,7 @@ function love.filedropped(file)
 	panels.info.elem[2].right = exifData.Make or " - "
 	panels.info.elem[3].right = exifData.CameraModelName or " - "
 	panels.info.elem[4].right = exifData.LensModel or " - "
-	panels.info.elem[5].right = (exifData.FocalLength or " - ").."mm"
+	panels.info.elem[5].right = (exifData.FocalLength or " - ") .. "mm"
 
 	local programModes = {
 		"Manual Exposure",
@@ -245,11 +257,12 @@ function love.filedropped(file)
 		"Action",
 		"Portrait",
 		"Landscape",
-		"Bulb",
+		"Bulb"
 	}
 
 	panels.info.elem[6].right = exifData.ExposureProgram and programModes[tonumber(exifData.ExposureProgram)] or "-"
-	panels.info.elem[7].right = (exifData.ExposureCompensation and ("%+0.1f"):format(exifData.ExposureCompensation) or " -").." EV"
+	panels.info.elem[7].right =
+		(exifData.ExposureCompensation and ("%+0.1f"):format(exifData.ExposureCompensation) or " -") .. " EV"
 
 	local shutter = tonumber(exifData.ShutterSpeed)
 	if shutter then
@@ -260,16 +273,18 @@ function love.filedropped(file)
 		end
 	end
 
-	panels.info.elem[8].right = (shutter or " - ").."s"
-	panels.info.elem[9].right = "f/"..(exifData.Aperture or " - ")
-	panels.info.elem[10].right = "ISO "..(exifData.ISO or " - ")
+	panels.info.elem[8].right = (shutter or " - ") .. "s"
+	panels.info.elem[9].right = "f/" .. (exifData.Aperture or " - ")
+	panels.info.elem[10].right = "ISO " .. (exifData.ISO or " - ")
 	panels.info.elem[11].right = exifData.Date or " - "
-	panels.info.elem[12].right = ("%d X %d (%.1fMP)"):format(originalImage.x, originalImage.y, originalImage.x*originalImage.y*1e-6)
+	panels.info.elem[12].right =
+		("%d X %d (%.1fMP)"):format(originalImage.x, originalImage.y, originalImage.x * originalImage.y * 1e-6)
 
 	imageOffset:set(0, 0, 0, 0) -- x offset
 	imageOffset:set(0, 0, 1, 0) -- y offset
 	imageOffset:set(0, 0, 2, 1) -- scale
-	local A, B, C, BR, CR, VR, BB, CB, VB, K1, K2, K3 = require("tools.lensfun")(exifData.LensModel or exifData.CameraModelName, exifData.FocalLength, exifData.Aperture)
+	local A, B, C, BR, CR, VR, BB, CB, VB, K1, K2, K3 =
+		require("tools.lensfun")(exifData.LensModel or exifData.CameraModelName, exifData.FocalLength, exifData.Aperture)
 	imageOffset:set(0, 0, 3, A)
 	imageOffset:set(0, 0, 4, B)
 	imageOffset:set(0, 0, 5, C)
@@ -285,17 +300,19 @@ function love.filedropped(file)
 
 	-- calculate distortion correction optimal scale
 	do
-    local x, y = originalImage.x/2, originalImage.y/2
-    local ro = math.min(x, y)
-    if ro==y then x, y = y, x end
+		local x, y = originalImage.x / 2, originalImage.y / 2
+		local ro = math.min(x, y)
+		if ro == y then
+			x, y = y, x
+		end
 
 		local rr = math.huge
 		for y = 0, y do
-			local ru = math.sqrt(x^2 + y^2) / ro
-			local rd = ru*(A*ru*ru*ru + B*ru*ru + C*ru + (1-A-B-C))
-			local rr1 = ru/rd/(BR*rd*rd + CR*rd + VR)
-      local rr2 = ru/rd/(BB*rd*rd + CB*rd + VB)
-      rr = math.min(rr1, rr2, rr)
+			local ru = math.sqrt(x ^ 2 + y ^ 2) / ro
+			local rd = ru * (A * ru * ru * ru + B * ru * ru + C * ru + (1 - A - B - C))
+			local rr1 = ru / rd / (BR * rd * rd + CR * rd + VR)
+			local rr2 = ru / rd / (BB * rd * rd + CB * rd + VB)
+			rr = math.min(rr1, rr2, rr)
 		end
 
 		imageOffset:set(0, 0, 15, rr)
@@ -344,7 +361,6 @@ panels.info.elem[21].onChange = loadInputImageCB
 local flags = data:new(1, 1, 7) -- distortion, tca, vignetting, sRGB, WB, reconstruct
 
 function love.update()
-
 	-- handle thread messages
 	while messageCh:getCount() > 0 do
 		local messageIn = messageCh:pop()
@@ -352,14 +368,16 @@ function love.update()
 		local code = messageIn[1]
 		local id = messageIn[2]
 
-    if code == "info" then
+		if code == "info" then
 			message = id:sub(1, 4096)
 		elseif code == "error" then
+			node.list[currentID].state = "error"
 			message = id:sub(1, 4096)
-			--node.list[currentID].state = "error"
 		elseif code == "start" and id then
 			local node = node.list[id]
-			if node and node.state == "waiting" then node.state = "processing" end
+			if node and node.state == "waiting" then
+				node.state = "processing"
+			end
 			currentID = id
 			processComplete = processComplete + 1
 		elseif code == "end" and id then
@@ -409,19 +427,22 @@ function love.update()
 			if panels.info.elem[15].value or panels.info.elem[16].value or panels.info.elem[17].value then
 				flags:set(0, 0, 0, panels.info.elem[15].value and 1 or 0)
 				flags:set(0, 0, 1, panels.info.elem[16].value and 1 or 0)
-        flags:set(0, 0, 2, panels.info.elem[17].value and 1 or 0)
+				flags:set(0, 0, 2, panels.info.elem[17].value and 1 or 0)
 				thread.ops.cropCorrect({originalImage, pipeline.input.imageData, imageOffset, flags}, "dev")
 			else
 				thread.ops.crop({originalImage, pipeline.input.imageData, imageOffset}, "dev")
 			end
 			require "ops.tools".imageShapeSet(pipeline.input.imageData.x, pipeline.input.imageData.y, pipeline.input.imageData.z)
 
-			if RAW_SRGBmatrix and RAW_WBmultipliers  then
+			if RAW_SRGBmatrix and RAW_WBmultipliers then
 				flags:set(0, 0, 3, panels.info.elem[18].value and 0 or 1)
 				flags:set(0, 0, 4, panels.info.elem[19].value and 1 or 0)
 				flags:set(0, 0, 5, panels.info.elem[20].value and 1 or 0)
 				flags:set(0, 0, 6, panels.info.elem[21].value and 1 or 0)
-				thread.ops.RAWtoSRGB({pipeline.input.imageData, RAW_SRGBmatrix, RAW_WBmultipliers, RAW_PREmultipliers, flags}, "dev")
+				thread.ops.RAWtoSRGB(
+					{pipeline.input.imageData, RAW_SRGBmatrix, RAW_WBmultipliers, RAW_PREmultipliers, flags},
+					"dev"
+				)
 			end
 
 			flags:syncDev()
@@ -431,7 +452,7 @@ function love.update()
 				pipeline.input.dirty = true
 			end
 		else
-			if pipeline.input.portOut[0].link and  not pipeline.input.portOut[0].link.data then
+			if pipeline.input.portOut[0].link and not pipeline.input.portOut[0].link.data then
 				pipeline.input:process()
 			end
 			pipeline.input.dirty = not settings.linkCache
@@ -506,6 +527,7 @@ function love.draw()
 		data.stats.getMemHostMax() / 1024 / 1024 + stats.host / 1024 / 1024,
 		love.timer.getFPS()
 	)
+	-- memdevmax is not cleared properly in stats
 
 	panels.ui:draw()
 
@@ -518,8 +540,8 @@ function love.draw()
 
 	-- draw histogram
 	local scale = 0
-  if hist then
-    hist:lock()
+	if hist then
+		hist:lock()
 		local histPanel = panels.hist.panel
 		local mr = panels.hist.r.value and 1 or 0
 		local mg = panels.hist.g.value and 1 or 0
@@ -527,7 +549,13 @@ function love.draw()
 		local ml = panels.hist.l.value and 1 or 0
 
 		for i = 3, 252 do
-			local v = math.max(hist:get_u32(i, 0, 0) * mr, hist:get_u32(i, 0, 1) * mg, hist:get_u32(i, 0, 2) * mb, hist:get_u32(i, 0, 3) * ml)
+			local v =
+				math.max(
+				hist:get_u32(i, 0, 0) * mr,
+				hist:get_u32(i, 0, 1) * mg,
+				hist:get_u32(i, 0, 2) * mb,
+				hist:get_u32(i, 0, 3) * ml
+			)
 			scale = math.max(scale, v)
 		end
 
@@ -558,7 +586,7 @@ function love.draw()
 			lc[(i - 1) * 2 + 1] = x + w / 255 * i
 			lc[(i - 1) * 2 + 2] = y + h * l
 		end
-    hist:unlock()
+		hist:unlock()
 
 		local x = histPanel.x + 1
 		local y = histPanel.y + histPanel.h
@@ -571,17 +599,39 @@ function love.draw()
 		love.graphics.setLineJoin("none")
 		love.graphics.setColor(style.gray5)
 		love.graphics.rectangle("line", x + 4.5, y - histPanel.w + 5.5, histPanel.w - 11, histPanel.w - 11)
-		love.graphics.line(x + 4.5 + math.round((histPanel.w - 10) * 0.25), y - histPanel.w + 8, x + 4.5 + math.round((histPanel.w - 10) * 0.25), y - 8)
-		love.graphics.line(x + 4.5 + math.round((histPanel.w - 10) * 0.50), y - histPanel.w + 8, x + 4.5 + math.round((histPanel.w - 10) * 0.50), y - 8)
-		love.graphics.line(x + 4.5 + math.round((histPanel.w - 10) * 0.75), y - histPanel.w + 8, x + 4.5 + math.round((histPanel.w - 10) * 0.75), y - 8)
+		love.graphics.line(
+			x + 4.5 + math.round((histPanel.w - 10) * 0.25),
+			y - histPanel.w + 8,
+			x + 4.5 + math.round((histPanel.w - 10) * 0.25),
+			y - 8
+		)
+		love.graphics.line(
+			x + 4.5 + math.round((histPanel.w - 10) * 0.50),
+			y - histPanel.w + 8,
+			x + 4.5 + math.round((histPanel.w - 10) * 0.50),
+			y - 8
+		)
+		love.graphics.line(
+			x + 4.5 + math.round((histPanel.w - 10) * 0.75),
+			y - histPanel.w + 8,
+			x + 4.5 + math.round((histPanel.w - 10) * 0.75),
+			y - 8
+		)
 
 		love.graphics.setLineWidth(4)
 		love.graphics.setColor(0, 0, 0, 0.3)
-		if panels.hist.r.value then love.graphics.line(rc) end
-		if panels.hist.g.value then love.graphics.line(gc) end
-		if panels.hist.b.value then love.graphics.line(bc) end
-		if panels.hist.l.value then love.graphics.line(lc) end
-
+		if panels.hist.r.value then
+			love.graphics.line(rc)
+		end
+		if panels.hist.g.value then
+			love.graphics.line(gc)
+		end
+		if panels.hist.b.value then
+			love.graphics.line(bc)
+		end
+		if panels.hist.l.value then
+			love.graphics.line(lc)
+		end
 
 		love.graphics.setLineWidth(2)
 		if panels.hist.r.value then
@@ -589,8 +639,13 @@ function love.draw()
 			love.graphics.line(rc)
 
 			local value = histPanel.elem[1].value[1]
-			if value>0.001 and value<0.999 then
-				love.graphics.line(x + 4.5 + math.round((histPanel.w - 10) * value), y - histPanel.w + 8, x + 4.5 + math.round((histPanel.w - 10) * value), y - 8)
+			if value > 0.001 and value < 0.999 then
+				love.graphics.line(
+					x + 4.5 + math.round((histPanel.w - 10) * value),
+					y - histPanel.w + 8,
+					x + 4.5 + math.round((histPanel.w - 10) * value),
+					y - 8
+				)
 			end
 		end
 		if panels.hist.g.value then
@@ -598,8 +653,13 @@ function love.draw()
 			love.graphics.line(gc)
 
 			local value = histPanel.elem[1].value[2]
-			if value>0.001 and value<0.999 then
-				love.graphics.line(x + 4.5 + math.round((histPanel.w - 10) * value), y - histPanel.w + 8, x + 4.5 + math.round((histPanel.w - 10) * value), y - 8)
+			if value > 0.001 and value < 0.999 then
+				love.graphics.line(
+					x + 4.5 + math.round((histPanel.w - 10) * value),
+					y - histPanel.w + 8,
+					x + 4.5 + math.round((histPanel.w - 10) * value),
+					y - 8
+				)
 			end
 		end
 		if panels.hist.b.value then
@@ -607,34 +667,37 @@ function love.draw()
 			love.graphics.line(bc)
 
 			local value = histPanel.elem[1].value[3]
-			if value>0.001 and value<0.999 then
-				love.graphics.line(x + 4.5 + math.round((histPanel.w - 10) * value), y - histPanel.w + 8, x + 4.5 + math.round((histPanel.w - 10) * value), y - 8)
+			if value > 0.001 and value < 0.999 then
+				love.graphics.line(
+					x + 4.5 + math.round((histPanel.w - 10) * value),
+					y - histPanel.w + 8,
+					x + 4.5 + math.round((histPanel.w - 10) * value),
+					y - 8
+				)
 			end
 		end
 		if panels.hist.l.value then
 			love.graphics.setColor(style.gray9)
 			love.graphics.line(lc)
 		end
-  end
+	end
 
 	require "ui.widget".drawCursor()
 
 	-- draw nodes
-  if not love.keyboard.isDown("tab") then
-
-    for n in node.stack:traverseUp() do
-  		n:draw("link out")
-  	end
-  	for n in node.stack:traverseUp() do
-  		n:draw()
-  	end
-  	if #cycles > 0 then
-  		for k, v in pairs(cycles) do
-  			v:draw(style.red)
-  		end
-  	end
-
-  end
+	if not love.keyboard.isDown("tab") then
+		for n in node.stack:traverseUp() do
+			n:draw("link out")
+		end
+		for n in node.stack:traverseUp() do
+			n:draw()
+		end
+		if #cycles > 0 then
+			for k, v in pairs(cycles) do
+				v:draw(style.red)
+			end
+		end
+	end
 
 	overlay:draw()
 
@@ -644,9 +707,6 @@ function love.draw()
 		require "ui.notice".overlay("Processing...")
 	end
 end
-
-
-
 
 local widget = require "ui.widget"
 widget.setFrame(panels.image)
@@ -687,9 +747,9 @@ function widget.imagePos()
 end
 
 function widget.imageOffset()
-  local ox, oy = imageOffset:get(0, 0, 0), imageOffset:get(0, 0, 1)
-  local w, h = originalImage.x, originalImage.y
-  return ox, oy, w, h
+	local ox, oy = imageOffset:get(0, 0, 0), imageOffset:get(0, 0, 1)
+	local w, h = originalImage.x, originalImage.y
+	return ox, oy, w, h
 end
 
 function widget.imageSize()
@@ -720,7 +780,6 @@ panels.toolbox.elem[1].value = true
 panels.toolbox.elem[1]:onChange()
 
 panels.image.onContext = overlay.show -- register node-add menu
-
 
 local uiInput = require "ui.input"
 local mousePressed = false
@@ -772,13 +831,15 @@ function love.mousereleased(x, y, button, isTouch)
 end
 
 function love.wheelmoved(x, y)
+	-- TODO: register wheel in ui.input
+
 	if uiInput.mouseOverFrame(widget.frame) or widget.active then
 		dirtyImage = dirtyImage or widget.wheelmoved(x, y)
 	end
 end
 
 function pipeline.update()
-  dirtyImage = true
+	dirtyImage = true
 end
 
 local fullscreen = false
@@ -861,48 +922,48 @@ function love.keypressed(key)
 	if key == "r" then
 		message = ""
 		reloadDev = true
-		--TODO: reload native plugins too, by reinitiating all threads?
+	--TODO: reload native plugins too, by reinitiating all threads?
 	end
 
 	if key == "s" then
-    require "ui.notice".blocking("Saving image: out.png")
+		require "ui.notice".blocking("Saving image: out.png")
 
-    local ts = displayScale
-    local tx = imageOffset:get(0, 0, 0, 0)
-    local ty = imageOffset:get(0, 0, 1, 0)
+		local ts = displayScale
+		local tx = imageOffset:get(0, 0, 0, 0)
+		local ty = imageOffset:get(0, 0, 1, 0)
 
-    scrollable = false
-    displayScale = false
-    imageOffset:set(0, 0, 0, 0)
-    imageOffset:set(0, 0, 1, 0)
+		scrollable = false
+		displayScale = false
+		imageOffset:set(0, 0, 0, 0)
+		imageOffset:set(0, 0, 1, 0)
 
-    loadInputImage = true
-  	dirtyImage = true
+		loadInputImage = true
+		dirtyImage = true
 
-    love.update()
-    while not processReady do
-      love.update()
-      love.timer.sleep(1/60)
-    end
-    love.draw()
-    require "ui.notice".blocking("Saving image: out.png")
+		love.update()
+		while not processReady do
+			love.update()
+			love.timer.sleep(1 / 60)
+		end
+		love.draw()
+		require "ui.notice".blocking("Saving image: out.png")
 
 		previewImage.imageData:encode("png", "out.png")
-		local path = love.filesystem.getSaveDirectory( )
+		local path = love.filesystem.getSaveDirectory()
 		os.remove("out.png")
-		os.rename(path.."/out.png", "out.png")
+		os.rename(path .. "/out.png", "out.png")
 
-    scrollable = true
-    displayScale = ts
-    imageOffset:set(0, 0, 0, tx)
-    imageOffset:set(0, 0, 1, ty)
+		scrollable = true
+		displayScale = ts
+		imageOffset:set(0, 0, 0, tx)
+		imageOffset:set(0, 0, 1, ty)
 	end
 
 	if key == "q" then
 		love.event.quit()
 	end
 
-	if key=="d" then
+	if key == "d" then
 		-- document mode
 		local nodeAddOverlay = require "ui.panels.nodeAddMenu"
 
@@ -914,17 +975,17 @@ function love.keypressed(key)
 		local function getNodes(t)
 			for k, v in ipairs(t.elem) do
 				if v.action then
-
 					if pipeline.input.portOut[0].link then
 						pipeline.input.portOut[0].link:remove()
 					end
 
 					local n = v.action(13, 6)
 
-					local w, h -- calculate node size
+					local w, h  -- calculate node size
 					do
 						local nodeWidth = n.w or style.nodeWidth
-						local nodeHeight = style.titleHeight + style.elemHeight * n.elem.n - (n.elem.n == 0 and style.nodeBorder or style.elemBorder)
+						local nodeHeight =
+							style.titleHeight + style.elemHeight * n.elem.n - (n.elem.n == 0 and style.nodeBorder or style.elemBorder)
 						if n.graph then
 							nodeHeight = nodeHeight + n.graph.h + style.nodeBorder
 						end
@@ -956,8 +1017,8 @@ function love.keypressed(key)
 					love.graphics.draw(c, 0, 0)
 					local d = c:newImageData()
 					d:encode("png", "testdoc.png")
-					local path = love.filesystem.getSaveDirectory( )
-					assert(os.rename(path.."/testdoc.png", "doc/nodes/"..table.concat(n.call, "-")..".png"))
+					local path = love.filesystem.getSaveDirectory()
+					assert(os.rename(path .. "/testdoc.png", "doc/nodes/" .. table.concat(n.call, "-") .. ".png"))
 
 					love.graphics.present()
 					n:remove()
@@ -976,6 +1037,7 @@ function love.keypressed(key)
 		love.window.setFullscreen(fullscreen)
 	end
 
+	-- TODO: selectively refresh only on change
 	loadInputImage = true
 	dirtyImage = true
 end

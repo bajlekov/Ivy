@@ -14,7 +14,6 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ]]
-
 local widget = require "ui.widget"
 local cursor = require "ui.cursor"
 local style = require "ui.style"
@@ -108,7 +107,8 @@ local function tweak(mode, p1, p2, p3)
 			widget.release.tweak = tweakReleaseCallback
 			widget.scroll.tweak = tweakScrollCallback
 
-			if mode=="paint" then
+			-- TODO: refactor!!!
+			if mode == "paint" then
 				widget.cursor.tweak = cursor.none
 				widget.draw.tweak.cursor = function(mouse)
 					local x, y = love.mouse.getPosition()
@@ -125,41 +125,41 @@ local function tweak(mode, p1, p2, p3)
 
 					local fx, fy = widget.frame.x, widget.frame.y
 					local ix, iy, iw, ih = widget.imagePos() -- take into account frame offsets
-					x = math.clamp(x, ix+fx, ix+iw+fx)
-					y = math.clamp(y, iy+fy, iy+ih+fy)
+					x = math.clamp(x, ix + fx, ix + iw + fx)
+					y = math.clamp(y, iy + fy, iy + ih + fy)
 
-					love.graphics.setScissor(ix+fx, iy+fy, iw+1, ih+1)
+					love.graphics.setScissor(ix + fx, iy + fy, iw + 1, ih + 1)
 
 					local scale = require "tools.pipeline".output.image.scale
 
-					local a, b, c, d, e = 0, math.pi*0.5, math.pi, math.pi*1.5, math.pi*2
-					local r1, r2 = p1.value*scale, p1.value*(1-p2.value)*scale
+					local a, b, c, d, e = 0, math.pi * 0.5, math.pi, math.pi * 1.5, math.pi * 2
+					local r1, r2 = p1.value * scale, p1.value * (1 - p2.value) * scale
 					local w1, w2 = 0.2, 1
 					love.graphics.setLineJoin("bevel")
 
 					love.graphics.setLineWidth(2)
 					love.graphics.setColor(0, 0, 0, 0.3)
 
-					love.graphics.arc("line", "open", x, y, r2, a+w2, c-w2)
-					love.graphics.arc("line", "open", x, y, r2, c+w2, e-w2)
+					love.graphics.arc("line", "open", x, y, r2, a + w2, c - w2)
+					love.graphics.arc("line", "open", x, y, r2, c + w2, e - w2)
 
-					love.graphics.arc("line", "open", x, y, r1, a+w1, c-w1)
-					love.graphics.arc("line", "open", x, y, r1, c+w1, e-w1)
+					love.graphics.arc("line", "open", x, y, r1, a + w1, c - w1)
+					love.graphics.arc("line", "open", x, y, r1, c + w1, e - w1)
 
-					love.graphics.line(x+10, y, x-10, y)
-					love.graphics.line(x, y+10, x, y-10)
+					love.graphics.line(x + 10, y, x - 10, y)
+					love.graphics.line(x, y + 10, x, y - 10)
 
 					love.graphics.setLineWidth(1)
 					love.graphics.setColor(style.gray9)
 
-					love.graphics.arc("line", "open", x, y, r2, a+w2, c-w2)
-					love.graphics.arc("line", "open", x, y, r2, c+w2, e-w2)
+					love.graphics.arc("line", "open", x, y, r2, a + w2, c - w2)
+					love.graphics.arc("line", "open", x, y, r2, c + w2, e - w2)
 
-					love.graphics.arc("line", "open", x, y, r1, a+w1, c-w1)
-					love.graphics.arc("line", "open", x, y, r1, c+w1, e-w1)
+					love.graphics.arc("line", "open", x, y, r1, a + w1, c - w1)
+					love.graphics.arc("line", "open", x, y, r1, c + w1, e - w1)
 
-					love.graphics.line(x+10, y, x-10, y)
-					love.graphics.line(x, y+10, x, y-10)
+					love.graphics.line(x + 10, y, x - 10, y)
+					love.graphics.line(x, y + 10, x, y - 10)
 
 					love.graphics.setScissor()
 				end
@@ -171,10 +171,11 @@ local function tweak(mode, p1, p2, p3)
 			dx, dy = 0, 0
 		end
 	end
+
 	function o.toolButton(node, idx, name)
 		local elem = node:addElem("bool", idx, name, false)
-    widget.setExclusive(elem)
-    elem.onChange = setToolCallback
+		widget.setExclusive(elem)
+		elem.onChange = setToolCallback
 	end
 
 	return o
