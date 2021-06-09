@@ -171,6 +171,47 @@ local RAW_PREmultipliers
 local imageOffset = data:new(1, 1, 16)
 local previewImage
 
+local scrollable = false
+local displayScale = false
+local function rescaleInputOutput()
+	-- TODO: move to pipeline
+
+	local displayScale = displayScale
+	if displayScale then
+		displayScale = displayScale / settings.scaleUI
+		scrollable = true
+
+		pipeline.input.imageData =
+			data:new(
+			math.min(math.floor(panels.image.w / displayScale), originalImage.x),
+			math.min(math.floor(panels.image.h / displayScale), originalImage.y),
+			3
+		)
+		pipeline.output.image = image.new(pipeline.input.imageData)
+
+		pipeline.output.image.scale = displayScale
+		pipeline.output.image.drawOffset.x = (panels.image.w - pipeline.output.image.x * displayScale) / 2
+		pipeline.output.image.drawOffset.y = (panels.image.h - pipeline.output.image.y * displayScale) / 2
+	else
+		displayScale = math.min(
+			panels.image.w/originalImage.x * settings.scaleUI,
+			panels.image.h/originalImage.y * settings.scaleUI
+		) / settings.scaleUI
+
+		scrollable = false
+		imageOffset:set(0, 0, 0, 0)
+		imageOffset:set(0, 0, 1, 0)
+
+		pipeline.input.imageData = originalImage:new()
+		pipeline.output.image = image.new(pipeline.input.imageData)
+	end
+
+	pipeline.output.image.scale = displayScale
+	pipeline.output.image.drawOffset.x = (panels.image.w - pipeline.output.image.x * displayScale) / 2
+	pipeline.output.image.drawOffset.y = (panels.image.h - pipeline.output.image.y * displayScale) / 2
+end
+pipeline.rescaleInputOutput = rescaleInputOutput
+
 local loadInputImage = true
 local dirtyImage = true
 local processReady = true
@@ -261,12 +302,7 @@ function love.filedropped(file)
 	end
 	imageOffset:syncDev()
 
-	pipeline.input.imageData = originalImage:new()
-	pipeline.output.image = image.new(pipeline.input.imageData)
-
-	pipeline.output.image.scale = math.min(panels.image.w / pipeline.input.imageData.x, panels.image.h / pipeline.input.imageData.y, 1)
-	pipeline.output.image.drawOffset.x = (panels.image.w - pipeline.input.imageData.x * pipeline.output.image.scale) / 2
-	pipeline.output.image.drawOffset.y = (panels.image.h - pipeline.input.imageData.y * pipeline.output.image.scale) / 2
+	rescaleInputOutput()
 
 	previewImage = pipeline.output.image
 
@@ -278,34 +314,6 @@ end
 
 -- trigger image load at start
 love.filedropped(settings.imagePath)
-
-
-
-local scrollable = false
-local displayScale = false
-
-local function rescaleInputOutput()
-	if displayScale then
-		scrollable = true
-
-		pipeline.input.imageData = data:new(math.floor(panels.image.w / displayScale), math.floor(panels.image.h / displayScale), 3)
-		pipeline.output.image = image.new(pipeline.input.imageData)
-
-		pipeline.output.image.scale = displayScale
-		pipeline.output.image.drawOffset.x = 0
-		pipeline.output.image.drawOffset.y = 0
-	else
-		scrollable = false
-		pipeline.input.imageData = originalImage:new()
-		pipeline.output.image = image.new(pipeline.input.imageData)
-
-		pipeline.output.image.scale = math.min(panels.image.w / pipeline.input.imageData.x, panels.image.h / pipeline.input.imageData.y, 1)
-		pipeline.output.image.drawOffset.x = (panels.image.w - pipeline.input.imageData.x * pipeline.output.image.scale) / 2
-		pipeline.output.image.drawOffset.y = (panels.image.h - pipeline.input.imageData.y * pipeline.output.image.scale) / 2
-	end
-end
-
-
 
 local processComplete = 0
 local processTotal = 0
@@ -321,13 +329,16 @@ local reloadDev = true
 local hist
 
 --local correctDistortion
-panels.info.elem[15].onChange = function() loadInputImage = true end
-panels.info.elem[16].onChange = function() loadInputImage = true end
-panels.info.elem[17].onChange = function() loadInputImage = true end
-panels.info.elem[18].onChange = function() loadInputImage = true end
-panels.info.elem[19].onChange = function() loadInputImage = true end
-panels.info.elem[20].onChange = function() loadInputImage = true end
-panels.info.elem[21].onChange = function() loadInputImage = true end
+local function loadInputImageCB()
+	loadInputImage = true
+end
+panels.info.elem[15].onChange = loadInputImageCB
+panels.info.elem[16].onChange = loadInputImageCB
+panels.info.elem[17].onChange = loadInputImageCB
+panels.info.elem[18].onChange = loadInputImageCB
+panels.info.elem[19].onChange = loadInputImageCB
+panels.info.elem[20].onChange = loadInputImageCB
+panels.info.elem[21].onChange = loadInputImageCB
 
 local flags = data:new(1, 1, 7) -- distortion, tca, vignetting, sRGB, WB, reconstruct
 
@@ -409,10 +420,7 @@ function love.update()
 				thread.ops.RAWtoSRGB({pipeline.input.imageData, RAW_SRGBmatrix, RAW_WBmultipliers, RAW_PREmultipliers, flags}, "dev")
 			end
 
-      flags:syncDev()
-
-			pipeline.input.imageData.__cpuDirty = true
-			pipeline.input.imageData.__gpuDirty = false
+			flags:syncDev()
 
 			if pipeline.input.portOut[0].link then
 				pipeline.input:process()
@@ -646,6 +654,12 @@ function widget.imagePan(dx, dy)
 		ox = ox - dx / displayScale * settings.scaleUI
 		oy = oy + dy / displayScale * settings.scaleUI
 
+		-- TODO: limit scrollable area
+		if ox < 0 then ox = 0 end
+		if oy < 0 then oy = 0 end
+		if ox > originalImage.x - pipeline.output.image.x then ox = originalImage.x - pipeline.output.image.x end
+		if oy > originalImage.y - pipeline.output.image.y then oy = originalImage.y - pipeline.output.image.y end
+
 		imageOffset:set(0, 0, 0, ox)
 		imageOffset:set(0, 0, 1, oy)
 		loadInputImage = true
@@ -778,21 +792,61 @@ function love.keypressed(key)
 		widget.disable()
 	end
 
-	if key == "1" then
-		displayScale = 1
-		print("Scale: 100%")
-	elseif key == "2" then
-		displayScale = 2
-		print("Scale: 200%")
-	elseif key == "3" then
-		displayScale = 4
-		print("Scale: 400%")
-	elseif key == "4" then
-		displayScale = 8
-		print("Scale: 800%")
-	elseif key == "5" then
-		displayScale = 16
-		print("Scale: 1600%")
+	local shift = love.keyboard.isDown("lshift") or love.keyboard.isDown("rshift")
+	local oldScale = displayScale
+	if shift then
+		if key == "1" then
+			displayScale = 2 ^ (0.5 * -0)
+		elseif key == "2" then
+			displayScale = 2 ^ (0.5 * -1)
+		elseif key == "3" then
+			displayScale = 2 ^ (0.5 * -2)
+		elseif key == "4" then
+			displayScale = 2 ^ (0.5 * -3)
+		elseif key == "5" then
+			displayScale = 2 ^ (0.5 * -4)
+		elseif key == "6" then
+			displayScale = 2 ^ (0.5 * -5)
+		elseif key == "7" then
+			displayScale = 2 ^ (0.5 * -6)
+		elseif key == "8" then
+			displayScale = 2 ^ (0.5 * -7)
+		elseif key == "9" then
+			displayScale = 2 ^ (0.5 * -8)
+		elseif key == "0" then
+			displayScale = 2 ^ (0.5 * -9)
+		end
+	else
+		if key == "1" then
+			displayScale = 2 ^ (0.5 * 0)
+		elseif key == "2" then
+			displayScale = 2 ^ (0.5 * 1)
+		elseif key == "3" then
+			displayScale = 2 ^ (0.5 * 2)
+		elseif key == "4" then
+			displayScale = 2 ^ (0.5 * 3)
+		elseif key == "5" then
+			displayScale = 2 ^ (0.5 * 4)
+		elseif key == "6" then
+			displayScale = 2 ^ (0.5 * 5)
+		elseif key == "7" then
+			displayScale = 2 ^ (0.5 * 6)
+		elseif key == "8" then
+			displayScale = 2 ^ (0.5 * 7)
+		elseif key == "9" then
+			displayScale = 2 ^ (0.5 * 8)
+		elseif key == "0" then
+			displayScale = 2 ^ (0.5 * 9)
+		end
+	end
+
+	if oldScale ~= displayScale then
+		print(("Scale: %.0f%%"):format(displayScale * 100))
+	end
+
+	if key == "`" then
+		print("Scale: FIT")
+		displayScale = false
 	end
 
 	if key == "r" then
@@ -906,14 +960,6 @@ function love.keypressed(key)
 		end
 
 		getNodes(nodeAddOverlay)
-	end
-
-	if key == "`" then
-		print("Scale: FIT")
-		scrollable = false
-		displayScale = false
-		imageOffset:set(0, 0, 0, 0)
-		imageOffset:set(0, 0, 1, 0)
 	end
 
 	if key == "f11" then
