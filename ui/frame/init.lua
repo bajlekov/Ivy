@@ -27,8 +27,8 @@ local function pass() end
 function frame:new(x, y, w, h)
 	x = x or 0
 	y = y or 0
-	h = h or (love.graphics.getHeight() - y)
-	w = w or (love.graphics.getWidth() - x)
+	h = h or (love.graphics.getHeight()/settings.scaleUI - y)
+	w = w or (love.graphics.getWidth()/settings.scaleUI - x)
 	local out = {
 		name = "BaseFrame",
 		direction = "V", -- V or H -> direction of splitting

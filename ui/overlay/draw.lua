@@ -29,11 +29,11 @@ return function(overlay)
 
 	-- move if extending past edge
 	-- FIXME: returne
-	if overlay.frame.y + overlay.frame.h > love.graphics.getHeight() - style.nodeBorder - 1 then
-		overlay.frame.y = love.graphics.getHeight() - overlay.frame.h - style.nodeBorder - 1
+	if overlay.frame.y + overlay.frame.h > love.graphics.getHeight()/settings.scaleUI - style.nodeBorder - 1 then
+		overlay.frame.y = love.graphics.getHeight()/settings.scaleUI - overlay.frame.h - style.nodeBorder - 1
 	end
-	if overlay.frame.x + overlay.frame.w > love.graphics.getWidth() - style.nodeBorder - 1 then
-		overlay.frame.x = love.graphics.getWidth() - overlay.frame.w - style.nodeBorder - 1
+	if overlay.frame.x + overlay.frame.w > love.graphics.getWidth()/settings.scaleUI - style.nodeBorder - 1 then
+		overlay.frame.x = love.graphics.getWidth()/settings.scaleUI - overlay.frame.w - style.nodeBorder - 1
 	end
 
 	if overlay.frame.x < style.nodeBorder + 1 then

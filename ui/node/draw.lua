@@ -26,9 +26,11 @@ local function draw(self, element)
 	local nodeHeight = style.titleHeight + style.elemHeight * self.elem.n - (self.elem.n == 0 and style.nodeBorder or style.elemBorder)
 
 	do
-		local x, y = self.ui.x, self.ui.y
-		local w = love.graphics.getWidth()
-		local h = love.graphics.getHeight()
+		local nodeHeight = nodeHeight + (self.graph and self.graph.h + 1 or 0)
+		local scale = settings.scaleUI
+		local x, y = math.round(self.ui.x*scale)/scale, math.round(self.ui.y*scale)/scale
+		local w = love.graphics.getWidth()/scale
+		local h = love.graphics.getHeight()/scale
 
 		if x > w - nodeWidth - 3 then x = w - nodeWidth - 3 end
 		if y > h - nodeHeight - 3 then y = h - nodeHeight - 3 end

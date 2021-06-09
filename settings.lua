@@ -22,7 +22,8 @@ do local _={
     1
   },
   scaleUI=1,
-  schedulerProfile=true
+  scaleUIpreference="auto",
+  schedulerProfile=false
 }
 return _
 end

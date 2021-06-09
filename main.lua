@@ -48,8 +48,28 @@ else
 	settings = loadfile("settings.lua")()
 end
 
+if jit.os=="Windows" then
+	ffi.cdef[[
+		int SetProcessDPIAware();
+		unsigned int GetDpiForSystem();
+	]]
+	ffi.C.SetProcessDPIAware()
+	local dpi = ffi.C.GetDpiForSystem()
+	if settings.scaleUIpreference=="auto" then
+		settings.scaleUI = dpi/96
+	elseif settings.scaleUIpreference==100 then
+		settings.scaleUI = 1
+	elseif settings.scaleUIpreference==200 then
+		settings.scaleUI = 2
+	else
+		settings.scaleUIpreference = "manual"
+	end
+end
 
-assert(love.window.setMode(1280, 720, {resizable = true, vsync = true, minwidth = 800, minheight = 600, msaa = 4} ))
+require "ui.scaleUI"
+local style = require "ui.style"
+
+assert(love.window.setMode(1280, 720, {resizable = true, vsync = true, minwidth = 800, minheight = 600, msaa = 4}))
 love.window.setTitle("Ivy: Initializing...")
 love.window.setIcon(love.image.newImageData("res/icon.png"))
 
@@ -460,13 +480,8 @@ function love.update()
 	end
 end
 
-
-
-local style = require("ui.style")
-
 function love.draw()
-	love.graphics.scale(settings.scaleUI, settings.scaleUI)
-
+	love.graphics.scale(settings.scaleUI)
 	love.graphics.clear(style.backgroundColor)
 
 	-- update status panel
@@ -628,8 +643,9 @@ widget.setFrame(panels.image)
 function widget.imagePan(dx, dy)
 	if scrollable then
 		local ox, oy = imageOffset:get(0, 0, 0), imageOffset:get(0, 0, 1)
-		ox = ox - dx / displayScale
-		oy = oy + dy / displayScale
+		ox = ox - dx / displayScale * settings.scaleUI
+		oy = oy + dy / displayScale * settings.scaleUI
+
 		imageOffset:set(0, 0, 0, ox)
 		imageOffset:set(0, 0, 1, oy)
 		loadInputImage = true
@@ -910,7 +926,7 @@ function love.keypressed(key)
 end
 
 function love.resize(w, h)
-	panels.ui:arrange(w, h)
+	panels.ui:arrange(w / settings.scaleUI, h / settings.scaleUI)
 	loadInputImage = true
 	dirtyImage = true
 end

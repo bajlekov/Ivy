@@ -15,6 +15,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ]]
 
+local ffi = require "ffi"
 
 local Frame = require "ui.frame"
 local Overlay = require "ui.overlay"
@@ -287,6 +288,47 @@ local cubicSpline = settingsMenu:addElem("bool", 9, "Cubic splines", false)
 cubicSpline.value = settings.cubicSpline or false
 cubicSpline.action = function(e, m) settings.cubicSpline = e.value end
 
+do
+	local scaleUI = settingsMenu:addElem("enum", 10, "Scale UI", {"UI: 100%", "UI: 200%", "UI: Auto", "UI: Manual"}, 3)
+	if settings.scaleUIpreference==100 then
+		scaleUI.value = 1
+	elseif settings.scaleUIpreference==200 then
+		scaleUI.value = 2
+	elseif settings.scaleUIpreference=="auto" then
+		scaleUI.value = 3
+	else
+		scaleUI.value = 4
+	end
+
+	scaleUI.action = function(e, m)
+		if e.value==1 then
+			settings.scaleUIpreference = 100
+			settings.scaleUI = 1
+		elseif e.value==2 then
+			settings.scaleUIpreference = 200
+			settings.scaleUI = 2
+		elseif e.value==3 then
+			settings.scaleUIpreference = "auto"
+			
+			if jit.os=="Windows" then
+				ffi.cdef[[
+					unsigned int GetDpiForSystem();
+				]]
+				local dpi = ffi.C.GetDpiForSystem()
+				settings.scaleUI = dpi/96
+			else
+				settings.scaleUI = 1
+			end
+
+		else
+			settings.scaleUIpreference = "manual"
+		end
+		
+		require "ui.style".resize()
+		love.resize(love.graphics.getWidth(), love.graphics.getHeight())
+		require "tools.pipeline".rescaleInputOutput()
+	end
+end
 
 histPanel:addElem("color", 1, "Color picker")
 

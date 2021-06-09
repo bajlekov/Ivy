@@ -15,17 +15,21 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ]]
 
-local font = love.graphics.newFont("res/Carlito-Bold.ttf", 24)
+local style = require "ui.style"
 
 local notice = {}
 
 function notice.blocking(text, clear)
+	local scale = settings.scaleUI
 	local w, h = love.window.getMode()
+	w = w/scale
+	h = h/scale
 	love.graphics.origin()
 	love.graphics.setColor(0.5, 0.5, 0.5, clear and 1.0 or 0.5)
 	love.graphics.rectangle( "fill", 0, 0, w, h )
+	love.graphics.scale(scale)
+	love.graphics.setFont(style.noticeFont)
 
-	love.graphics.setFont(font)
 	love.graphics.setColor(1, 1, 1, 1)
 	love.graphics.printf(text, 0, 60, w, "center")
 
@@ -33,10 +37,14 @@ function notice.blocking(text, clear)
 end
 
 function notice.overlay(text, color)
+	local scale = settings.scaleUI
 	local w, h = love.window.getMode()
+	w = w/scale
+	h = h/scale
 	love.graphics.origin()
+	love.graphics.scale(scale)
+	love.graphics.setFont(style.noticeFont)
 
-	love.graphics.setFont(font)
 	love.graphics.setColor(color or {0.9, 0.9, 0.9, 0.6})
 	love.graphics.printf(text, 0, 60, w, "center")
 end

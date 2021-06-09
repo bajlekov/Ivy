@@ -28,6 +28,8 @@ local formats = love.graphics.getImageFormats()
 assert(formats.rgba32f, "RGBA32F format not supported")
 
 function format.rgba8(image)
+	love.graphics.push()
+	love.graphics.origin()
 	local x, y = image:getPixelDimensions()
 
 	local canvas = love.graphics.newCanvas(x, y, {format = "rgba32f"})
@@ -63,6 +65,7 @@ function format.rgba8(image)
 		end
 	end
 
+	love.graphics.pop()
 	return data
 end
 
