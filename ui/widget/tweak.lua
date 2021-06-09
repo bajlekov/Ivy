@@ -24,9 +24,11 @@ local function tweak(mode, p1, p2, p3)
 
 	local node
 
-	local dx, dy =  0,  0
+	local dx, dy = 0, 0
 	local ox, oy = -1, -1
 	local cx, cy = -1, -1
+
+	local path = {} -- keep update path path history
 
 	local update = false
 
@@ -37,23 +39,25 @@ local function tweak(mode, p1, p2, p3)
 
 	local function tweakDragCallback(mouse)
 		node.dirty = true
-		local shift = love.keyboard.isDown("lshift") or love.keyboard.isDown("rshift")
-		dx = dx + (shift and mouse.dx/10 or mouse.dx)
-		dy = dy + (shift and mouse.dy/10 or mouse.dy)
 		update = true
+		dx = dx + (cs and mouse.dx / 10 or mouse.dx)
+		dy = dy + (cs and mouse.dy / 10 or mouse.dy)
 		cx, cy = widget.imageCoord(mouse.lx - mouse.ox + mouse.x, mouse.ly - mouse.oy + mouse.y)
+		table.insert(path, {x = cx, y = cy, ctrl = mouse.ctrl, alt = mouse.alt, shift = mouse.shift})
 	end
 
 	local function tweakPressCallback(mouse)
 		node.dirty = true
 		update = true
-    dx, dy = 0, 0
-    ox, oy = widget.imageCoord(mouse.lx, mouse.ly)
+		dx, dy = 0, 0
+		ox, oy = widget.imageCoord(mouse.lx, mouse.ly)
 		cx, cy = ox, oy
-		if mode=="adjust" then
+		path = { {x = cx, y = cy, ctrl = mouse.ctrl, alt = mouse.alt, shift = mouse.shift} }
+		if mode == "adjust" then
 			cursor.sizeV()
 		end
-  end
+	end
+
 	local function tweakScrollCallback(x, y)
 		if p1 or p2 or p3 then
 			local shift = love.keyboard.isDown("lshift") or love.keyboard.isDown("rshift")
@@ -86,6 +90,11 @@ local function tweak(mode, p1, p2, p3)
 		local x, y = dx, dy
 		dx, dy = 0, 0
 		return x, y
+	end
+	function o.getUpdatePath()
+		local out = path
+		path = {}
+		return out
 	end
 
 	local function setToolCallback(elem)
