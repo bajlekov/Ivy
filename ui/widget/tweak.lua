@@ -102,7 +102,9 @@ local function tweak(mode, p1, p2, p3)
 			if mode=="paint" then
 				widget.cursor.tweak = cursor.none
 				widget.draw.tweak.cursor = function(mouse)
-					local x, y = love.mouse.getPosition( )
+					local x, y = love.mouse.getPosition()
+					x = x / settings.scaleUI
+					y = y / settings.scaleUI
 
 					love.graphics.setLineWidth(4)
 					love.graphics.setColor(0, 0, 0, 0.3)
