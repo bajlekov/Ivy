@@ -367,24 +367,28 @@ do
 			local i = t.inputSourceBlack(self, 6)
 
 			local ox, oy = self.data.tweak.getOrigin()
-			local cx, cy, update = self.data.tweak.getCurrent()
-			local p = t.autoTempBuffer(self, -1, 1, 1, 11) -- [x, y, value, flow, size, fall-off, range, fall-off, patch, sample x, sample y]
+			local path = self.data.tweak.getUpdatePath()
 
-			local ctrl = love.keyboard.isDown("lctrl") or love.keyboard.isDown("rctrl")
-			local alt = love.keyboard.isDown("lalt") or love.keyboard.isDown("ralt")
+			if #path > 0 then
+				local p = t.autoTempBuffer(self, -1, #path, 11, 1) -- [x, y, value, flow, size, fall-off, range, fall-off, patch, sample x, sample y]
+				print(p.cs)
+				p.cs = "Y"
 
-			if update then
-				p:set(0, 0, 0, cx)
-				p:set(0, 0, 1, cy)
-				p:set(0, 0, 2, ctrl and 0 or self.elem[2].value)
-				p:set(0, 0, 3, self.elem[3].value)
-				p:set(0, 0, 4, self.elem[4].value)
-				p:set(0, 0, 5, self.elem[5].value)
-				p:set(0, 0, 6, self.portIn[6].link and self.elem[6].value^2 or -1) -- range -1: disabled
-				p:set(0, 0, 7, self.elem[7].value)
-				p:set(0, 0, 8, self.elem[8].value)
-				p:set(0, 0, 9, alt and ox or cx)
-				p:set(0, 0, 10, alt and oy or cy)
+				for idx, point in ipairs(path) do
+					idx = idx - 1
+					p:set(idx, 0, 0, point.x)
+					p:set(idx, 1, 0, point.y)
+					p:set(idx, 2, 0, point.ctrl and (1 - self.elem[2].value) or (self.elem[2].value))
+					p:set(idx, 3, 0, self.elem[3].value)
+					p:set(idx, 4, 0, self.elem[4].value)
+					p:set(idx, 5, 0, self.elem[5].value)
+					p:set(idx, 6, 0, self.portIn[6].link and self.elem[6].value^2 or -1) -- range -1: disabled
+					p:set(idx, 7, 0, self.elem[7].value)
+					p:set(idx, 8, 0, self.elem[8].value)
+					p:set(idx, 9, 0, point.alt and ox or point.x)
+					p:set(idx, 10, 0, point.alt and oy or point.y)
+				end
+				p:hostWritten() -- all host data is overwritten
 				p:syncDev()
 
 				thread.ops.paintSmart({link.data, i, p}, self)
@@ -415,7 +419,7 @@ do
 		n:addElem("float", 7, "Fall-off", 0, 1, 0.5)
 		n:addElem("bool", 8, "Smart Patch", false)
 
-		n.data.tweak = require "ui.widget.tweak"("paint", n.elem[4], n.elem[5], n.elem[6])
+		n.data.tweak = require "ui.widget.tweak"("paint", n.elem[4], n.elem[5], n.elem[2])
 		n.data.tweak.toolButton(n, 1, "Paint")
 
 		n:addElem("button", 9, "Load", function()
