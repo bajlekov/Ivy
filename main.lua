@@ -327,6 +327,7 @@ local procTime = 0
 
 local reloadDev = true
 local hist
+local stats = {dev = 0, host = 0}
 
 --local correctDistortion
 local function loadInputImageCB()
@@ -370,6 +371,9 @@ function love.update()
 			assert(id == currentID)
 			currentID = false
 			processComplete = processComplete + 1
+		elseif code == "stats" then
+			stats.dev = messageIn.dev or 0
+			stats.host = messageIn.host or 0
 		end
 	end
 
@@ -493,16 +497,15 @@ function love.draw()
 	love.graphics.clear(style.backgroundColor)
 
 	-- update status panel
-	local processor = tostring("OpenCL "..panels.parameters.elem[3].right.." / "..jit.arch.." LuaJIT")
-	panels.status.leftText = string.format(
-		"UI: %.1ffps | Processing: %.1fms (%s) | Memory: CPU %.1fMB, GPU %.1fMB (Temp: CPU %.1fMB, GPU %.1fMB)",
-		love.timer.getFPS(), procTime * 1000, processor,
-		--data.stats.data.cpu_max/1024/1024, data.stats.data.gpu_max/1024/1024,
-		--data.stats.thread.cpu_max/1024/1024, data.stats.thread.gpu_max/1024/1024)
-    -999, -999, -999, -999)
-	--data.stats.clearCPU()
-	--data.stats.clearGPU()
-
+	panels.status.leftText =
+		string.format(
+		"%s: %.1fms | Device: %.1fMB | Host: %.1fMB | UI: %.1ffps ",
+		panels.parameters.elem[3].right,
+		procTime * 1000,
+		data.stats.getMemDevMax() / 1024 / 1024 + stats.dev / 1024 / 1024,
+		data.stats.getMemHostMax() / 1024 / 1024 + stats.host / 1024 / 1024,
+		love.timer.getFPS()
+	)
 
 	panels.ui:draw()
 
