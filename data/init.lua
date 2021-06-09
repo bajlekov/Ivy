@@ -21,6 +21,7 @@ local ocl = require "lib.opencl"
 
 local data = {type="data"}
 data.meta = {__index = data}
+data.stats = require "data.stats"
 
 local devContext, devQueue
 function data.initDev(c, q)
@@ -146,21 +147,22 @@ ffi.cdef[[
 
 local function ivyBufferFree(buffer)
   if buffer[0].dataHost~=NULL then
+    assert(buffer[0].strHost~=NULL)
+    data.stats.freeHost(buffer[0].dataHost)
     ffi.C.free(buffer[0].dataHost)
-    buffer[0].dataHost = NULL
-  end
-  if buffer[0].strHost~=NULL then
     ffi.C.free(buffer[0].strHost)
+    buffer[0].dataHost = NULL
     buffer[0].strHost = NULL
   end
   if buffer[0].dataDev~=NULL then
+    assert(buffer[0].strDev~=NULL)
+    data.stats.freeHost(buffer[0].dataDev)
     devContext.release_mem_object(buffer[0].dataDev)
-    buffer[0].dataDev = NULL
-  end
-  if buffer[0].strDev~=NULL then
     devContext.release_mem_object(buffer[0].strDev)
+    buffer[0].dataDev = NULL
     buffer[0].strDev = NULL
   end
+
   ffi.C.free(buffer)
 end
 
@@ -210,6 +212,8 @@ function data:allocHost(transfer)
 		self.buffer[0].strHost[4] = self.sy
 		self.buffer[0].strHost[5] = self.sz
     self.buffer[0].dirtyHost = 1
+
+    self.stats.allocHost(self.buffer[0].dataHost, ffi.sizeof("host_float")*self.x*self.y*self.z + ffi.sizeof("host_int")*6)
   end
   if transfer then
     self:syncHost()
@@ -234,6 +238,8 @@ function data:allocDev(transfer)
     strDev[5] = self.sz
     devQueue:enqueue_write_buffer(self.buffer[0].strDev, true, strDev)
     self.buffer[0].dirtyDev = 1
+
+    self.stats.allocDev(self.buffer[0].dataDev, ffi.sizeof("cl_float")*self.x*self.y*self.z + ffi.sizeof("cl_int")*6)
   end
   if transfer then
     self:syncDev()
@@ -249,6 +255,8 @@ function data:freeHost(transfer)
   end
   if self.buffer[0].dataHost~=NULL then
     assert(self.buffer[0].strHost~=NULL)
+    self.stats.freeHost(self.buffer[0].dataHost)
+
     ffi.C.free(self.buffer[0].dataHost)
     ffi.C.free(self.buffer[0].strHost)
     self.buffer[0].dataHost = NULL
@@ -266,6 +274,8 @@ function data:freeDev(transfer)
   end
 	if self.buffer[0].dataDev~=NULL then
     assert(self.buffer[0].strDev~=NULL)
+    self.stats.freeDev(self.buffer[0].dataDev)
+
     devContext.release_mem_object(self.buffer[0].dataDev)
     devContext.release_mem_object(self.buffer[0].strDev)
     self.buffer[0].dataDev = NULL

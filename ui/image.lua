@@ -20,6 +20,7 @@ local data = require "data"
 
 local image = {type="image"}
 image.meta = {__index = image}
+image.stats = require "data.stats"
 
 local devContext, devQueue
 function image.initDev(c, q)
@@ -54,22 +55,31 @@ ffi.cdef[[
 
 local function ivyImageFree(buffer)
   if buffer[0].dataHost~=NULL then
-    -- imageData cleans up its own memory
-    buffer[0].dataHost = NULL
-  end
-  if buffer[0].strHost~=NULL then
+    assert(buffer[0].strHost~=NULL)
+    data.stats.freeHost(buffer[0].dataHost)
+    -- imageData cleans up its own host memory
     ffi.C.free(buffer[0].strHost)
     buffer[0].strHost = NULL
+    buffer[0].dataHost = NULL
   end
   if buffer[0].dataDev~=NULL then
+    assert(buffer[0].strDev~=NULL)
+    data.stats.freeDev(buffer[0].dataDev)
     devContext.release_mem_object(buffer[0].dataDev)
-    buffer[0].dataDev = NULL
-  end
-  if buffer[0].strDev~=NULL then
     devContext.release_mem_object(buffer[0].strDev)
+    buffer[0].dataDev = NULL
     buffer[0].strDev = NULL
   end
+
   ffi.C.free(buffer)
+end
+
+local function allocHost()
+  print("Warning: Allocating host data of Image is unsupported")
+end
+
+local function freeHost()
+  print("Warning: Freeing host data of Image is unsupported")
 end
 
 function image:new(x, y)
@@ -83,10 +93,23 @@ function image:new(x, y)
   i.image:setFilter("linear", "nearest")
   ffi.fill(i.imageData:getPointer(), i.x*i.y*4, 255)
 
-  -- regular data buffer
+  -- regular data buffer allocation
   i.data = data:new(i.x, i.y, 1)
 	i.data.buffer[0].dataHost = i.imageData:getPointer()
-  ffi.gc(i.data.buffer, ivyImageFree)
+  i.data.buffer[0].strHost = ffi.cast("host_int *", ffi.C.malloc(ffi.sizeof("host_int") * 6))
+	i.data.buffer[0].strHost[0] = i.x
+	i.data.buffer[0].strHost[1] = i.y
+	i.data.buffer[0].strHost[2] = 1
+	i.data.buffer[0].strHost[3] = 1
+	i.data.buffer[0].strHost[4] = i.x
+	i.data.buffer[0].strHost[5] = 0
+
+  image.stats.allocHost(i.data.buffer[0].dataHost, ffi.sizeof("uint32_t")*i.x*i.y + ffi.sizeof("host_int")*6)
+  i.data.allocHost = allocHost -- disable host allocating
+  i.data.freeHost = freeHost -- disable host freeing
+
+  ffi.gc(i.data.buffer, ivyImageFree) -- free whole struct when not used
+
   i.data.cs = "SRGB"
   i.scale = 1
   i.drawOffset = {x=0, y=0}
