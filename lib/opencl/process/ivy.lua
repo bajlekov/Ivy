@@ -151,6 +151,7 @@ function process:getKernel(name, buffers)
 		if #source>0 then
 			local program = self.context:create_program_with_source(source)
 			if not pcall(program.build, program, tools.buildParams) then
+				print("ERROR ["..name.."]: \n"..program:get_build_info(self.device, "log"))
 				messageCh:push{"error", "ERROR ["..name.."]: \n"..program:get_build_info(self.device, "log")}
 				return nil
 			else
