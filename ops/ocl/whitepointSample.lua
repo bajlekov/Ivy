@@ -39,13 +39,13 @@ kernel sample(I, P, S)
   const y = P[1]
 
   var s = vec(0.0)
-	for i = -2, 2 do
-		for j = -2, 2 do
+	for i = -15, 15 do
+		for j = -15, 15 do
 			s = s + I[x+i, y+j]
     end
   end
 
-  s = s/25.0
+  s = s/961
   s = s/s.y
   const wp = vec(0.95047, 1.0, 1.08883)
 
