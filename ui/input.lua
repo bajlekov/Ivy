@@ -28,6 +28,9 @@ local inputEvent = {
   ox = 0,
   oy = 0,
   button = false,
+  alt = false,
+  ctrl = false,
+  shift = false,
 }
 
 
@@ -35,9 +38,26 @@ local overlayInput = require "ui.overlay.input"
 local nodeInput = require "ui.node.input"
 local frameInput = require "ui.frame.input"
 
+
+function input.keyPressed(key)
+  if key=="lalt" or key=="ralt" then inputEvent.alt = true end
+  if key=="lctrl" or key=="rctrl" then inputEvent.ctrl = true end
+  if key=="lshift" or key=="rshift" then inputEvent.shift = true end
+
+  input.mouseMoved(inputEvent.x, inputEvent.y, 0, 0)
+end
+
+function input.keyReleased(key)
+  if key=="lalt" or key=="ralt" then inputEvent.alt = false end
+  if key=="lctrl" or key=="rctrl" then inputEvent.ctrl = false end
+  if key=="lshift" or key=="rshift" then inputEvent.shift = false end
+
+  input.mouseMoved(inputEvent.x, inputEvent.y, 0, 0)
+end
+
+
 function input.mousePressed(x, y, button)
-  -- release any previous mouse drag event
-  input.mouseReleased(x, y)
+  input.mouseReleased(x, y) -- release any previous mouse drag event
 
   inputEvent.ox = x
   inputEvent.oy = y
@@ -63,6 +83,7 @@ function input.mouseMoved(x, y, dx, dy)
   inputEvent.y = y
   inputEvent.dx = dx
   inputEvent.dy = dy
+
   if moveCallback then
     releaseCallback = moveCallback(inputEvent)
   end

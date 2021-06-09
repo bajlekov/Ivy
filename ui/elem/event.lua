@@ -43,13 +43,11 @@ function event.press.float(elem, mouse)
 end
 function event.move.float(elem, mouse)
 	if mouse.button==1 and not elem.disabled then
-		local shift = love.keyboard.isDown("lshift") or love.keyboard.isDown("rshift")
-		local ctrl = love.keyboard.isDown("lctrl") or love.keyboard.isDown("rctrl")
 		local dx, dy = mouse.x - mouse.ox, mouse.y - mouse.oy
 		local change = dx / (elem.parent.w or style.nodeWidth) -- FIXME: parameters in UI have different width
 		local size = elem.max - elem.min
-		if ctrl then change = math.floor(change * 20) / 20 end
-		local value = originalElementValue + change * size * (shift and 0.1 or 1)
+		if mouse.ctrl then change = math.floor(change * 20) / 20 end
+		local value = originalElementValue + change * size * (mouse.shift and 0.1 or 1)
 		if value < elem.min then value = elem.min end
 		if value > elem.max then value = elem.max end
 		elem.value = value
@@ -139,7 +137,13 @@ function event.press.enum(elem, mouse)
 		return
 	end
 end
-function event.release.enum(elem) elem.tint = nil end
+function event.release.enum(elem, mouse)
+	elem.tint = nil
+
+	if elem.action then
+		elem.action(elem, mouse)
+	end
+end
 
 function event.press.button(elem, mouse)
 	if mouse.button == 1 then

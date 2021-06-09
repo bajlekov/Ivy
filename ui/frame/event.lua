@@ -21,51 +21,61 @@ local style = require "ui.style"
 
 event.onAction = {}
 
-local function mouseOverElem(frame, mouse) -- vertical elems
-	local y = frame.y + style.nodeBorder + 1 + (frame.headless and 0 or style.titleHeight)
-	local h = style.elemHeight
-	local i = math.floor((mouse.y - y) / h) + 1
-	if frame.elem[i] then
-		local x = frame.x + style.nodeBorder + 1
-		local y = y + h *(i-1)
-		local w = frame.w - 2*style.nodeBorder - 2
-		local h = style.elemHeight - style.elemBorder
-		if mouse.x>=x and mouse.x<x+w and mouse.y>=y and mouse.y<y+h then
-			return frame.elem[i]
+local function mouseOverElem(frame, x, y) -- vertical elems
+	local xmin = frame.x + style.nodeBorder + 1
+	local xmax = frame.x + frame.w - style.nodeBorder - 1
+
+	if x >= xmin and x < xmax then
+		local fy = frame.y + style.nodeBorder + 1 + (frame.headless and 0 or style.titleHeight)
+		local i = math.floor((y - fy) / style.elemHeight) + 1
+		if frame.elem[i] then
+			local ymin = fy + style.elemHeight * (i - 1)
+			local ymax = ymin + style.elemHeight - style.elemBorder
+			if y >= ymin and y < ymax then
+				return frame.elem[i], xmin, ymin
+			end
 		end
 	end
-	return false
+
+	return false , nil, nil
 end
 
 local elemInput = require "ui.elem.input"
 
 function event.onAction.panel(frame, mouse)
-	local elem = mouseOverElem(frame, mouse)
+	local elem, ex, ey = mouseOverElem(frame, mouse.x, mouse.y)
 	if elem then
+		mouse.ex = ex
+		mouse.ey = ey
 		return elemInput.press(elem, mouse)
 	end
 end
 
 
-local function mouseOverElem(frame, mouse) -- horizontal elems
-	local x = frame.x + style.nodeBorder + 1
-	local w = style.nodeWidth + 1
-	local i = math.floor((mouse.x - x) / w) + 1
-	if frame.elem[i] then
-		local x = x + w*(i - 1)
-		local y = frame.y + style.nodeBorder + 1 + (frame.headless and 0 or style.titleHeight)
-		local w = style.nodeWidth
-		local h = style.elemHeight - style.elemBorder
-		if mouse.x>=x and mouse.x<x+w and mouse.y>=y and mouse.y<y+h then
-			return frame.elem[i]
+local function mouseOverElem(frame, x, y) -- horizontal elems
+	local ymin = frame.y + style.nodeBorder + 1 + (frame.headless and 0 or style.titleHeight)
+	local ymax = ymin + style.elemHeight - style.elemBorder
+
+	if y >= ymin and y < ymax then
+		local fx = frame.x + style.nodeBorder + 1
+		local i = math.floor((x - fx) / (style.nodeWidth + style.elemBorder)) + 1
+		if frame.elem[i] then
+			local xmin = fx + (style.nodeWidth + style.elemBorder) * (i - 1)
+			local xmax = xmin + style.nodeWidth
+			if x >= xmin and x < xmax then
+				return frame.elem[i], xmin, ymin
+			end
 		end
 	end
-  return false
+
+	return false, nil, nil
 end
 
 function event.onAction.toolbar(frame, mouse)
-	local elem = mouseOverElem(frame, mouse)
+	local elem, ex, ey = mouseOverElem(frame, mouse.x, mouse.y)
 	if elem then
+		mouse.ex = ex
+		mouse.ey = ey
 		return elemInput.press(elem, mouse)
 	end
 end

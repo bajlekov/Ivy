@@ -55,26 +55,29 @@ local function mouseOverGraph(node, x, y)
 		local ymin = node.ui.y + nodeHeight + style.nodeBorder
 		local ymax = ymin + node.graph.h
 		if y >= ymin and y < ymax then
-			--debug.outline(xmin, ymin, xmax, ymax)
 			return true
 		end
 	end
 	return false
 end
 
-local function mouseOverElem(node, x, y) -- FIXME: use non-loop method as in frames and overlays
+local function mouseOverElem(node, x, y)
 	local xmin = node.ui.x
 	local xmax = xmin + (node.w or style.nodeWidth)
+
 	if x >= xmin and x < xmax then
-		for i = 1, node.elem.n do
-			if node.elem[i] then
-				local ymin = node.ui.y + style.titleHeight + style.elemHeight * (i - 1)
-				local ymax = ymin + style.elemHeight - style.elemBorder
-				if y >= ymin and y < ymax then
-					return node.elem[i], xmin, ymin
-				end
+		local i = math.floor((y - node.ui.y - style.titleHeight) / style.elemHeight) + 1
+		if node.elem[i] then
+
+			local ymin = node.ui.y + style.titleHeight + style.elemHeight * (i - 1)
+			local ymax = ymin + style.elemHeight - style.elemBorder
+
+			if y >= ymin and y < ymax then
+				return node.elem[i], xmin, ymin
 			end
+
 		end
+		
 	end
 	return false, nil, nil
 end
@@ -90,13 +93,13 @@ local function mouseOverPortIn(node, x, y)
 				return node.portIn[0]
 			end
 		end
-		for i = 1, node.elem.n do
-			if node.portIn[i] then
-				local ymin = node.ui.y + style.titleHeight + style.elemHeight * (i - 1)
-				local ymax = ymin + style.elemHeight - style.elemBorder
-				if x >= xmin and x < xmax and y >= ymin and y < ymax then
-					return node.portIn[i]
-				end
+
+		local i = math.floor((y - node.ui.y - style.titleHeight) / style.elemHeight) + 1
+		if node.portIn[i] then
+			local ymin = node.ui.y + style.titleHeight + style.elemHeight * (i - 1)
+			local ymax = ymin + style.elemHeight - style.elemBorder
+			if x >= xmin and x < xmax and y >= ymin and y < ymax then
+				return node.portIn[i]
 			end
 		end
 	end
@@ -114,13 +117,13 @@ local function mouseOverPortOut(node, x, y)
 				return node.portOut[0]
 			end
 		end
-		for i = 1, node.elem.n do
-			if node.portOut[i] then
-				local ymin = node.ui.y + style.titleHeight + style.elemHeight * (i - 1)
-				local ymax = ymin + style.elemHeight - style.elemBorder
-				if y >= ymin and y < ymax then
-					return node.portOut[i]
-				end
+
+		local i = math.floor((y - node.ui.y - style.titleHeight) / style.elemHeight) + 1
+		if node.portOut[i] then
+			local ymin = node.ui.y + style.titleHeight + style.elemHeight * (i - 1)
+			local ymax = ymin + style.elemHeight - style.elemBorder
+			if x >= xmin and x < xmax and y >= ymin and y < ymax then
+				return node.portOut[i]
 			end
 		end
 	end
@@ -197,9 +200,9 @@ function input.press(mouse)
 			end
 
 			local elem, ex, ey = mouseOverElem(n, mouse.x, mouse.y)
-			mouse.ex = ex
-			mouse.ey = ey
 			if elem then
+				mouse.ex = ex
+				mouse.ey = ey
 				return true, elemInput.press(elem, mouse)
 			end
 

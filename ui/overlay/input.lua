@@ -40,27 +40,28 @@ local function mouseOverElem(frame, x, y)
 	if x >= xmin and x < xmax then
 		local i = math.floor((y - frame.y) / style.elemHeight) + 1
 		if frame.elem[i] then
-
 			local ymin = frame.y + style.elemHeight * (i - 1)
 			local ymax = ymin + style.elemHeight - style.elemBorder
-
 			if y >= ymin and y < ymax then
-				return frame.elem[i]
+				return frame.elem[i], xmin, ymin
 			end
-
 		end
 	end
-	return false
+	return false, nil, nil
 end
 
 local elemInput = require "ui.elem.input"
 
 function input.press(mouse) --FIXME: use event system!!!
 	if mouse.button == 1 and overlay.frame and overlay.frame.visible and mouseOverFrame(overlay.frame, mouse.x, mouse.y) then
-		local elem = mouseOverElem(overlay.frame, mouse.x, mouse.y)
+		
+		local elem, ex, ey = mouseOverElem(overlay.frame, mouse.x, mouse.y)
 		if elem then
+			mouse.ex = ex
+			mouse.ey = ey
 			return true, elemInput.press(elem, mouse)
 		end
+		
 		return true
 	else -- button press outside of frame -> exit menu
 		if overlay.frame then overlay.frame.visible = false end
