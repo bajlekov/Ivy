@@ -25,15 +25,12 @@ style.elemHeight = 14
 
 style.shadow = true
 
-
 -- fonts
-style.titleFont = "res/Carlito-Bold.ttf"
-style.elemFont = "res/Carlito-Regular.ttf"
-style.labelFont = "res/Carlito-Bold.ttf"
-style.messageFont = "res/Cousine-Regular.ttf"
-style.noticeFont = "res/Carlito-Bold.ttf"
-
-
+style.titleFontPath = "res/Carlito-Bold.ttf"
+style.elemFontPath = "res/Carlito-Regular.ttf"
+style.labelFontPath = "res/Carlito-Bold.ttf"
+style.messageFontPath = "res/Cousine-Regular.ttf"
+style.noticeFontPath = "res/Carlito-Bold.ttf"
 
 local colors = {
 	red = 0xf44336,
@@ -102,13 +99,16 @@ style.linkColor = style.portOnColor
 style.linkDragColor = style.orange
 
 
--- post-process
-style.smallFont = love.graphics.newFont(style.elemFont, 10)
-style.titleFont = love.graphics.newFont(style.titleFont, style.titleHeight - style.nodeBorder*3)
-style.elemFont = love.graphics.newFont(style.elemFont, style.elemHeight - style.elemBorder*2)
-style.labelFont = love.graphics.newFont(style.labelFont, style.elemHeight - style.elemBorder*2)
-style.messageFont = love.graphics.newFont(style.messageFont, style.elemHeight - style.elemBorder*2)
-style.noticeFont = love.graphics.newFont(style.noticeFont, 32)
+-- dynamic resizing based on UI scale
+function style.resize()
+	style.smallFont = love.graphics.newFont(style.elemFontPath, 10*settings.scaleUI)
+	style.titleFont = love.graphics.newFont(style.titleFontPath, (style.titleHeight - style.nodeBorder*3)*settings.scaleUI)
+	style.elemFont = love.graphics.newFont(style.elemFontPath, (style.elemHeight - style.elemBorder*2)*settings.scaleUI)
+	style.labelFont = love.graphics.newFont(style.labelFontPath, (style.elemHeight - style.elemBorder*2)*settings.scaleUI)
+	style.messageFont = love.graphics.newFont(style.messageFontPath, (style.elemHeight - style.elemBorder*2)*settings.scaleUI)
+	style.noticeFont = love.graphics.newFont(style.noticeFontPath, 32*settings.scaleUI)
+end
+style.resize()
 
 function style.tint(c, t)
 	if not t then return c end
