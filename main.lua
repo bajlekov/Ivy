@@ -739,6 +739,8 @@ function love.mousemoved(x, y, dx, dy)
 end
 
 function love.mousepressed(x, y, button, isTouch)
+	uiInput.mousePressed(x / settings.scaleUI, y / settings.scaleUI, button)
+
 	if not mousePressed then
 		if uiInput.mouseOverFrame(widget.frame) then
 			widget.enable()
@@ -747,15 +749,15 @@ function love.mousepressed(x, y, button, isTouch)
 		end
 	end
 
-	mousePressed = true
-	uiInput.mousePressed(x / settings.scaleUI, y / settings.scaleUI, button)
+	mousePressed = true -- TODO: only refresh on change
 	dirtyImage = true
 	cycles = {} -- clear cycle indication
 end
 
 function love.mousereleased(x, y, button, isTouch)
-	mousePressed = false
 	uiInput.mouseReleased(x / settings.scaleUI, y / settings.scaleUI, button)
+
+	mousePressed = false
 	cycles = nodeDFS(node) -- populate cycle indication
 	dirtyImage = true
 
@@ -778,6 +780,8 @@ end
 
 local fullscreen = false
 function love.keyreleased(key)
+	uiInput.keyReleased(key)
+
 	if uiInput.mouseOverFrame(widget.frame) then
 		widget.enable()
 	else
@@ -786,6 +790,8 @@ function love.keyreleased(key)
 end
 
 function love.keypressed(key)
+	uiInput.keyPressed(key)
+
 	if uiInput.mouseOverFrame(widget.frame) then
 		widget.enable()
 	else
