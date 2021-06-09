@@ -351,6 +351,31 @@ function ops.setWP(x, y)
 end
 
 
+local function processFeatherMask(self)
+	self.procType = "dev"
+	local m = t.inputSourceBlack(self, 0)
+	local g = t.inputSourceBlack(self, 1)
+	local r = t.inputParam(self, 2)
+	local f = t.inputParam(self, 3)
+	local o = t.autoOutputSink(self, 0, m:shape())
+	local n = t.plainParam(self, 4)
+	thread.ops.maskRefine({m, g, r, f, o, n}, self)
+end
+
+function ops.featherMask(x, y)
+	local n = node:new("Feather Mask")
+	n:addPortIn(0, "XYZ")
+	n:addPortIn(1, "LAB"):addElem("text", 1, "Guide")
+	n:addPortIn(2, "Y"):addElem("float", 2, "Range", 0, 0.5, 0.2)
+	n:addPortIn(3, "Y"):addElem("float", 3, "Fall-off", 0, 1, 0.5)
+	n:addElem("float", 4, "Kernel Size", 0, 10, 2)
+	n:addPortOut(0, "XYZ")
+	n.process = processFeatherMask
+
+	n:setPos(x, y)
+	return n
+end
+
 
 do
 	local pool = require "tools.imagePool"
