@@ -23,8 +23,8 @@ local node = require "ui.node"
 local nodeHeight
 
 local function mouseOverNode(node, x, y)
-	local left = next(node.portIn)
-	local right = next(node.portOut)
+	local left = next(node.portIn) and true
+	local right = next(node.portOut) and true
 	local w = node.w or style.nodeWidth
 
 	nodeHeight = style.titleHeight + style.elemHeight * node.elem.n - (node.elem.n == 0 and style.nodeBorder or style.elemBorder)

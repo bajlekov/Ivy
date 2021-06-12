@@ -57,8 +57,8 @@ function overlay.show(frame, mouse) -- frame: reference frame for x, y coordinat
 	require "ui.widget".disable()
 	overlay.default()
 	overlay.frame.visible = true
-	overlay.frame.x = mouse.lx + frame.x
-	overlay.frame.y = mouse.ly + frame.y
+	overlay.frame.x = mouse.x
+	overlay.frame.y = mouse.y
 end
 
 function overlay.set(f, x, y)
