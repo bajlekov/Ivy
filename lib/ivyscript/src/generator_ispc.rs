@@ -99,7 +99,7 @@ impl<'a> Generator<'a> {
 
         // parse function
         if let Some(Stmt::Function { args, body, .. }) = self.functions.borrow().get(&name) {
-            let mut def = String::from("(varying int _x, varying int _y, varying int _z, \n");
+            let mut def = "(varying int _x, varying int _y, varying int _z, \n".to_string();
             let mut decl;
 
             for (k, v) in args.iter().enumerate() {
@@ -142,7 +142,7 @@ impl<'a> Generator<'a> {
                     VarType::VecArray(4, _, a, b, c, d) => {
                         format!("float<3> {}[{}][{}][{}][{}]", v, a, b, c, d)
                     }
-                    _ => String::from("/*** Error: Unknown type ***/"),
+                    _ => "/*** Error: Unknown type ***/".into(),
                 };
 
                 if k < args.len() - 1 {
@@ -245,7 +245,7 @@ impl<'a> Generator<'a> {
                 .replace(self.generated_constants.borrow().clone().unwrap());
             self.used_functions.borrow_mut().clear();
 
-            let mut a = String::from("\n\tuniform int _dim[],\n");
+            let mut a = "\n\tuniform int _dim[],\n".to_string();
             for (k, v) in args.iter().enumerate() {
                 let arg = format!(
                     "{} {}{}",
@@ -260,9 +260,9 @@ impl<'a> Generator<'a> {
                     v,
                     match input[k] {
                         VarType::Buffer { .. } => format!("[], uniform int ___str_{}[]", v),
-                        VarType::IntArray(1, ..) => String::from("[]"),
-                        VarType::FloatArray(1, ..) => String::from("[]"),
-                        _ => String::from(""),
+                        VarType::IntArray(1, ..) => "[]".into(),
+                        VarType::FloatArray(1, ..) => "[]".into(),
+                        _ => String::new(),
                     },
                 );
 
@@ -287,7 +287,7 @@ uniform int _zmin = _dim[2] + taskIndex2*_dim[8];
 uniform int _zmax = _dim[2] + min(((uniform int)taskIndex2 + 1)*_dim[8], _dim[5]);
 
 // swap _x___ and _y___ if _dim[3]==0
-cif (_dim[3]<16 && _dim[4]>16) {
+if (_dim[3]<16 && _dim[4]>16) {
     uniform int _tmin = _ymin;
     uniform int _tmax = _ymax;
     _ymin = _xmin;
@@ -299,7 +299,7 @@ cif (_dim[3]<16 && _dim[4]>16) {
 foreach (_z = _zmin ... _zmax, _1 = _ymin ... _ymax, _0 = _xmin ... _xmax) {
 
 int _x, _y;
-cif (_dim[3]<16 && _dim[4]>16) {
+if (_dim[3]<16 && _dim[4]>16) {
     _y = _0;
     _x = _1;   
 } else {
@@ -363,6 +363,7 @@ uniform int _nz = ceil((uniform float)_dim[5]/_dim[8]);
         match stmt {
             Stmt::Var(id, expr) => self.gen_var(id, expr),
             Stmt::Const(id, expr) => format!("const {}", self.gen_var(id, expr)),
+
             Stmt::Assign(id, expr) => self.gen_assign(id, expr),
             Stmt::Call(id, args) => {
                 let args_str = args
@@ -379,7 +380,7 @@ uniform int _nz = ceil((uniform float)_dim[5]/_dim[8]);
                     let id = self.function(id, &vars);
                     let mut args_str = args_str;
                     let mut vars = vars;
-                    args_str.insert(0, String::from("_x, _y, _z"));
+                    args_str.insert(0, "_x, _y, _z".into());
                     vars.insert(0, VarType::Unknown);
                     format!("{};\n", self.gen_call(&id, &args_str, &vars))
                 }
@@ -398,13 +399,13 @@ uniform int _nz = ceil((uniform float)_dim[5]/_dim[8]);
             Stmt::While { cond, body } => self.gen_while(cond, body),
             Stmt::Return(None) => {
                 if let Some(VarType::Unknown) = self.inference.borrow().scope.get("return") {
-                    String::from("return;\n")
+                    "return;\n".into()
                 } else {
-                    String::from("// ERROR!!!\n")
+                    "// ERROR!!!\n".into()
                 }
             }
-            Stmt::Continue => String::from("continue;\n"),
-            Stmt::Break => String::from("break;\n"),
+            Stmt::Continue => "continue;\n".into(),
+            Stmt::Break => "break;\n".into(),
             Stmt::Return(Some(expr)) => {
                 let expr_str = self.gen_expr(expr); // generate before assessing type!
 
@@ -421,7 +422,7 @@ uniform int _nz = ceil((uniform float)_dim[5]/_dim[8]);
                 if t2 == VarType::Unknown {
                     self.inference.borrow().scope.overwrite("return", t1);
                 } else if t3 == VarType::Unknown {
-                    return String::from("// ERROR!!!\n");
+                    return "// ERROR!!!\n".into();
                 } else {
                     self.inference.borrow().scope.overwrite("return", t3);
                 }
@@ -429,7 +430,7 @@ uniform int _nz = ceil((uniform float)_dim[5]/_dim[8]);
                 format!("return {};\n", expr_str)
             }
             Stmt::Comment(c) => format!("//{}\n", c),
-            _ => String::from("// ERROR!!!\n"),
+            _ => "// ERROR!!!\n".into(),
         }
     }
 
@@ -473,10 +474,10 @@ uniform int _nz = ceil((uniform float)_dim[5]/_dim[8]);
                 VarType::Int => Expr::Literal(Literal::Int(1)),
                 VarType::Float => Expr::Literal(Literal::Float(1.0)),
                 VarType::Vec => Expr::Call(
-                    String::from("vec"),
+                    "vec".into(),
                     vec![Expr::Literal(Literal::Float(1.0))],
                 ),
-                _ => return String::from("// ERROR!!!\n"),
+                _ => return "// ERROR!!!\n".into(),
             };
             self.inference.borrow().scope.add(var, var_type);
 
@@ -629,14 +630,14 @@ uniform int _nz = ceil((uniform float)_dim[5]/_dim[8]);
                 id, a, b, c, d, expr_str
             ),
 
-            _ => String::from("// ERROR!!!\n"),
+            _ => "// ERROR!!!\n".into(),
         }
     }
 
     fn gen_expr(&'a self, expr: &Expr) -> String {
         match expr {
-            Expr::Literal(Literal::Bool(true)) => String::from("true"),
-            Expr::Literal(Literal::Bool(false)) => String::from("false"),
+            Expr::Literal(Literal::Bool(true)) => "true".into(),
+            Expr::Literal(Literal::Bool(false)) => "false".into(),
             Expr::Literal(Literal::Int(n)) => format!("{}", n),
             Expr::Literal(Literal::Float(n)) => format!("{:.7}f", n),
             Expr::Unary(expr) => self.gen_unary(expr),
@@ -648,13 +649,13 @@ uniform int _nz = ceil((uniform float)_dim[5]/_dim[8]);
                 if args.len() == 1 {
                     match (id.as_ref(), &args[0]) {
                         ("get_global_id", Expr::Literal(Literal::Int(0))) => {
-                            return String::from("_x")
+                            return "_x".into()
                         }
                         ("get_global_id", Expr::Literal(Literal::Int(1))) => {
-                            return String::from("_y")
+                            return "_y".into()
                         }
                         ("get_global_id", Expr::Literal(Literal::Int(2))) => {
-                            return String::from("_z")
+                            return "_z".into()
                         }
                         _ => {}
                     }
@@ -674,7 +675,7 @@ uniform int _nz = ceil((uniform float)_dim[5]/_dim[8]);
                     let id = self.function(id, &vars);
                     let mut args_str = args_str;
                     let mut vars = vars;
-                    args_str.insert(0, String::from("_x, _y, _z"));
+                    args_str.insert(0, "_x, _y, _z".into());
                     vars.insert(0, VarType::Unknown);
                     self.gen_call(&id, &args_str, &vars)
                 }
@@ -689,7 +690,6 @@ uniform int _nz = ceil((uniform float)_dim[5]/_dim[8]);
                 }
                 return format!("{{{}}}", s);
             }
-            _ => String::from("// ERROR!!!\n"),
         }
     }
 
@@ -858,7 +858,7 @@ uniform int _nz = ceil((uniform float)_dim[5]/_dim[8]);
                                 let a = self.gen_expr(a);
                                 let b = self.gen_expr(b);
                                 let guard = format!(
-                                    "cif ({}>=0 && {}<___str_{}[0] && {}>=0 && {}<___str_{}[1]) ",
+                                    "if ({}>=0 && {}<___str_{}[0] && {}>=0 && {}<___str_{}[1]) ",
                                     a, a, name, b, b, name
                                 );
                                 let val = self.gen_expr(val);
@@ -889,19 +889,19 @@ uniform int _nz = ceil((uniform float)_dim[5]/_dim[8]);
                                     );
                                     format!("{} {} = {}({});\n", guard, id, cs, val)
                                 } else {
-                                    String::from("// ERROR!!!\n")
+                                    "// ERROR!!!\n".into()
                                 }
                             } else {
-                                String::from("// ERROR!!!\n")
+                                "// ERROR!!!\n".into()
                             }
                         } else {
-                            String::from("// ERROR!!!\n")
+                            "// ERROR!!!\n".into()
                         }
                     } else {
-                        String::from("// ERROR!!!\n")
+                        "// ERROR!!!\n".into()
                     }
                 } else {
-                    String::from("// ERROR!!!\n")
+                    "// ERROR!!!\n".into()
                 }
             } else if let Index::Array1D(a) = &**idx {
                 let var = self.inference.borrow().var_type(expr);
@@ -917,17 +917,17 @@ uniform int _nz = ceil((uniform float)_dim[5]/_dim[8]);
                             let a = self.gen_expr(a);
                             let val = self.gen_expr(val);
                             let guard = format!(
-                                "cif ({}>=0 && {}<(___str_{}[0] * ___str_{}[1] * ___str_{}[2])) ",
+                                "if ({}>=0 && {}<(___str_{}[0] * ___str_{}[1] * ___str_{}[2])) ",
                                 a, a, name, name, name,
                             );
 
                             let id = format!("{}[(varying int)({})]", name, var.idx_1d(name, &a));
                             format!("{} {} = {};\n", guard, id, val)
                         }
-                        _ => String::from("// ERROR!!!\n"),
+                        _ => "// ERROR!!!\n".into(),
                     }
                 } else {
-                    String::from("// ERROR!!!\n")
+                    "// ERROR!!!\n".into()
                 }
             } else if let Index::Array2D(a, b) = &**idx {
                 let var = self.inference.borrow().var_type(expr);
@@ -937,7 +937,7 @@ uniform int _nz = ceil((uniform float)_dim[5]/_dim[8]);
                             let a = self.gen_expr(a);
                             let b = self.gen_expr(b);
                             let guard = format!(
-                                "cif ({}>=0 && {}<___str_{}[0] && {}>=0 && {}<___str_{}[1]) ",
+                                "if ({}>=0 && {}<___str_{}[0] && {}>=0 && {}<___str_{}[1]) ",
                                 a, a, name, b, b, name
                             );
                             let val = self.gen_expr(val);
@@ -953,7 +953,7 @@ uniform int _nz = ceil((uniform float)_dim[5]/_dim[8]);
                             let a = self.gen_expr(a);
                             let b = self.gen_expr(b);
                             let guard = format!(
-                                "cif ({}>=0 && {}<___str_{}[0] && {}>=0 && {}<___str_{}[1]) ",
+                                "if ({}>=0 && {}<___str_{}[0] && {}>=0 && {}<___str_{}[1]) ",
                                 a, a, name, b, b, name
                             );
                             let val = self.gen_expr(val);
@@ -988,10 +988,10 @@ uniform int _nz = ceil((uniform float)_dim[5]/_dim[8]);
                             self.gen_expr(b),
                             self.gen_expr(val)
                         ),
-                        _ => String::from("// ERROR!!!\n"),
+                        _ => "// ERROR!!!\n".into(),
                     }
                 } else {
-                    String::from("// ERROR!!!\n")
+                    "// ERROR!!!\n".into()
                 }
             } else if let Index::Array3D(a, b, c) = &**idx {
                 let var = self.inference.borrow().var_type(expr);
@@ -1013,7 +1013,7 @@ uniform int _nz = ceil((uniform float)_dim[5]/_dim[8]);
                             let b = self.gen_expr(b);
                             let c = self.gen_expr(c);
                             let guard = format!(
-                                "cif ({}>=0 && {}<___str_{}[0] && {}>=0 && {}<___str_{}[1] && {}>=0 && {}<___str_{}[2]) ",
+                                "if ({}>=0 && {}<___str_{}[0] && {}>=0 && {}<___str_{}[1] && {}>=0 && {}<___str_{}[2]) ",
                                 a, a, name, b, b, name, c, c, name
                             );
                             let val = self.gen_expr(val);
@@ -1025,10 +1025,10 @@ uniform int _nz = ceil((uniform float)_dim[5]/_dim[8]);
                             );
                             format!("{} {} = {};\n", guard, id, val)
                         }
-                        _ => String::from("// ERROR!!!\n"),
+                        _ => "// ERROR!!!\n".into(),
                     }
                 } else {
-                    String::from("// ERROR!!!\n")
+                    "// ERROR!!!\n".into()
                 }
             } else if let Index::Array4D(a, b, c, d) = &**idx {
                 let var = self.inference.borrow().var_type(expr);
@@ -1046,10 +1046,10 @@ uniform int _nz = ceil((uniform float)_dim[5]/_dim[8]);
                             self.gen_expr(d),
                             self.gen_expr(val)
                         ),
-                        _ => String::from("// ERROR!!!\n"),
+                        _ => "// ERROR!!!\n".into(),
                     }
                 } else {
-                    String::from("// ERROR!!!\n")
+                    "// ERROR!!!\n".into()
                 }
             } else {
                 let id = self.gen_index(expr, idx);
@@ -1072,7 +1072,7 @@ uniform int _nz = ceil((uniform float)_dim[5]/_dim[8]);
                 match var {
                     VarType::Vec => format!("{}.x", self.gen_expr(expr)),
                     VarType::Buffer { .. } => format!("___str_{}[0]", name),
-                    _ => String::from("// ERROR!!!\n"),
+                    _ => "// ERROR!!!\n".into(),
                 }
             }
             Index::Vec(1) => {
@@ -1080,7 +1080,7 @@ uniform int _nz = ceil((uniform float)_dim[5]/_dim[8]);
                 match var {
                     VarType::Vec => format!("{}.y", self.gen_expr(expr)),
                     VarType::Buffer { .. } => format!("___str_{}[1]", name),
-                    _ => String::from("// ERROR!!!\n"),
+                    _ => "// ERROR!!!\n".into(),
                 }
             }
             Index::Vec(2) => {
@@ -1088,7 +1088,7 @@ uniform int _nz = ceil((uniform float)_dim[5]/_dim[8]);
                 match var {
                     VarType::Vec => format!("{}.z", self.gen_expr(expr)),
                     VarType::Buffer { .. } => format!("___str_{}[2]", name),
-                    _ => String::from("// ERROR!!!\n"),
+                    _ => "// ERROR!!!\n".into(),
                 }
             }
             Index::Array1D(a) => {
@@ -1100,10 +1100,10 @@ uniform int _nz = ceil((uniform float)_dim[5]/_dim[8]);
                         | VarType::IntArray(1, ..)
                         | VarType::FloatArray(1, ..)
                         | VarType::VecArray(1, ..) => format!("{}[{}]", id, self.gen_expr(a)),
-                        _ => String::from("// ERROR!!!\n"),
+                        _ => "// ERROR!!!\n".into(),
                     }
                 } else {
-                    String::from("// ERROR!!!\n")
+                    "// ERROR!!!\n".into()
                 }
             }
             Index::Array2D(a, b) => {
@@ -1123,10 +1123,10 @@ uniform int _nz = ceil((uniform float)_dim[5]/_dim[8]);
                         | VarType::VecArray(2, ..) => {
                             format!("{}[{}][{}]", id, self.gen_expr(a), self.gen_expr(b))
                         }
-                        _ => String::from("// ERROR!!!\n"),
+                        _ => "// ERROR!!!\n".into(),
                     }
                 } else {
-                    String::from("// ERROR!!!\n")
+                    "// ERROR!!!\n".into()
                 }
             }
             Index::Array3D(a, b, c) => {
@@ -1149,10 +1149,10 @@ uniform int _nz = ceil((uniform float)_dim[5]/_dim[8]);
                             self.gen_expr(b),
                             self.gen_expr(c),
                         ),
-                        _ => String::from("// ERROR!!!\n"),
+                        _ => "// ERROR!!!\n".into(),
                     }
                 } else {
-                    String::from("// ERROR!!!\n")
+                    "// ERROR!!!\n".into()
                 }
             }
             Index::Array4D(a, b, c, d) => {
@@ -1170,10 +1170,10 @@ uniform int _nz = ceil((uniform float)_dim[5]/_dim[8]);
                             self.gen_expr(c),
                             self.gen_expr(d),
                         ),
-                        _ => String::from("// ERROR!!!\n"),
+                        _ => "// ERROR!!!\n".into(),
                     }
                 } else {
-                    String::from("// ERROR!!!\n")
+                    "// ERROR!!!\n".into()
                 }
             }
             Index::ColorSpace(cs_to) => {
@@ -1190,20 +1190,20 @@ uniform int _nz = ceil((uniform float)_dim[5]/_dim[8]);
                                         var.buf_idx_2d(id, &self.gen_expr(a), &self.gen_expr(b))
                                     )
                                 } else {
-                                    String::from("// ERROR!!!\n")
+                                    "// ERROR!!!\n".into()
                                 }
                             } else {
-                                String::from("// ERROR!!!\n")
+                                "// ERROR!!!\n".into()
                             };
                             format!("{}to{}({})", cs, cs_to, id)
                         } else {
-                            String::from("// ERROR!!!\n")
+                            "// ERROR!!!\n".into()
                         }
                     } else {
-                        String::from("// ERROR!!!\n")
+                        "// ERROR!!!\n".into()
                     }
                 } else {
-                    String::from("// ERROR!!!\n")
+                    "// ERROR!!!\n".into()
                 }
             }
 
@@ -1225,7 +1225,7 @@ uniform int _nz = ceil((uniform float)_dim[5]/_dim[8]);
                                 &self.gen_expr(b),
                                 &self.gen_expr(c),
                             ),
-                            _ => String::from("// ERROR!!!\n"),
+                            _ => "// ERROR!!!\n".into(),
                         };
                         match prop {
                             Prop::Int => format!("(((uniform int*){})[{}])", id, idx),
@@ -1234,13 +1234,13 @@ uniform int _nz = ceil((uniform float)_dim[5]/_dim[8]);
                             Prop::IntPtr => format!("(((uniform int*){}) + {})", id, idx),
                         }
                     } else {
-                        String::from("// ERROR!!!\n")
+                        "// ERROR!!!\n".into()
                     }
                 } else {
-                    String::from("// ERROR!!!\n")
+                    "// ERROR!!!\n".into()
                 }
             }
-            _ => String::from("// ERROR!!!\n"),
+            _ => "// ERROR!!!\n".into(),
         }
     }
 }

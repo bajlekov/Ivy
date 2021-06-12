@@ -52,11 +52,11 @@ impl Scanner {
         }
 
         tokens.push(Token {
-            token: TokenType::EOF,
+            token: TokenType::Eof,
             fragment: Fragment {
                 line: self.line + 1,
                 position: self.start - self.line_start + 1,
-                lexeme: String::from("[End of file]"),
+                lexeme: "[End of file]".into(),
             },
         });
 
@@ -173,7 +173,7 @@ impl Scanner {
             "var" => TokenType::Var,
             "const" => TokenType::Const,
 
-            v => TokenType::Identifier(String::from(v)),
+            v => TokenType::Identifier(v.into()),
         }
     }
 

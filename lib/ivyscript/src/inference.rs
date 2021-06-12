@@ -171,21 +171,21 @@ impl<'a> Inference<'a> {
                 (VarType::Buffer { .. }, Index::Vec(_)) => I,
                 (V, Index::ColorSpace(c)) => match c {
                     // 3ch buffer
-                    ColorSpace::SRGB => V,
-                    ColorSpace::LRGB => V,
-                    ColorSpace::XYZ => V,
-                    ColorSpace::LAB => V,
-                    ColorSpace::LCH => V,
+                    ColorSpace::Srgb => V,
+                    ColorSpace::Lrgb => V,
+                    ColorSpace::Xyz => V,
+                    ColorSpace::Lab => V,
+                    ColorSpace::Lch => V,
                     ColorSpace::Y => F,
                     ColorSpace::L => F,
                 },
                 (F, Index::ColorSpace(c)) => match c {
                     // 1ch buffer
-                    ColorSpace::SRGB => V,
-                    ColorSpace::LRGB => V,
-                    ColorSpace::XYZ => V,
-                    ColorSpace::LAB => V,
-                    ColorSpace::LCH => V,
+                    ColorSpace::Srgb => V,
+                    ColorSpace::Lrgb => V,
+                    ColorSpace::Xyz => V,
+                    ColorSpace::Lab => V,
+                    ColorSpace::Lch => V,
                     ColorSpace::Y => F,
                     ColorSpace::L => F,
                 },
@@ -233,7 +233,7 @@ impl<'a> Inference<'a> {
             }
             Expr::Array(v) => {
                 if v.is_empty() {
-                    return Err(format!("Unable to construct empty array"));
+                    return Err("Unable to construct empty array".into());
                 } else {
                     // TODO: assert that all other elements have the same type
                     match self.var_type(&v[0])? {
@@ -323,11 +323,7 @@ impl<'a> Inference<'a> {
     }
 
     fn is_int_lit(&self, a: &Expr) -> bool {
-        if let Expr::Literal(Literal::Int(_)) = a {
-            true
-        } else {
-            false
-        }
+        matches!(a, Expr::Literal(Literal::Int(_)))
     }
 
     fn get_int_lit(&self, a: &Expr) -> Result<i32, String> {
@@ -358,7 +354,7 @@ impl<'a> Inference<'a> {
                 Err(format!("Function '{}' is not defined", id))
             }
         } else {
-            Err(format!("Function list is not initialized"))
+            Err("Function list is not initialized".into())
         }
     }
 

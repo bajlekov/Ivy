@@ -39,7 +39,7 @@ impl VarType {
                 cx = format!("(___str_{}[2] - 1)", id)
             )
         } else {
-            String::from("// ERROR!!!\n")
+            "// ERROR!!!\n".into()
         }
     }
 
@@ -77,7 +77,7 @@ impl VarType {
                 cz = format!("(___str_{}[2] - 1)", id),
             )
         } else {
-            String::from("// ERROR!!!\n")
+            "// ERROR!!!\n".into()
         }
     }
 }

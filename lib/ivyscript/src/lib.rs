@@ -14,6 +14,8 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
+#![allow(clippy::many_single_char_names)]
+#![allow(clippy::type_complexity)]
 
 use std::ffi::{CStr, CString};
 
@@ -56,7 +58,7 @@ pub extern "C" fn translator_new_ocl<'a>(source: *const i8) -> *mut Translator<'
         CStr::from_ptr(source)
     };
 
-    let source = source.to_str().unwrap_or("").to_string();
+    let source = source.to_str().unwrap_or_default().to_string();
 
     let mut scanner = Scanner::new(source.clone());
     let tokens = scanner.scan();
@@ -75,7 +77,7 @@ pub extern "C" fn translator_new_ocl<'a>(source: *const i8) -> *mut Translator<'
             });
     }
 
-    let tokens = tokens.unwrap_or(Vec::new());
+    let tokens = tokens.unwrap_or_default();
 
     let parser = Parser::new(tokens);
     let ast = parser.parse();
@@ -93,7 +95,7 @@ pub extern "C" fn translator_new_ocl<'a>(source: *const i8) -> *mut Translator<'
                 println!("{} {}: {}", if l == line { "=>" } else { "  " }, l + 1, s)
             });
     }
-    let ast = ast.unwrap_or(Vec::new());
+    let ast = ast.unwrap_or_default();
 
     let generator = GeneratorOCL::new(ast);
 
@@ -125,7 +127,7 @@ pub extern "C" fn translator_new_ispc<'a>(source: *const i8) -> *mut Translator<
         CStr::from_ptr(source)
     };
 
-    let source = source.to_str().unwrap_or("").to_string();
+    let source = source.to_str().unwrap_or_default().to_string();
 
     let mut scanner = Scanner::new(source.clone());
     let tokens = scanner.scan();
@@ -205,19 +207,16 @@ pub extern "C" fn translator_generate(t: *mut Translator, kernel: *const i8) -> 
         assert!(!kernel.is_null());
         CStr::from_ptr(kernel)
     };
-    let kernel = kernel.to_str().unwrap_or("");
+    let kernel = kernel.to_str().unwrap_or_default();
 
     let source = match &t.generator {
         Generator::Ocl(g) => g.kernel(kernel, &t.inputs),
-        //Generator::Ispc(g) => g
-        //    .kernel(kernel, &t.inputs)
-        //    .ok_or(String::from("ISPC generation error!")),
     };
 
     if let Err(err) = &source {
         println!("[Generator]: {}", err);
     }
-    let source = source.unwrap_or(String::from(""));
+    let source = source.unwrap_or_default();
 
     CString::new(source).unwrap().into_raw()
 }
@@ -233,7 +232,7 @@ pub extern "C" fn translator_get_id(t: *mut Translator, name: *const i8) -> *con
         CStr::from_ptr(name)
     };
 
-    CString::new(function_id(name.to_str().unwrap_or(""), &t.inputs))
+    CString::new(function_id(name.to_str().unwrap_or_default(), &t.inputs))
         .unwrap()
         .into_raw()
 }
@@ -275,8 +274,8 @@ pub extern "C" fn translator_add_buffer_srgb(t: *mut Translator, x: u64, y: u64,
     };
     t.inputs.push(VarType::Buffer {
         z,
-        cs: ColorSpace::SRGB,
-        x1y1: if x == 1 && y == 1 { true } else { false },
+        cs: ColorSpace::Srgb,
+        x1y1: x == 1 && y == 1,
     });
     t.inputs.len() as u64
 }
@@ -289,8 +288,8 @@ pub extern "C" fn translator_add_buffer_lrgb(t: *mut Translator, x: u64, y: u64,
     };
     t.inputs.push(VarType::Buffer {
         z,
-        cs: ColorSpace::LRGB,
-        x1y1: if x == 1 && y == 1 { true } else { false },
+        cs: ColorSpace::Lrgb,
+        x1y1: x == 1 && y == 1,
     });
     t.inputs.len() as u64
 }
@@ -303,8 +302,8 @@ pub extern "C" fn translator_add_buffer_xyz(t: *mut Translator, x: u64, y: u64, 
     };
     t.inputs.push(VarType::Buffer {
         z,
-        cs: ColorSpace::XYZ,
-        x1y1: if x == 1 && y == 1 { true } else { false },
+        cs: ColorSpace::Xyz,
+        x1y1: x == 1 && y == 1,
     });
     t.inputs.len() as u64
 }
@@ -317,8 +316,8 @@ pub extern "C" fn translator_add_buffer_lab(t: *mut Translator, x: u64, y: u64, 
     };
     t.inputs.push(VarType::Buffer {
         z,
-        cs: ColorSpace::LAB,
-        x1y1: if x == 1 && y == 1 { true } else { false },
+        cs: ColorSpace::Lab,
+        x1y1: x == 1 && y == 1,
     });
     t.inputs.len() as u64
 }
@@ -331,8 +330,8 @@ pub extern "C" fn translator_add_buffer_lch(t: *mut Translator, x: u64, y: u64, 
     };
     t.inputs.push(VarType::Buffer {
         z,
-        cs: ColorSpace::LCH,
-        x1y1: if x == 1 && y == 1 { true } else { false },
+        cs: ColorSpace::Lch,
+        x1y1: x == 1 && y == 1,
     });
     t.inputs.len() as u64
 }
@@ -346,7 +345,7 @@ pub extern "C" fn translator_add_buffer_y(t: *mut Translator, x: u64, y: u64, z:
     t.inputs.push(VarType::Buffer {
         z,
         cs: ColorSpace::Y,
-        x1y1: if x == 1 && y == 1 { true } else { false },
+        x1y1: x == 1 && y == 1,
     });
     t.inputs.len() as u64
 }
@@ -360,7 +359,7 @@ pub extern "C" fn translator_add_buffer_l(t: *mut Translator, x: u64, y: u64, z:
     t.inputs.push(VarType::Buffer {
         z,
         cs: ColorSpace::L,
-        x1y1: if x == 1 && y == 1 { true } else { false },
+        x1y1: x == 1 && y == 1,
     });
     t.inputs.len() as u64
 }

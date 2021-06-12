@@ -50,17 +50,13 @@ impl ScopeTree {
 
     pub fn add(&self, id: &str, t: VarType) -> usize {
         let n = self.current.get();
-        self.scopes.borrow_mut()[n]
-            .vars
-            .insert(id.to_string(), Some(t));
+        self.scopes.borrow_mut()[n].vars.insert(id.into(), Some(t));
         n
     }
 
     pub fn placeholder(&self, id: &str) -> usize {
         let n = self.current.get();
-        self.scopes.borrow_mut()[n]
-            .vars
-            .insert(id.to_string(), None);
+        self.scopes.borrow_mut()[n].vars.insert(id.into(), None);
         n
     }
 
@@ -69,7 +65,7 @@ impl ScopeTree {
         loop {
             let scope = &mut self.scopes.borrow_mut()[id];
             if scope.vars.get(var).is_some() {
-                scope.vars.insert(var.to_string(), Some(t));
+                scope.vars.insert(var.into(), Some(t));
                 return id;
             } else {
                 if id == 0 {
@@ -126,8 +122,8 @@ mod test {
 
     #[test]
     fn scope_add() {
-        let key1 = String::from("abc");
-        let key2 = String::from("def");
+        let key1 = "abc".to_string();
+        let key2 = "def".to_string();
 
         let s = ScopeTree::new();
 

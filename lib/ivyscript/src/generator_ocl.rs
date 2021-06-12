@@ -82,7 +82,7 @@ impl<'a> Generator<'a> {
                     self.kernels.borrow_mut().insert(id.clone(), &stmt);
                 }
                 Stmt::Comment(..) => {}
-                Stmt::EOF => {}
+                Stmt::Eof => {}
                 _ => panic!("Unexpected statement in file scope!"),
             }
         }
@@ -106,7 +106,7 @@ impl<'a> Generator<'a> {
             // new frame on the dependency stack
             self.dependencies.borrow_mut().push(HashSet::new());
 
-            let mut definition = String::from("(\n");
+            let mut definition = "(\n".to_string();
             let mut declaration;
 
             // generate argument signatures
@@ -167,7 +167,7 @@ impl<'a> Generator<'a> {
                     definition.push_str(&format!("\t{}\n", arg));
                 }
             }
-            definition.push_str(")");
+            definition.push(')');
 
             declaration = definition.clone(); // copy function signature into declaration
 
@@ -200,7 +200,7 @@ impl<'a> Generator<'a> {
                 .dependencies
                 .borrow_mut()
                 .pop()
-                .ok_or::<String>(format!("No dependency frame found!"))?;
+                .ok_or_else(|| "No dependency frame found!".to_string())?;
 
             // add function return type to definition
             definition = format!("{} {} {}}}", ret_string, id, definition);
@@ -256,10 +256,10 @@ impl<'a> Generator<'a> {
                     match input[k] {
                         VarType::Buffer { .. } =>
                             format!("global float *{}, global int *___str_", v),
-                        VarType::Int => String::from("int "),
-                        VarType::Float => String::from("float "),
-                        VarType::IntArray(1, ..) => String::from("int *"),
-                        VarType::FloatArray(1, ..) => String::from("float *"),
+                        VarType::Int => "int ".into(),
+                        VarType::Float => "float ".into(),
+                        VarType::IntArray(1, ..) => "int *".into(),
+                        VarType::FloatArray(1, ..) => "float *".into(),
                         t =>
                             return Err(format!(
                                 "Type '{}' of argument '{}' not supported in kernel arguments",
@@ -283,7 +283,7 @@ impl<'a> Generator<'a> {
             for v in body {
                 kernel.push_str(&self.gen_stmt(v)?);
             }
-            kernel.push_str("}");
+            kernel.push('}');
 
             // check whether return value is of type void
             if self.inference.borrow().scope.get("return") != Some(VarType::Void) {
@@ -317,7 +317,7 @@ impl<'a> Generator<'a> {
             .dependencies
             .borrow_mut()
             .pop()
-            .ok_or::<String>(format!("No dependency frame found!"))?
+            .ok_or_else(|| "No dependency frame found!".to_string())?
             .into_iter()
             .collect::<Vec<_>>();
 
@@ -392,7 +392,7 @@ impl<'a> Generator<'a> {
             } => self.gen_if_else(cond_list, else_body)?,
             Stmt::While { cond, body } => self.gen_while(cond, body)?,
             Stmt::Return(None) => match self.inference.borrow().scope.get("return") {
-                Some(VarType::Void) | None => String::from("return;\n"),
+                Some(VarType::Void) | None => "return;\n".into(),
                 Some(t) => {
                     return Err(format!(
                         "Void return statement inconsistent with previously used return type '{}'",
@@ -400,8 +400,8 @@ impl<'a> Generator<'a> {
                     ))
                 }
             },
-            Stmt::Continue => String::from("continue;\n"),
-            Stmt::Break => String::from("break;\n"),
+            Stmt::Continue => "continue;\n".into(),
+            Stmt::Break => "break;\n".into(),
             Stmt::Return(Some(expr)) => {
                 let expr_str = self.gen_expr(expr)?; // generate before assessing type!
 
@@ -462,10 +462,7 @@ impl<'a> Generator<'a> {
             let step = match var_type {
                 VarType::Int => Expr::Literal(Literal::Int(1)),
                 VarType::Float => Expr::Literal(Literal::Float(1.0)),
-                VarType::Vec => Expr::Call(
-                    String::from("vec"),
-                    vec![Expr::Literal(Literal::Float(1.0))],
-                ),
+                VarType::Vec => Expr::Call("vec".into(), vec![Expr::Literal(Literal::Float(1.0))]),
                 _ => return Err(format!("Incompatible loop variable type '{}'", var_type)),
             };
             self.inference.borrow().scope.add(var, var_type);
@@ -509,7 +506,7 @@ impl<'a> Generator<'a> {
         }
         self.inference.borrow().scope.close();
 
-        for cond_item in cond_list.into_iter().skip(1) {
+        for cond_item in cond_list.iter().skip(1) {
             let Cond { ref cond, ref body } = cond_item;
 
             s.push_str(&format!("}} else if ({}) {{\n", self.gen_expr(cond)?));
@@ -564,8 +561,8 @@ impl<'a> Generator<'a> {
                 "local_int_array" => no_init,
                 "local_float_array" => no_init,
                 "local_vec_array" => no_init,
-                "zero" => String::from("0"),
-                "one" => String::from("1"),
+                "zero" => "0".into(),
+                "one" => "1".into(),
                 _ => self.gen_expr(&expr)?,
             },
             Expr::Array(_) => format!(" = {}", self.gen_expr(&expr)?),
@@ -631,8 +628,8 @@ impl<'a> Generator<'a> {
 
     fn gen_expr(&'a self, expr: &Expr) -> Result<String, String> {
         let s = match expr {
-            Expr::Literal(Literal::Bool(true)) => String::from("true"),
-            Expr::Literal(Literal::Bool(false)) => String::from("false"),
+            Expr::Literal(Literal::Bool(true)) => "true".into(),
+            Expr::Literal(Literal::Bool(false)) => "false".into(),
             Expr::Literal(Literal::Int(n)) => format!("{}", n),
             Expr::Literal(Literal::Float(n)) => format!("{:.7}f", n),
             Expr::Unary(expr) => self.gen_unary(expr)?,
@@ -656,7 +653,7 @@ impl<'a> Generator<'a> {
                     self.dependencies
                         .borrow_mut()
                         .last_mut()
-                        .ok_or::<String>(format!("No dependency frame found!"))?
+                        .ok_or_else(|| "No dependency frame found!".to_string())?
                         .insert(id.clone());
                     self.gen_call(&id, &args_str, &vars)?
                 }

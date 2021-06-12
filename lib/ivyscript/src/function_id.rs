@@ -22,10 +22,10 @@ pub fn function_id(name: &str, input: &[VarType]) -> String {
     let mut id = format!("___{}_", input.len());
     for v in input {
         let s = match v {
-            VarType::Bool => String::from("B_"),
-            VarType::Int => String::from("I_"),
-            VarType::Float => String::from("F_"),
-            VarType::Vec => String::from("V_"),
+            VarType::Bool => "B_".into(),
+            VarType::Int => "I_".into(),
+            VarType::Float => "F_".into(),
+            VarType::Vec => "V_".into(),
             VarType::BoolArray(n, false, x, y, z, w) => format!("BA{}_{}_{}_{}_{}_", n, x, y, z, w),
             VarType::IntArray(n, false, x, y, z, w) => format!("IA{}_{}_{}_{}_{}_", n, x, y, z, w),
             VarType::FloatArray(n, false, x, y, z, w) => {
@@ -42,11 +42,11 @@ pub fn function_id(name: &str, input: &[VarType]) -> String {
                 "BUF{}{}{}_",
                 z,
                 match cs {
-                    ColorSpace::SRGB => "SRGB",
-                    ColorSpace::LRGB => "LRGB",
-                    ColorSpace::XYZ => "XYZ",
-                    ColorSpace::LAB => "LAB",
-                    ColorSpace::LCH => "LCH",
+                    ColorSpace::Srgb => "SRGB",
+                    ColorSpace::Lrgb => "LRGB",
+                    ColorSpace::Xyz => "XYZ",
+                    ColorSpace::Lab => "LAB",
+                    ColorSpace::Lch => "LCH",
                     ColorSpace::Y => "Y",
                     ColorSpace::L => "L",
                 },
@@ -55,8 +55,8 @@ pub fn function_id(name: &str, input: &[VarType]) -> String {
                     false => "",
                 }
             ),
-            VarType::Void => String::from("Void"),
-            VarType::Unknown => String::from("Unknown"),
+            VarType::Void => "Void".into(),
+            VarType::Unknown => "Unknown".into(),
         };
         id.push_str(&s);
     }

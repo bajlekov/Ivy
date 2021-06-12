@@ -48,11 +48,11 @@ pub enum Prop {
 
 #[derive(Debug, Eq, PartialEq, Copy, Clone)]
 pub enum ColorSpace {
-    SRGB,
-    LRGB,
-    XYZ,
-    LAB,
-    LCH,
+    Srgb,
+    Lrgb,
+    Xyz,
+    Lab,
+    Lch,
     Y,
     L,
 }
@@ -63,11 +63,11 @@ impl std::fmt::Display for ColorSpace {
             f,
             "{}",
             match self {
-                ColorSpace::SRGB => "SRGB",
-                ColorSpace::LRGB => "LRGB",
-                ColorSpace::XYZ => "XYZ",
-                ColorSpace::LAB => "LAB",
-                ColorSpace::LCH => "LCH",
+                ColorSpace::Srgb => "SRGB",
+                ColorSpace::Lrgb => "LRGB",
+                ColorSpace::Xyz => "XYZ",
+                ColorSpace::Lab => "LAB",
+                ColorSpace::Lch => "LCH",
                 ColorSpace::Y => "Y",
                 ColorSpace::L => "L",
             }
@@ -179,6 +179,6 @@ pub enum Stmt {
     },
 
     Comment(String),
-    EOF,
+    Eof,
     //Error(String),
 }

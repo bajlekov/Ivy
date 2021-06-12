@@ -80,7 +80,7 @@ pub enum TokenType {
     Const,
 
     Comment(String),
-    EOF,
+    Eof,
 }
 
 #[derive(Debug)]
