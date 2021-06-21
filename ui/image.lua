@@ -57,6 +57,7 @@ local function ivyImageFree(buffer)
   if buffer[0].dataHost~=NULL then
     assert(buffer[0].strHost~=NULL)
     data.stats.freeHost(buffer[0].dataHost)
+    data.stats.freeHost(buffer[0].strHost)
     -- imageData cleans up its own host memory
     ffi.C.free(buffer[0].strHost)
     buffer[0].strHost = NULL
@@ -65,6 +66,7 @@ local function ivyImageFree(buffer)
   if buffer[0].dataDev~=NULL then
     assert(buffer[0].strDev~=NULL)
     data.stats.freeDev(buffer[0].dataDev)
+    data.stats.freeDev(buffer[0].strDev)
     devContext.release_mem_object(buffer[0].dataDev)
     devContext.release_mem_object(buffer[0].strDev)
     buffer[0].dataDev = NULL

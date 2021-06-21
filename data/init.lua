@@ -149,6 +149,7 @@ local function ivyBufferFree(buffer)
   if buffer[0].dataHost~=NULL then
     assert(buffer[0].strHost~=NULL)
     data.stats.freeHost(buffer[0].dataHost)
+    data.stats.freeHost(buffer[0].strHost)
     ffi.C.free(buffer[0].dataHost)
     ffi.C.free(buffer[0].strHost)
     buffer[0].dataHost = NULL
@@ -156,7 +157,8 @@ local function ivyBufferFree(buffer)
   end
   if buffer[0].dataDev~=NULL then
     assert(buffer[0].strDev~=NULL)
-    data.stats.freeHost(buffer[0].dataDev)
+    data.stats.freeDev(buffer[0].dataDev)
+    data.stats.freeDev(buffer[0].strDev)
     devContext.release_mem_object(buffer[0].dataDev)
     devContext.release_mem_object(buffer[0].strDev)
     buffer[0].dataDev = NULL
@@ -213,7 +215,8 @@ function data:allocHost(transfer)
 		self.buffer[0].strHost[5] = self.sz
     self.buffer[0].dirtyHost = 1
 
-    self.stats.allocHost(self.buffer[0].dataHost, ffi.sizeof("host_float")*self.x*self.y*self.z + ffi.sizeof("host_int")*6)
+    self.stats.allocHost(self.buffer[0].dataHost, ffi.sizeof("host_float")*self.x*self.y*self.z)
+    self.stats.allocHost(self.buffer[0].strHost, ffi.sizeof("host_int")*6)
   end
   if transfer then
     self:syncHost()
@@ -239,7 +242,8 @@ function data:allocDev(transfer)
     devQueue:enqueue_write_buffer(self.buffer[0].strDev, true, strDev)
     self.buffer[0].dirtyDev = 1
 
-    self.stats.allocDev(self.buffer[0].dataDev, ffi.sizeof("cl_float")*self.x*self.y*self.z + ffi.sizeof("cl_int")*6)
+    self.stats.allocDev(self.buffer[0].dataDev, ffi.sizeof("cl_float")*self.x*self.y*self.z)
+    self.stats.allocDev(self.buffer[0].strDev, ffi.sizeof("cl_int")*6)
   end
   if transfer then
     self:syncDev()
@@ -256,6 +260,7 @@ function data:freeHost(transfer)
   if self.buffer[0].dataHost~=NULL then
     assert(self.buffer[0].strHost~=NULL)
     self.stats.freeHost(self.buffer[0].dataHost)
+    self.stats.freeHost(self.buffer[0].strHost)
 
     ffi.C.free(self.buffer[0].dataHost)
     ffi.C.free(self.buffer[0].strHost)
@@ -275,7 +280,8 @@ function data:freeDev(transfer)
 	if self.buffer[0].dataDev~=NULL then
     assert(self.buffer[0].strDev~=NULL)
     self.stats.freeDev(self.buffer[0].dataDev)
-
+    self.stats.freeDev(self.buffer[0].strDev)
+    
     devContext.release_mem_object(self.buffer[0].dataDev)
     devContext.release_mem_object(self.buffer[0].strDev)
     self.buffer[0].dataDev = NULL
