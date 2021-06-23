@@ -24,7 +24,7 @@ ffi.cdef([[
     typedef struct translator translator_t;
 
     translator_t *translator_new_ocl(const char *);
-    //translator_t *translator_new_ispc(const char *);
+    translator_t *translator_new_ispc(const char *);
     char *translator_generate(translator_t *, const char *);
     void translator_free(translator_t *);
 
@@ -52,7 +52,7 @@ end
 
 local targetList = {
   OCL = lib.translator_new_ocl,
-  --ISPC = lib.translator_new_ispc,
+  ISPC = lib.translator_new_ispc,
 }
 
 function ivy.new(source, target)

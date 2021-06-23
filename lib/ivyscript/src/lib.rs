@@ -23,7 +23,7 @@ mod ast;
 mod buf_idx;
 mod fragment;
 mod function_id;
-//mod generator_ispc;
+mod generator_ispc;
 mod generator_ocl;
 mod inference;
 mod parser;
@@ -32,7 +32,7 @@ mod scope;
 mod tokens;
 
 use function_id::function_id;
-//use generator_ispc::Generator as GeneratorISPC;
+use generator_ispc::Generator as GeneratorISPC;
 use generator_ocl::Generator as GeneratorOCL;
 use parser::Parser;
 use scanner::Scanner;
@@ -42,7 +42,7 @@ use inference::VarType;
 
 pub enum Generator<'a> {
     Ocl(GeneratorOCL<'a>),
-    //Ispc(GeneratorISPC<'a>),
+    Ispc(GeneratorISPC<'a>),
 }
 
 pub struct Translator<'a> {
@@ -113,13 +113,12 @@ pub extern "C" fn translator_new_ocl<'a>(source: *const i8) -> *mut Translator<'
 
     match &translator.generator {
         Generator::Ocl(g) => g.prepare(),
-        //Generator::Ispc(g) => g.prepare(),
+        Generator::Ispc(g) => g.prepare(),
     }
 
     ptr
 }
 
-/*
 #[no_mangle]
 pub extern "C" fn translator_new_ispc<'a>(source: *const i8) -> *mut Translator<'a> {
     let source = unsafe {
@@ -145,7 +144,8 @@ pub extern "C" fn translator_new_ispc<'a>(source: *const i8) -> *mut Translator<
                 println!("{} {}: {}", if l == line { "=>" } else { "  " }, l + 1, s)
             });
     }
-    let tokens = tokens.unwrap_or(Vec::new());
+
+    let tokens = tokens.unwrap_or_default();
 
     let parser = Parser::new(tokens);
     let ast = parser.parse();
@@ -163,7 +163,7 @@ pub extern "C" fn translator_new_ispc<'a>(source: *const i8) -> *mut Translator<
                 println!("{} {}: {}", if l == line { "=>" } else { "  " }, l + 1, s)
             });
     }
-    let ast = ast.unwrap_or(Vec::new());
+    let ast = ast.unwrap_or_default();
 
     let generator = GeneratorISPC::new(ast);
 
@@ -185,7 +185,7 @@ pub extern "C" fn translator_new_ispc<'a>(source: *const i8) -> *mut Translator<
     }
 
     ptr
-*/
+}
 
 #[no_mangle]
 pub extern "C" fn translator_free(t: *mut Translator) {
@@ -211,6 +211,7 @@ pub extern "C" fn translator_generate(t: *mut Translator, kernel: *const i8) -> 
 
     let source = match &t.generator {
         Generator::Ocl(g) => g.kernel(kernel, &t.inputs),
+        Generator::Ispc(g) => g.kernel(kernel, &t.inputs),
     };
 
     if let Err(err) = &source {
