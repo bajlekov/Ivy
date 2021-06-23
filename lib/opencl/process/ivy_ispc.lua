@@ -134,8 +134,8 @@ ffi.cdef([[
     void ivyjit_free(void*);
 ]])
 
-local jit = ffi.load("lib/ispc/ivyJIT.dll")
-jit.ivyjit_init()
+local ivyjit = ffi.load("lib/ispc/ivyJIT.dll")
+ivyjit.ivyjit_init()
 
 function process:getKernel(name, buffers)
 	if not self.generator then
@@ -176,14 +176,14 @@ function process:getKernel(name, buffers)
 			end
 			os.remove("___temp.ispc")
 
-			local J = ffi.gc(jit.ivyjit_new(), jit.ivyjit_free)
+			local J = ffi.gc(ivyjit.ivyjit_new(), ivyjit.ivyjit_free)
 
 			local f = io.open("___temp.ll", "rb")
-			jit.ivyjit_module(J, "___temp.ll")
+			ivyjit.ivyjit_module(J, "___temp.ll")
 			f:close()
 			os.remove("___temp.ll")
 
-			local kernel = ffi.cast("void (*)(int *, "..table.concat(decl, ", ")..")", jit.ivyjit_lookup(J, id))
+			local kernel = ffi.cast("void (*)(int *, "..table.concat(decl, ", ")..")", ivyjit.ivyjit_lookup(J, name))
 			self.kernels[id] = {k = kernel, j = J}
 			return kernel
 		else
