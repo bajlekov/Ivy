@@ -226,8 +226,11 @@ function process:enqueueKernel(name, size, buffers)
 	dim[4] = size[2] or 1
 	dim[5] = size[3] or 1
 
-	dim[6] = math.max(dim[3]/16, 16)
-	dim[7] = math.max(dim[4]/16, 16)
+	local workgroupSize = self.workgroupSize or workgroupSize
+	local workgroup = {math.min(dim[3], workgroupSize[1]), math.min(dim[4], workgroupSize[2]), math.min(dim[5], workgroupSize[3])}
+
+	dim[6] = math.max(dim[3]/workgroup[1], workgroup[1])
+	dim[7] = math.max(dim[4]/workgroup[2], workgroup[2])
 	dim[8] = 1
 
 	local t1 = love.timer.getTime()
