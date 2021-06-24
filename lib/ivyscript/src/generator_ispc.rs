@@ -363,7 +363,7 @@ uniform int _nz = ceil((uniform float)_dim[5]/_dim[8]);
             // add includes, constants and function dependencies
             let (deps_declarations, deps_definitions) = self.gen_dependencies()?; // pops dependencies frame
             Ok(format!(
-                "#include \"cs.ispc\"\n{}\n{}\n{}\n{}",
+                "#include \"std.ispc\"\n{}\n{}\n{}\n{}",
                 self.generated_constants
                     .borrow()
                     .as_ref()

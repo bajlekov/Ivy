@@ -169,7 +169,7 @@ function process:getKernel(name, buffers)
 			f:write(source)
 			f:close()
 
-			os.execute("lib\\ispc\\ispc ___temp.ispc --target=host --emit-llvm-text -o ___temp.ll -O3 --opt=fast-math --math-lib=default -Iops/ocl/ --wno-perf")
+			os.execute("lib\\ispc\\ispc ___temp.ispc --target=host --emit-llvm-text -o ___temp.ll -O3 --opt=fast-math --math-lib=default -Iops/include/ --wno-perf")
 			if not file_exists("___temp.ll") then
 				messageCh:push{"error", "ERROR ["..name.."]: \nISPC unable to compile source!"}
 				return nil

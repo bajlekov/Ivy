@@ -9,7 +9,7 @@ do local _={
   linkDebug=false,
   nativeProfile=false,
   nodeAutoConnect=true,
-  openclBuildParams="-cl-std=CL1.2 -Iops/ocl ",
+  openclBuildParams="-cl-std=CL1.2 -Iops/include ",
   openclCache=false,
   openclDebug=false,
   openclDevice=1,

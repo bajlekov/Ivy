@@ -297,7 +297,7 @@ impl<'a> Generator<'a> {
             // add includes, constants and function dependencies
             let (deps_declarations, deps_definitions) = self.gen_dependencies()?; // pops dependencies frame
             Ok(format!(
-                "#include \"cs.cl\"\n{}\n{}\n{}\n{}",
+                "#include \"std.cl\"\n{}\n{}\n{}\n{}",
                 self.generated_constants
                     .borrow()
                     .as_ref()
