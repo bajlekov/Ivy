@@ -53,11 +53,6 @@ function format.rgba8(image)
 			g = buf[i * 4 + (y - j-1) * x * 4 + 1]
 			b = buf[i * 4 + (y - j-1) * x * 4 + 2]
 
-			-- protect blacks?
-			r = r + math.random() / 255
-			g = g + math.random() / 255
-			b = b + math.random() / 255
-
 			r, g, b = SRGBtoLRGB(r, g, b)
 			data:set(i, j, 0, math.max(r, 0))
 			data:set(i, j, 1, math.max(g, 0))

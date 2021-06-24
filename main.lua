@@ -93,6 +93,7 @@ do
 		settings.openclDevice = 1
 	end
 	local devices = platforms[oclPlatform]:get_devices()
+	assert(#devices > 0, "No OpenCL device found for current platform!")
 	if oclDevice > #devices then
 		oclDevice = 1
 		settings.openclDevice = 1
@@ -371,7 +372,9 @@ function love.update()
 		if code == "info" then
 			message = id:sub(1, 4096)
 		elseif code == "error" then
-			node.list[currentID].state = "error"
+			if node.list[currentID] then
+				node.list[currentID].state = "error"
+			end
 			message = id:sub(1, 4096)
 		elseif code == "start" and id then
 			local node = node.list[id]
@@ -402,7 +405,7 @@ function love.update()
 		previewImage = pipeline.output.image:refresh() -- set to display the new output.image next
 
 		if pipeline.output.elem[1].value then
-			hist = pipeline.output.data.histogram:syncHost(true, true)
+			hist = pipeline.output.data.histogram
 		else
 			hist = false
 		end
