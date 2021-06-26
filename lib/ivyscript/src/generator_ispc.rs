@@ -900,14 +900,25 @@ uniform int _nz = ceil((uniform float)_dim[5]/_dim[8]);
         }
 
         let mut s = String::new();
-        for (k, v) in args.iter().enumerate() {
+
+        let mut args_iter = args.iter();
+        if args.len() > 0 {
+            // TODO: properly determine whether function requires global indices to be passed
+            if args[0] == "_x, _y, _z" {
+                if let Some(v) = args_iter.next() {
+                    s.push_str(v);
+                    s.push_str(", ");
+                }
+            }
+        }
+
+        for (k, v) in args_iter.enumerate() {
             s.push_str(&v);
             if let VarType::Buffer { .. } = vars[k] {
                 s.push_str(", ___str_");
                 s.push_str(&v);
             }
-
-            if k < args.len() - 1 {
+            if k < vars.len() - 1 {
                 s.push_str(", ");
             }
         }
