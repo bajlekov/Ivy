@@ -113,7 +113,10 @@ impl<'a> Generator<'a> {
             for (k, v) in args.iter().enumerate() {
                 let arg = match input[k] {
                     VarType::Buffer { .. } => {
-                        format!("uniform float {}[], uniform int ___str_{}[]", v, v)
+                        format!(
+                            "uniform float uniform {}[], uniform int uniform ___str_{}[]",
+                            v, v
+                        )
                     }
                     VarType::Int => format!("int {}", v),
                     VarType::Float => format!("float {}", v),
@@ -121,7 +124,7 @@ impl<'a> Generator<'a> {
                     VarType::BoolArray(n, l, a, b, c, d) => {
                         format!(
                             "{}bool {}{}",
-                            if l { "local " } else { "" },
+                            if l { "uniform " } else { "" },
                             v,
                             idx4(n, a, b, c, d)?
                         )
@@ -129,7 +132,7 @@ impl<'a> Generator<'a> {
                     VarType::IntArray(n, l, a, b, c, d) => {
                         format!(
                             "{}int {}{}",
-                            if l { "local " } else { "" },
+                            if l { "uniform " } else { "" },
                             v,
                             idx4(n, a, b, c, d)?
                         )
@@ -137,7 +140,7 @@ impl<'a> Generator<'a> {
                     VarType::FloatArray(n, l, a, b, c, d) => {
                         format!(
                             "{}float {}{}",
-                            if l { "local " } else { "" },
+                            if l { "uniform " } else { "" },
                             v,
                             idx4(n, a, b, c, d)?
                         )
@@ -145,7 +148,7 @@ impl<'a> Generator<'a> {
                     VarType::VecArray(n, l, a, b, c, d) => {
                         format!(
                             "{}float<3> {}{}",
-                            if l { "local " } else { "" },
+                            if l { "uniform " } else { "" },
                             v,
                             idx4(n, a, b, c, d)?
                         )
@@ -268,6 +271,8 @@ impl<'a> Generator<'a> {
                     v,
                     match input[k] {
                         VarType::Buffer { .. } => format!("[], uniform int ___str_{}[]", v),
+                        VarType::Int => "".into(),
+                        VarType::Float => "".into(),
                         VarType::IntArray(1, ..) => "[]".into(),
                         VarType::FloatArray(1, ..) => "[]".into(),
                         t =>
@@ -649,7 +654,7 @@ uniform int _nz = ceil((uniform float)_dim[5]/_dim[8]);
             VarType::BoolArray(n, l, a, b, c, d) => {
                 format!(
                     "{}bool {} {}{};\n",
-                    if l { "local " } else { "" },
+                    if l { "uniform " } else { "" },
                     id,
                     idx4(n, a, b, c, d)?,
                     expr_str
@@ -658,7 +663,7 @@ uniform int _nz = ceil((uniform float)_dim[5]/_dim[8]);
             VarType::IntArray(n, l, a, b, c, d) => {
                 format!(
                     "{}int {} {}{};\n",
-                    if l { "local " } else { "" },
+                    if l { "uniform " } else { "" },
                     id,
                     idx4(n, a, b, c, d)?,
                     expr_str
@@ -667,7 +672,7 @@ uniform int _nz = ceil((uniform float)_dim[5]/_dim[8]);
             VarType::FloatArray(n, l, a, b, c, d) => {
                 format!(
                     "{}float {} {}{};\n",
-                    if l { "local " } else { "" },
+                    if l { "uniform " } else { "" },
                     id,
                     idx4(n, a, b, c, d)?,
                     expr_str
@@ -676,7 +681,7 @@ uniform int _nz = ceil((uniform float)_dim[5]/_dim[8]);
             VarType::VecArray(n, l, a, b, c, d) => {
                 format!(
                     "{}float<3> {} {}{};\n",
-                    if l { "local " } else { "" },
+                    if l { "uniform " } else { "" },
                     id,
                     idx4(n, a, b, c, d)?,
                     expr_str
@@ -881,8 +886,6 @@ uniform int _nz = ceil((uniform float)_dim[5]/_dim[8]);
 
         if !vars.is_empty() {
             id = match (id, vars[0]) {
-                ("abs", VarType::Float) => "fabs",
-                ("abs", VarType::Vec) => "fabs",
                 ("atomic_add", VarType::FloatArray(1, false, ..)) => "_atomic_float_add",
                 ("atomic_sub", VarType::FloatArray(1, false, ..)) => "_atomic_float_sub",
                 ("atomic_inc", VarType::FloatArray(1, false, ..)) => "_atomic_float_inc",
