@@ -313,6 +313,8 @@ if (_dim[3]<16 && _dim[4]>16) {
     _xmax = _tmax;
 }
 
+seed_rng(&_rng_state, programIndex);
+
 foreach (_z = _zmin ... _zmax, _1 = _ymin ... _ymax, _0 = _xmin ... _xmax) {
 
 int _x, _y;

@@ -15,6 +15,9 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#ifndef __INCLUDE_CS
+#define __INCLUDE_CS
+
 inline float<3> vec(float x, float y, float z)
 {
     float<3> o = {x, y, z};
@@ -27,8 +30,7 @@ inline float<3> vec(float x)
     return o;
 }
 
-#ifndef __INCLUDE_CS
-#define __INCLUDE_CS
+#include "random.ispc"
 
 #define A    0.055f
 #define G    2.4f
@@ -58,11 +60,11 @@ inline float _lrgb(float V) {
 #undef F
 
 inline float<3> _SRGB_LRGB(float<3> i) {
-	return (float<3>)(_lrgb(i.x), _lrgb(i.y), _lrgb(i.z));
+	return vec(_lrgb(i.x), _lrgb(i.y), _lrgb(i.z));
 }
 
 inline float<3> _LRGB_SRGB(float<3> i) {
-	return (float<3>)(_srgb(i.x), _srgb(i.y), _srgb(i.z));
+	return vec(_srgb(i.x), _srgb(i.y), _srgb(i.z));
 }
 
 // sRGB to XYZ D65 conversion matrix
@@ -103,8 +105,8 @@ inline float<3> _Y_XYZ(float i) {
 	o.z = i*(__M[6]+__M[7]+__M[8]);
 	return o;
 }
-inline float<3> _Y_LRGB(float i) { return (float<3>)(i); }
-inline float<3> _Y_SRGB(float i) { return (float<3>)(_srgb(i));}
+inline float<3> _Y_LRGB(float i) { return vec(i); }
+inline float<3> _Y_SRGB(float i) { return vec(_srgb(i));}
 inline float _LRGB_Y(float<3> i) { return i.x*__M[3] + i.y*__M[4] + i.z*__M[5]; }
 
 #define wp_x 0.95047f // http://brucelindbloom.com/index.html?Eqn_ChromAdapt.html
@@ -185,7 +187,7 @@ inline float<3> _LCH_LAB(float<3> i) {
 }
 
 inline float _LXX_L(float<3> i) { return i.x; }
-inline float<3> _L_LXX(float i) { return (float<3>)(i, 0, 0); }
+inline float<3> _L_LXX(float i) { return vec(i, 0, 0); }
 
 
 // list of convenience chained conversion functions
@@ -504,6 +506,10 @@ inline float<3> sqrt(float<3> a) {
 inline float<3> max(float<3> a, float<3> b) {
 	return vec(max(a.x, b.x), max(a.y, b.y), max(a.z, b.z));
 }
+
+inline float<3> floor(float<3> a) {
+	return vec(floor(a.x), floor(a.y), floor(a.z));
+}
 // similar needs to be done for all math functions!!
 // pre-compile and link this instead of including as source once done!!
 
@@ -518,6 +524,10 @@ inline float<3> mix(float<3> a, float<3> b, float<3> c) {
 
 inline float<3> clamp(float<3> v, float l, float h) {
   return vec(clamp(v.x, l, h), clamp(v.y, l, h), clamp(v.z, l, h));
+}
+
+inline float<3> clamp(float<3> v, float<3> l, float<3> h) {
+  return vec(clamp(v.x, l.x, h.x), clamp(v.y, l.y, h.y), clamp(v.z, l.z, h.z));
 }
 
 inline float pown(float a, int b) {
