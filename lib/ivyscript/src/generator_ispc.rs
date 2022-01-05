@@ -23,7 +23,7 @@ use crate::ast::{
 };
 use crate::function_id::function_id;
 
-use crate::inference::{GenFunction, Inference, VarType};
+use crate::inference::{GenFunction, Inference, VarType, PRIVATE, LOCAL};
 
 pub struct Generator<'a> {
     inference: RefCell<Inference<'a>>,
@@ -120,34 +120,34 @@ impl<'a> Generator<'a> {
                     VarType::Int => format!("int {}", arg),
                     VarType::Float => format!("float {}", arg),
                     VarType::Vec => format!("float<3> {}", arg),
-                    VarType::BoolArray(dim, local, i1, i2, i3, i4) => {
+                    VarType::BoolArray(dim, address, i1, i2, i3, i4) => {
                         format!(
                             "{}bool {}{}",
-                            if local { "uniform " } else { "" },
+                            if address==LOCAL { "uniform " } else { "" },
                             arg,
                             idx4(dim, i1, i2, i3, i4)?
                         )
                     }
-                    VarType::IntArray(dim, local, i1, i2, i3, i4) => {
+                    VarType::IntArray(dim, address, i1, i2, i3, i4) => {
                         format!(
                             "{}int {}{}",
-                            if local { "uniform " } else { "" },
+                            if address==LOCAL { "uniform " } else { "" },
                             arg,
                             idx4(dim, i1, i2, i3, i4)?
                         )
                     }
-                    VarType::FloatArray(dim, local, i1, i2, i3, i4) => {
+                    VarType::FloatArray(dim, address, i1, i2, i3, i4) => {
                         format!(
                             "{}float {}{}",
-                            if local { "uniform " } else { "" },
+                            if address==LOCAL { "uniform " } else { "" },
                             arg,
                             idx4(dim, i1, i2, i3, i4)?
                         )
                     }
-                    VarType::VecArray(dim, local, i1, i2, i3, i4) => {
+                    VarType::VecArray(dim, address, i1, i2, i3, i4) => {
                         format!(
                             "{}float<3> {}{}",
-                            if local { "uniform " } else { "" },
+                            if address==LOCAL { "uniform " } else { "" },
                             arg,
                             idx4(dim, i1, i2, i3, i4)?
                         )
@@ -643,37 +643,37 @@ uniform int _nz = ceil((uniform float)_dim[5]/_dim[8]);
             VarType::Float => format!("float {} = {};\n", id, expr_str),
             VarType::Vec => format!("float<3> {} = {};\n", id, expr_str),
 
-            VarType::BoolArray(dim, local, i1, i2, i3, i4) => {
+            VarType::BoolArray(dim, address, i1, i2, i3, i4) => {
                 format!(
                     "{}bool {} {}{};\n",
-                    if local { "uniform " } else { "" },
+                    if address==LOCAL { "uniform " } else { "" },
                     id,
                     idx4(dim, i1, i2, i3, i4)?,
                     expr_str
                 )
             }
-            VarType::IntArray(dim, local, i1, i2, i3, i4) => {
+            VarType::IntArray(dim, address, i1, i2, i3, i4) => {
                 format!(
                     "{}int {} {}{};\n",
-                    if local { "uniform " } else { "" },
+                    if address==LOCAL { "uniform " } else { "" },
                     id,
                     idx4(dim, i1, i2, i3, i4)?,
                     expr_str
                 )
             }
-            VarType::FloatArray(dim, local, i1, i2, i3, i4) => {
+            VarType::FloatArray(dim, address, i1, i2, i3, i4) => {
                 format!(
                     "{}float {} {}{};\n",
-                    if local { "uniform " } else { "" },
+                    if address==LOCAL { "uniform " } else { "" },
                     id,
                     idx4(dim, i1, i2, i3, i4)?,
                     expr_str
                 )
             }
-            VarType::VecArray(dim, local, i1, i2, i3, i4) => {
+            VarType::VecArray(dim, address, i1, i2, i3, i4) => {
                 format!(
                     "{}float<3> {} {}{};\n",
-                    if local { "uniform " } else { "" },
+                    if address==LOCAL { "uniform " } else { "" },
                     id,
                     idx4(dim, i1, i2, i3, i4)?,
                     expr_str
@@ -878,18 +878,18 @@ uniform int _nz = ceil((uniform float)_dim[5]/_dim[8]);
 
         if !vars.is_empty() {
             id = match (id, vars[0]) {
-                ("atomic_add", VarType::FloatArray(1, false, ..)) => "_atomic_float_add",
-                ("atomic_sub", VarType::FloatArray(1, false, ..)) => "_atomic_float_sub",
-                ("atomic_inc", VarType::FloatArray(1, false, ..)) => "_atomic_float_inc",
-                ("atomic_dec", VarType::FloatArray(1, false, ..)) => "_atomic_float_dec",
-                ("atomic_min", VarType::FloatArray(1, false, ..)) => "_atomic_float_min",
-                ("atomic_max", VarType::FloatArray(1, false, ..)) => "_atomic_float_max",
-                ("atomic_add", VarType::FloatArray(1, true, ..)) => "_atomic_local_float_add",
-                ("atomic_sub", VarType::FloatArray(1, true, ..)) => "_atomic_local_float_sub",
-                ("atomic_inc", VarType::FloatArray(1, true, ..)) => "_atomic_local_float_inc",
-                ("atomic_dec", VarType::FloatArray(1, true, ..)) => "_atomic_local_float_dec",
-                ("atomic_min", VarType::FloatArray(1, true, ..)) => "_atomic_local_float_min",
-                ("atomic_max", VarType::FloatArray(1, true, ..)) => "_atomic_local_float_max",
+                ("atomic_add", VarType::FloatArray(1, PRIVATE, ..)) => "_atomic_float_add",
+                ("atomic_sub", VarType::FloatArray(1, PRIVATE, ..)) => "_atomic_float_sub",
+                ("atomic_inc", VarType::FloatArray(1, PRIVATE, ..)) => "_atomic_float_inc",
+                ("atomic_dec", VarType::FloatArray(1, PRIVATE, ..)) => "_atomic_float_dec",
+                ("atomic_min", VarType::FloatArray(1, PRIVATE, ..)) => "_atomic_float_min",
+                ("atomic_max", VarType::FloatArray(1, PRIVATE, ..)) => "_atomic_float_max",
+                ("atomic_add", VarType::FloatArray(1, LOCAL, ..)) => "_atomic_local_float_add",
+                ("atomic_sub", VarType::FloatArray(1, LOCAL, ..)) => "_atomic_local_float_sub",
+                ("atomic_inc", VarType::FloatArray(1, LOCAL, ..)) => "_atomic_local_float_inc",
+                ("atomic_dec", VarType::FloatArray(1, LOCAL, ..)) => "_atomic_local_float_dec",
+                ("atomic_min", VarType::FloatArray(1, LOCAL, ..)) => "_atomic_local_float_min",
+                ("atomic_max", VarType::FloatArray(1, LOCAL, ..)) => "_atomic_local_float_max",
                 _ => id,
             }
         }

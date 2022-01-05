@@ -16,7 +16,7 @@
 */
 
 use crate::ast::ColorSpace;
-use crate::inference::VarType;
+use crate::inference::{VarType, PRIVATE, LOCAL};
 
 pub fn function_id(name: &str, input: &[VarType]) -> String {
     let mut id = format!("___{}_", input.len());
@@ -26,28 +26,28 @@ pub fn function_id(name: &str, input: &[VarType]) -> String {
             VarType::Int => "I_".into(),
             VarType::Float => "F_".into(),
             VarType::Vec => "V_".into(),
-            VarType::BoolArray(dim, false, i1, i2, i3, i4) => {
+            VarType::BoolArray(dim, PRIVATE, i1, i2, i3, i4) => {
                 format!("BA{}_{}_{}_{}_{}_", dim, i1, i2, i3, i4)
             }
-            VarType::IntArray(dim, false, i1, i2, i3, i4) => {
+            VarType::IntArray(dim, PRIVATE, i1, i2, i3, i4) => {
                 format!("IA{}_{}_{}_{}_{}_", dim, i1, i2, i3, i4)
             }
-            VarType::FloatArray(dim, false, i1, i2, i3, i4) => {
+            VarType::FloatArray(dim, PRIVATE, i1, i2, i3, i4) => {
                 format!("FA{}_{}_{}_{}_{}_", dim, i1, i2, i3, i4)
             }
-            VarType::VecArray(dim, false, i1, i2, i3, i4) => {
+            VarType::VecArray(dim, PRIVATE, i1, i2, i3, i4) => {
                 format!("VA{}_{}_{}_{}_{}_", dim, i1, i2, i3, i4)
             }
-            VarType::BoolArray(dim, true, i1, i2, i3, i4) => {
+            VarType::BoolArray(dim, LOCAL, i1, i2, i3, i4) => {
                 format!("LBA{}_{}_{}_{}_{}_", dim, i1, i2, i3, i4)
             }
-            VarType::IntArray(dim, true, i1, i2, i3, i4) => {
+            VarType::IntArray(dim, LOCAL, i1, i2, i3, i4) => {
                 format!("LIA{}_{}_{}_{}_{}_", dim, i1, i2, i3, i4)
             }
-            VarType::FloatArray(dim, true, i1, i2, i3, i4) => {
+            VarType::FloatArray(dim, LOCAL, i1, i2, i3, i4) => {
                 format!("LFA{}_{}_{}_{}_{}_", dim, i1, i2, i3, i4)
             }
-            VarType::VecArray(dim, true, i1, i2, i3, i4) => {
+            VarType::VecArray(dim, LOCAL, i1, i2, i3, i4) => {
                 format!("LVA{}_{}_{}_{}_{}_", dim, i1, i2, i3, i4)
             }
             VarType::Buffer { z, cs, x1y1 } => format!(

@@ -24,15 +24,21 @@ use crate::function_id::function_id;
 use crate::scope::Tree;
 
 #[derive(Debug, Eq, PartialEq, Copy, Clone)]
+pub enum AddressSpace {
+    Local,
+    Private,
+} 
+
+#[derive(Debug, Eq, PartialEq, Copy, Clone)]
 pub enum VarType {
     Bool,
     Int,
     Float,
     Vec,
-    BoolArray(u8, bool, usize, usize, usize, usize),
-    IntArray(u8, bool, usize, usize, usize, usize),
-    FloatArray(u8, bool, usize, usize, usize, usize),
-    VecArray(u8, bool, usize, usize, usize, usize),
+    BoolArray(u8, AddressSpace, usize, usize, usize, usize),
+    IntArray(u8, AddressSpace, usize, usize, usize, usize),
+    FloatArray(u8, AddressSpace, usize, usize, usize, usize),
+    VecArray(u8, AddressSpace, usize, usize, usize, usize),
     Buffer {
         x1y1: bool,
         z: usize,
@@ -47,6 +53,9 @@ const I: VarType = VarType::Int;
 const F: VarType = VarType::Float;
 const V: VarType = VarType::Vec;
 
+pub const LOCAL: AddressSpace = AddressSpace::Local;
+pub const PRIVATE: AddressSpace = AddressSpace::Private;
+
 impl std::fmt::Display for VarType {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
@@ -54,27 +63,27 @@ impl std::fmt::Display for VarType {
             VarType::Int => write!(f, "Int"),
             VarType::Float => write!(f, "Float"),
             VarType::Vec => write!(f, "Vec"),
-            VarType::BoolArray(dim, local, ..) => {
+            VarType::BoolArray(dim, address, ..) => {
                 write!(
                     f,
                     "{}D {}BoolArray",
                     dim,
-                    if *local { "local " } else { "" }
+                    if *address==LOCAL { "local " } else { "" }
                 )
             }
             VarType::IntArray(dim, local, ..) => {
-                write!(f, "{}D {}IntArray", dim, if *local { "local " } else { "" })
+                write!(f, "{}D {}IntArray", dim, if *local==LOCAL { "local " } else { "" })
             }
             VarType::FloatArray(dim, local, ..) => {
                 write!(
                     f,
                     "{}D {}FloatArray",
                     dim,
-                    if *local { "local " } else { "" }
+                    if *local==LOCAL { "local " } else { "" }
                 )
             }
             VarType::VecArray(dim, local, ..) => {
-                write!(f, "{}D {}VecArray", dim, if *local { "local " } else { "" })
+                write!(f, "{}D {}VecArray", dim, if *local==LOCAL { "local " } else { "" })
             }
             VarType::Buffer { z, cs, x1y1: true } => write!(f, "{}ch {} x1y1 Buffer", z, cs),
             VarType::Buffer { z, cs, x1y1: false } => write!(f, "{}ch {} Buffer", z, cs),
@@ -111,19 +120,19 @@ impl<'a> Inference<'a> {
                 if let Expr::Identifier(id) = &**expr {
                     if let Some(var_type) = self.scope.get(id) {
                         let var_type = match var_type {
-                            VarType::IntArray(_, true, ..) => {
-                                VarType::IntArray(1, true, 0, 0, 0, 0)
+                            VarType::IntArray(_, LOCAL, ..) => {
+                                VarType::IntArray(1, LOCAL, 0, 0, 0, 0)
                             }
-                            VarType::IntArray(_, false, ..) => {
-                                VarType::IntArray(1, false, 0, 0, 0, 0)
+                            VarType::IntArray(_, PRIVATE, ..) => {
+                                VarType::IntArray(1, PRIVATE, 0, 0, 0, 0)
                             }
-                            VarType::FloatArray(_, true, ..) => {
-                                VarType::FloatArray(1, true, 0, 0, 0, 0)
+                            VarType::FloatArray(_, LOCAL, ..) => {
+                                VarType::FloatArray(1, LOCAL, 0, 0, 0, 0)
                             }
-                            VarType::FloatArray(_, false, ..) => {
-                                VarType::FloatArray(1, false, 0, 0, 0, 0)
+                            VarType::FloatArray(_, PRIVATE, ..) => {
+                                VarType::FloatArray(1, PRIVATE, 0, 0, 0, 0)
                             }
-                            VarType::Buffer { .. } => VarType::FloatArray(1, false, 0, 0, 0, 0),
+                            VarType::Buffer { .. } => VarType::FloatArray(1, PRIVATE, 0, 0, 0, 0),
                             err_type => {
                                 return Err(format!(
                                 "Variable '{}' of type '{}' does not support the '.ptr' property",
@@ -214,7 +223,7 @@ impl<'a> Inference<'a> {
                     ColorSpace::Y | ColorSpace::L => F,
                 },
 
-                (F, Index::Prop(Prop::IntPtr)) => VarType::IntArray(1, false, 0, 0, 0, 0), // only available for buffers
+                (F, Index::Prop(Prop::IntPtr)) => VarType::IntArray(1, PRIVATE, 0, 0, 0, 0), // only available for buffers
 
                 (VarType::BoolArray(1, ..), Index::Array1D(..))
                 | (VarType::BoolArray(2, ..), Index::Array2D(..))
@@ -261,45 +270,45 @@ impl<'a> Inference<'a> {
 
                 // TODO: assert that all other elements have the same type
                 match self.var_type(&elems[0])? {
-                    B => VarType::BoolArray(1, false, elems.len(), 0, 0, 0),
-                    I => VarType::IntArray(1, false, elems.len(), 0, 0, 0),
-                    F => VarType::FloatArray(1, false, elems.len(), 0, 0, 0),
-                    V => VarType::VecArray(1, false, elems.len(), 0, 0, 0),
+                    B => VarType::BoolArray(1, PRIVATE, elems.len(), 0, 0, 0),
+                    I => VarType::IntArray(1, PRIVATE, elems.len(), 0, 0, 0),
+                    F => VarType::FloatArray(1, PRIVATE, elems.len(), 0, 0, 0),
+                    V => VarType::VecArray(1, PRIVATE, elems.len(), 0, 0, 0),
                     VarType::BoolArray(1, _, i1, ..) => {
-                        VarType::BoolArray(2, false, elems.len(), i1, 0, 0)
+                        VarType::BoolArray(2, PRIVATE, elems.len(), i1, 0, 0)
                     }
                     VarType::BoolArray(2, _, i1, i2, ..) => {
-                        VarType::BoolArray(3, false, elems.len(), i1, i2, 0)
+                        VarType::BoolArray(3, PRIVATE, elems.len(), i1, i2, 0)
                     }
                     VarType::BoolArray(3, _, i1, i2, i3, ..) => {
-                        VarType::BoolArray(4, false, elems.len(), i1, i2, i3)
+                        VarType::BoolArray(4, PRIVATE, elems.len(), i1, i2, i3)
                     }
                     VarType::IntArray(1, _, i1, ..) => {
-                        VarType::IntArray(2, false, elems.len(), i1, 0, 0)
+                        VarType::IntArray(2, PRIVATE, elems.len(), i1, 0, 0)
                     }
                     VarType::IntArray(2, _, i1, i2, ..) => {
-                        VarType::IntArray(3, false, elems.len(), i1, i2, 0)
+                        VarType::IntArray(3, PRIVATE, elems.len(), i1, i2, 0)
                     }
                     VarType::IntArray(3, _, i1, i2, i3, ..) => {
-                        VarType::IntArray(4, false, elems.len(), i1, i2, i3)
+                        VarType::IntArray(4, PRIVATE, elems.len(), i1, i2, i3)
                     }
                     VarType::FloatArray(1, _, i1, ..) => {
-                        VarType::FloatArray(2, false, elems.len(), i1, 0, 0)
+                        VarType::FloatArray(2, PRIVATE, elems.len(), i1, 0, 0)
                     }
                     VarType::FloatArray(2, _, i1, i2, ..) => {
-                        VarType::FloatArray(3, false, elems.len(), i1, i2, 0)
+                        VarType::FloatArray(3, PRIVATE, elems.len(), i1, i2, 0)
                     }
                     VarType::FloatArray(3, _, i1, i2, i3, ..) => {
-                        VarType::FloatArray(4, false, elems.len(), i1, i2, i3)
+                        VarType::FloatArray(4, PRIVATE, elems.len(), i1, i2, i3)
                     }
                     VarType::VecArray(1, _, i1, ..) => {
-                        VarType::VecArray(2, false, elems.len(), i1, 0, 0)
+                        VarType::VecArray(2, PRIVATE, elems.len(), i1, 0, 0)
                     }
                     VarType::VecArray(2, _, i1, i2, ..) => {
-                        VarType::VecArray(3, false, elems.len(), i1, i2, 0)
+                        VarType::VecArray(3, PRIVATE, elems.len(), i1, i2, 0)
                     }
                     VarType::VecArray(3, _, i1, i2, i3, ..) => {
-                        VarType::VecArray(4, false, elems.len(), i1, i2, i3)
+                        VarType::VecArray(4, PRIVATE, elems.len(), i1, i2, i3)
                     }
                     err_type => {
                         return Err(format!("Unable to construct array of type '{}'", err_type))
@@ -637,7 +646,7 @@ impl<'a> Inference<'a> {
             // array constructors
             "array" if vars.len() == 1 && Inference::is_int_lit(&vars[0]) => VarType::FloatArray(
                 1,
-                false,
+                PRIVATE,
                 Inference::get_int_lit(&vars[0])?
                     .try_into()
                     .map_err(|_| "Negative array index")?,
@@ -652,7 +661,7 @@ impl<'a> Inference<'a> {
             {
                 VarType::FloatArray(
                     2,
-                    false,
+                    PRIVATE,
                     Inference::get_int_lit(&vars[0])?
                         .try_into()
                         .map_err(|_| "Negative array index")?,
@@ -671,7 +680,7 @@ impl<'a> Inference<'a> {
             {
                 VarType::FloatArray(
                     3,
-                    false,
+                    PRIVATE,
                     Inference::get_int_lit(&vars[0])?
                         .try_into()
                         .map_err(|_| "Negative array index")?,
@@ -693,7 +702,7 @@ impl<'a> Inference<'a> {
             {
                 VarType::FloatArray(
                     4,
-                    false,
+                    PRIVATE,
                     Inference::get_int_lit(&vars[0])?
                         .try_into()
                         .map_err(|_| "Negative array index")?,
@@ -712,7 +721,7 @@ impl<'a> Inference<'a> {
             "bool_array" if vars.len() == 1 && Inference::is_int_lit(&vars[0]) => {
                 VarType::BoolArray(
                     1,
-                    false,
+                    PRIVATE,
                     Inference::get_int_lit(&vars[0])?
                         .try_into()
                         .map_err(|_| "Negative array index")?,
@@ -728,7 +737,7 @@ impl<'a> Inference<'a> {
             {
                 VarType::BoolArray(
                     2,
-                    false,
+                    PRIVATE,
                     Inference::get_int_lit(&vars[0])?
                         .try_into()
                         .map_err(|_| "Negative array index")?,
@@ -747,7 +756,7 @@ impl<'a> Inference<'a> {
             {
                 VarType::BoolArray(
                     3,
-                    false,
+                    PRIVATE,
                     Inference::get_int_lit(&vars[0])?
                         .try_into()
                         .map_err(|_| "Negative array index")?,
@@ -769,7 +778,7 @@ impl<'a> Inference<'a> {
             {
                 VarType::BoolArray(
                     4,
-                    false,
+                    PRIVATE,
                     Inference::get_int_lit(&vars[0])?
                         .try_into()
                         .map_err(|_| "Negative array index")?,
@@ -787,7 +796,7 @@ impl<'a> Inference<'a> {
 
             "int_array" if vars.len() == 1 && Inference::is_int_lit(&vars[0]) => VarType::IntArray(
                 1,
-                false,
+                PRIVATE,
                 Inference::get_int_lit(&vars[0])?
                     .try_into()
                     .map_err(|_| "Negative array index")?,
@@ -802,7 +811,7 @@ impl<'a> Inference<'a> {
             {
                 VarType::IntArray(
                     2,
-                    false,
+                    PRIVATE,
                     Inference::get_int_lit(&vars[0])?
                         .try_into()
                         .map_err(|_| "Negative array index")?,
@@ -821,7 +830,7 @@ impl<'a> Inference<'a> {
             {
                 VarType::IntArray(
                     3,
-                    false,
+                    PRIVATE,
                     Inference::get_int_lit(&vars[0])?
                         .try_into()
                         .map_err(|_| "Negative array index")?,
@@ -843,7 +852,7 @@ impl<'a> Inference<'a> {
             {
                 VarType::IntArray(
                     4,
-                    false,
+                    PRIVATE,
                     Inference::get_int_lit(&vars[0])?
                         .try_into()
                         .map_err(|_| "Negative array index")?,
@@ -862,7 +871,7 @@ impl<'a> Inference<'a> {
             "float_array" if vars.len() == 1 && Inference::is_int_lit(&vars[0]) => {
                 VarType::FloatArray(
                     1,
-                    false,
+                    PRIVATE,
                     Inference::get_int_lit(&vars[0])?
                         .try_into()
                         .map_err(|_| "Negative array index")?,
@@ -879,7 +888,7 @@ impl<'a> Inference<'a> {
             {
                 VarType::FloatArray(
                     2,
-                    false,
+                    PRIVATE,
                     Inference::get_int_lit(&vars[0])?
                         .try_into()
                         .map_err(|_| "Negative array index")?,
@@ -898,7 +907,7 @@ impl<'a> Inference<'a> {
             {
                 VarType::FloatArray(
                     3,
-                    false,
+                    PRIVATE,
                     Inference::get_int_lit(&vars[0])?
                         .try_into()
                         .map_err(|_| "Negative array index")?,
@@ -920,7 +929,7 @@ impl<'a> Inference<'a> {
             {
                 VarType::FloatArray(
                     4,
-                    false,
+                    PRIVATE,
                     Inference::get_int_lit(&vars[0])?
                         .try_into()
                         .map_err(|_| "Negative array index")?,
@@ -938,7 +947,7 @@ impl<'a> Inference<'a> {
 
             "vec_array" if vars.len() == 1 && Inference::is_int_lit(&vars[0]) => VarType::VecArray(
                 1,
-                false,
+                PRIVATE,
                 Inference::get_int_lit(&vars[0])?
                     .try_into()
                     .map_err(|_| "Negative array index")?,
@@ -953,7 +962,7 @@ impl<'a> Inference<'a> {
             {
                 VarType::VecArray(
                     2,
-                    false,
+                    PRIVATE,
                     Inference::get_int_lit(&vars[0])?
                         .try_into()
                         .map_err(|_| "Negative array index")?,
@@ -972,7 +981,7 @@ impl<'a> Inference<'a> {
             {
                 VarType::VecArray(
                     3,
-                    false,
+                    PRIVATE,
                     Inference::get_int_lit(&vars[0])?
                         .try_into()
                         .map_err(|_| "Negative array index")?,
@@ -994,7 +1003,7 @@ impl<'a> Inference<'a> {
             {
                 VarType::VecArray(
                     4,
-                    false,
+                    PRIVATE,
                     Inference::get_int_lit(&vars[0])?
                         .try_into()
                         .map_err(|_| "Negative array index")?,
@@ -1014,7 +1023,7 @@ impl<'a> Inference<'a> {
             "local_array" if vars.len() == 1 && Inference::is_int_lit(&vars[0]) => {
                 VarType::FloatArray(
                     1,
-                    true,
+                    LOCAL,
                     Inference::get_int_lit(&vars[0])?
                         .try_into()
                         .map_err(|_| "Negative array index")?,
@@ -1030,7 +1039,7 @@ impl<'a> Inference<'a> {
             {
                 VarType::FloatArray(
                     2,
-                    true,
+                    LOCAL,
                     Inference::get_int_lit(&vars[0])?
                         .try_into()
                         .map_err(|_| "Negative array index")?,
@@ -1049,7 +1058,7 @@ impl<'a> Inference<'a> {
             {
                 VarType::FloatArray(
                     3,
-                    true,
+                    LOCAL,
                     Inference::get_int_lit(&vars[0])?
                         .try_into()
                         .map_err(|_| "Negative array index")?,
@@ -1071,7 +1080,7 @@ impl<'a> Inference<'a> {
             {
                 VarType::FloatArray(
                     4,
-                    true,
+                    LOCAL,
                     Inference::get_int_lit(&vars[0])?
                         .try_into()
                         .map_err(|_| "Negative array index")?,
@@ -1090,7 +1099,7 @@ impl<'a> Inference<'a> {
             "local_bool_array" if vars.len() == 1 && Inference::is_int_lit(&vars[0]) => {
                 VarType::BoolArray(
                     1,
-                    true,
+                    LOCAL,
                     Inference::get_int_lit(&vars[0])?
                         .try_into()
                         .map_err(|_| "Negative array index")?,
@@ -1106,7 +1115,7 @@ impl<'a> Inference<'a> {
             {
                 VarType::BoolArray(
                     2,
-                    true,
+                    LOCAL,
                     Inference::get_int_lit(&vars[0])?
                         .try_into()
                         .map_err(|_| "Negative array index")?,
@@ -1125,7 +1134,7 @@ impl<'a> Inference<'a> {
             {
                 VarType::BoolArray(
                     3,
-                    true,
+                    LOCAL,
                     Inference::get_int_lit(&vars[0])?
                         .try_into()
                         .map_err(|_| "Negative array index")?,
@@ -1147,7 +1156,7 @@ impl<'a> Inference<'a> {
             {
                 VarType::BoolArray(
                     4,
-                    true,
+                    LOCAL,
                     Inference::get_int_lit(&vars[0])?
                         .try_into()
                         .map_err(|_| "Negative array index")?,
@@ -1166,7 +1175,7 @@ impl<'a> Inference<'a> {
             "local_int_array" if vars.len() == 1 && Inference::is_int_lit(&vars[0]) => {
                 VarType::IntArray(
                     1,
-                    true,
+                    LOCAL,
                     Inference::get_int_lit(&vars[0])?
                         .try_into()
                         .map_err(|_| "Negative array index")?,
@@ -1182,7 +1191,7 @@ impl<'a> Inference<'a> {
             {
                 VarType::IntArray(
                     2,
-                    true,
+                    LOCAL,
                     Inference::get_int_lit(&vars[0])?
                         .try_into()
                         .map_err(|_| "Negative array index")?,
@@ -1201,7 +1210,7 @@ impl<'a> Inference<'a> {
             {
                 VarType::IntArray(
                     3,
-                    true,
+                    LOCAL,
                     Inference::get_int_lit(&vars[0])?
                         .try_into()
                         .map_err(|_| "Negative array index")?,
@@ -1223,7 +1232,7 @@ impl<'a> Inference<'a> {
             {
                 VarType::IntArray(
                     4,
-                    true,
+                    LOCAL,
                     Inference::get_int_lit(&vars[0])?
                         .try_into()
                         .map_err(|_| "Negative array index")?,
@@ -1242,7 +1251,7 @@ impl<'a> Inference<'a> {
             "local_float_array" if vars.len() == 1 && Inference::is_int_lit(&vars[0]) => {
                 VarType::FloatArray(
                     1,
-                    true,
+                    LOCAL,
                     Inference::get_int_lit(&vars[0])?
                         .try_into()
                         .map_err(|_| "Negative array index")?,
@@ -1258,7 +1267,7 @@ impl<'a> Inference<'a> {
             {
                 VarType::FloatArray(
                     2,
-                    true,
+                    LOCAL,
                     Inference::get_int_lit(&vars[0])?
                         .try_into()
                         .map_err(|_| "Negative array index")?,
@@ -1277,7 +1286,7 @@ impl<'a> Inference<'a> {
             {
                 VarType::FloatArray(
                     3,
-                    true,
+                    LOCAL,
                     Inference::get_int_lit(&vars[0])?
                         .try_into()
                         .map_err(|_| "Negative array index")?,
@@ -1299,7 +1308,7 @@ impl<'a> Inference<'a> {
             {
                 VarType::FloatArray(
                     4,
-                    true,
+                    LOCAL,
                     Inference::get_int_lit(&vars[0])?
                         .try_into()
                         .map_err(|_| "Negative array index")?,
@@ -1318,7 +1327,7 @@ impl<'a> Inference<'a> {
             "local_vec_array" if vars.len() == 1 && Inference::is_int_lit(&vars[0]) => {
                 VarType::VecArray(
                     1,
-                    true,
+                    LOCAL,
                     Inference::get_int_lit(&vars[0])?
                         .try_into()
                         .map_err(|_| "Negative array index")?,
@@ -1334,7 +1343,7 @@ impl<'a> Inference<'a> {
             {
                 VarType::VecArray(
                     2,
-                    true,
+                    LOCAL,
                     Inference::get_int_lit(&vars[0])?
                         .try_into()
                         .map_err(|_| "Negative array index")?,
@@ -1353,7 +1362,7 @@ impl<'a> Inference<'a> {
             {
                 VarType::VecArray(
                     3,
-                    true,
+                    LOCAL,
                     Inference::get_int_lit(&vars[0])?
                         .try_into()
                         .map_err(|_| "Negative array index")?,
@@ -1375,7 +1384,7 @@ impl<'a> Inference<'a> {
             {
                 VarType::VecArray(
                     4,
-                    true,
+                    LOCAL,
                     Inference::get_int_lit(&vars[0])?
                         .try_into()
                         .map_err(|_| "Negative array index")?,
