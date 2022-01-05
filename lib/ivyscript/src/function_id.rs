@@ -20,24 +20,36 @@ use crate::inference::VarType;
 
 pub fn function_id(name: &str, input: &[VarType]) -> String {
     let mut id = format!("___{}_", input.len());
-    for v in input {
-        let s = match v {
+    for var_type in input {
+        let out = match var_type {
             VarType::Bool => "B_".into(),
             VarType::Int => "I_".into(),
             VarType::Float => "F_".into(),
             VarType::Vec => "V_".into(),
-            VarType::BoolArray(n, false, x, y, z, w) => format!("BA{}_{}_{}_{}_{}_", n, x, y, z, w),
-            VarType::IntArray(n, false, x, y, z, w) => format!("IA{}_{}_{}_{}_{}_", n, x, y, z, w),
-            VarType::FloatArray(n, false, x, y, z, w) => {
-                format!("FA{}_{}_{}_{}_{}_", n, x, y, z, w)
+            VarType::BoolArray(dim, false, i1, i2, i3, i4) => {
+                format!("BA{}_{}_{}_{}_{}_", dim, i1, i2, i3, i4)
             }
-            VarType::VecArray(n, false, x, y, z, w) => format!("VA{}_{}_{}_{}_{}_", n, x, y, z, w),
-            VarType::BoolArray(n, true, x, y, z, w) => format!("LBA{}_{}_{}_{}_{}_", n, x, y, z, w),
-            VarType::IntArray(n, true, x, y, z, w) => format!("LIA{}_{}_{}_{}_{}_", n, x, y, z, w),
-            VarType::FloatArray(n, true, x, y, z, w) => {
-                format!("LFA{}_{}_{}_{}_{}_", n, x, y, z, w)
+            VarType::IntArray(dim, false, i1, i2, i3, i4) => {
+                format!("IA{}_{}_{}_{}_{}_", dim, i1, i2, i3, i4)
             }
-            VarType::VecArray(n, true, x, y, z, w) => format!("LVA{}_{}_{}_{}_{}_", n, x, y, z, w),
+            VarType::FloatArray(dim, false, i1, i2, i3, i4) => {
+                format!("FA{}_{}_{}_{}_{}_", dim, i1, i2, i3, i4)
+            }
+            VarType::VecArray(dim, false, i1, i2, i3, i4) => {
+                format!("VA{}_{}_{}_{}_{}_", dim, i1, i2, i3, i4)
+            }
+            VarType::BoolArray(dim, true, i1, i2, i3, i4) => {
+                format!("LBA{}_{}_{}_{}_{}_", dim, i1, i2, i3, i4)
+            }
+            VarType::IntArray(dim, true, i1, i2, i3, i4) => {
+                format!("LIA{}_{}_{}_{}_{}_", dim, i1, i2, i3, i4)
+            }
+            VarType::FloatArray(dim, true, i1, i2, i3, i4) => {
+                format!("LFA{}_{}_{}_{}_{}_", dim, i1, i2, i3, i4)
+            }
+            VarType::VecArray(dim, true, i1, i2, i3, i4) => {
+                format!("LVA{}_{}_{}_{}_{}_", dim, i1, i2, i3, i4)
+            }
             VarType::Buffer { z, cs, x1y1 } => format!(
                 "BUF{}{}{}_",
                 z,
@@ -58,7 +70,7 @@ pub fn function_id(name: &str, input: &[VarType]) -> String {
             VarType::Void => "Void".into(),
             VarType::Unknown => "Unknown".into(),
         };
-        id.push_str(&s);
+        id.push_str(&out);
     }
     id.push_str("__");
     id.push_str(name);
