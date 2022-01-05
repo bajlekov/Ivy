@@ -27,14 +27,14 @@ struct Scope {
 }
 
 #[derive(Debug)]
-pub struct ScopeTree {
+pub struct Tree {
     scopes: RefCell<Vec<Scope>>,
     pub current: Cell<usize>,
 }
 
-impl ScopeTree {
-    pub fn new() -> ScopeTree {
-        ScopeTree {
+impl Tree {
+    pub fn new() -> Tree {
+        Tree {
             scopes: RefCell::new(vec![Scope {
                 parent: 0,
                 vars: HashMap::new(),
@@ -48,31 +48,32 @@ impl ScopeTree {
         self.scopes.borrow_mut().drain(1..);
     }
 
-    pub fn add(&self, id: &str, t: VarType) -> usize {
-        let n = self.current.get();
-        self.scopes.borrow_mut()[n].vars.insert(id.into(), Some(t));
-        n
+    pub fn add(&self, id: &str, var_type: VarType) -> usize {
+        let idx = self.current.get();
+        self.scopes.borrow_mut()[idx]
+            .vars
+            .insert(id.into(), Some(var_type));
+        idx
     }
 
     pub fn placeholder(&self, id: &str) -> usize {
-        let n = self.current.get();
-        self.scopes.borrow_mut()[n].vars.insert(id.into(), None);
-        n
+        let idx = self.current.get();
+        self.scopes.borrow_mut()[idx].vars.insert(id.into(), None);
+        idx
     }
 
-    pub fn overwrite(&self, var: &str, t: VarType) -> usize {
+    pub fn overwrite(&self, var: &str, var_type: VarType) -> usize {
         let mut id = self.current.get();
         loop {
             let scope = &mut self.scopes.borrow_mut()[id];
             if scope.vars.get(var).is_some() {
-                scope.vars.insert(var.into(), Some(t));
+                scope.vars.insert(var.into(), Some(var_type));
                 return id;
-            } else {
-                if id == 0 {
-                    return 0;
-                }
-                id = scope.parent;
             }
+            if id == 0 {
+                return 0;
+            }
+            id = scope.parent;
         }
     }
 
@@ -80,20 +81,19 @@ impl ScopeTree {
         let mut id = self.current.get();
         loop {
             let scope = &self.scopes.borrow()[id];
-            if let Some(t) = scope.vars.get(var) {
-                return *t;
-            } else {
-                if id == 0 {
-                    return None;
-                }
-                id = scope.parent;
+            if let Some(var_type) = scope.vars.get(var) {
+                return *var_type;
             }
+            if id == 0 {
+                return None;
+            }
+            id = scope.parent;
         }
     }
 
     pub fn set_parent(&self, parent: usize) {
-        let n = self.current.get();
-        self.scopes.borrow_mut()[n].parent = parent;
+        let idx = self.current.get();
+        self.scopes.borrow_mut()[idx].parent = parent;
     }
 
     pub fn set_current(&self, current: usize) {
@@ -125,7 +125,7 @@ mod test {
         let key1 = "abc".to_string();
         let key2 = "def".to_string();
 
-        let s = ScopeTree::new();
+        let s = Tree::new();
 
         s.add(&key1, VarType::Float);
 
