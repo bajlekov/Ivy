@@ -20,3 +20,32 @@ function overshoot_clamp(Image, x, y, value, overshoot)
 
 	return value
 end
+
+function overshoot_rolloff(Image, x, y, value, overshoot)
+	var xy = Image[x, y, 0]
+	var xp = Image[x+1, y, 0]
+	var xn = Image[x-1, y, 0]
+	var yp = Image[x, y+1, 0]
+	var yn = Image[x, y-1, 0]
+
+  var pp = Image[x+1, y+1, 0]
+  var pn = Image[x+1, y-1, 0]
+  var nn = Image[x-1, y-1, 0]
+  var np = Image[x-1, y+1, 0]
+
+	var xmax = max(max(max(max(xp, xn), yp), yn), xy)
+  xmax = max(max((pp+nn)*0.5, (pn+np)*0.5), xmax)
+	var xmin = min(min(min(min(xp, xn), yp), yn), xy)
+  xmin = min(min((pp+nn)*0.5, (pn+np)*0.5), xmin)
+
+	var xrange = xmax - xmin
+	if value > xy then
+		xrange = xmax + overshoot*xrange - xy
+	else
+		xrange = xmin - overshoot*xrange - xy
+	end
+
+	value = xy + atan2(abs(value - xy), abs(xrange))*xrange
+
+	return value
+end
