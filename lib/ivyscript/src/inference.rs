@@ -17,10 +17,11 @@
 
 use std::cell::RefCell;
 use std::collections::{HashMap, HashSet};
+use std::convert::TryInto;
 
 use crate::ast::{BinaryOp, ColorSpace, Expr, Index, Literal, Prop, UnaryOp};
 use crate::function_id::function_id;
-use crate::scope::ScopeTree;
+use crate::scope::Tree;
 
 #[derive(Debug, Eq, PartialEq, Copy, Clone)]
 pub enum VarType {
@@ -28,11 +29,15 @@ pub enum VarType {
     Int,
     Float,
     Vec,
-    BoolArray(u8, bool, u64, u64, u64, u64),
-    IntArray(u8, bool, u64, u64, u64, u64),
-    FloatArray(u8, bool, u64, u64, u64, u64),
-    VecArray(u8, bool, u64, u64, u64, u64),
-    Buffer { x1y1: bool, z: u64, cs: ColorSpace },
+    BoolArray(u8, bool, usize, usize, usize, usize),
+    IntArray(u8, bool, usize, usize, usize, usize),
+    FloatArray(u8, bool, usize, usize, usize, usize),
+    VecArray(u8, bool, usize, usize, usize, usize),
+    Buffer {
+        x1y1: bool,
+        z: usize,
+        cs: ColorSpace,
+    },
     Void,
     Unknown,
 }
@@ -49,17 +54,27 @@ impl std::fmt::Display for VarType {
             VarType::Int => write!(f, "Int"),
             VarType::Float => write!(f, "Float"),
             VarType::Vec => write!(f, "Vec"),
-            VarType::BoolArray(d, l, ..) => {
-                write!(f, "{}D {}BoolArray", d, if *l { "local " } else { "" })
+            VarType::BoolArray(dim, local, ..) => {
+                write!(
+                    f,
+                    "{}D {}BoolArray",
+                    dim,
+                    if *local { "local " } else { "" }
+                )
             }
-            VarType::IntArray(d, l, ..) => {
-                write!(f, "{}D {}IntArray", d, if *l { "local " } else { "" })
+            VarType::IntArray(dim, local, ..) => {
+                write!(f, "{}D {}IntArray", dim, if *local { "local " } else { "" })
             }
-            VarType::FloatArray(d, l, ..) => {
-                write!(f, "{}D {}FloatArray", d, if *l { "local " } else { "" })
+            VarType::FloatArray(dim, local, ..) => {
+                write!(
+                    f,
+                    "{}D {}FloatArray",
+                    dim,
+                    if *local { "local " } else { "" }
+                )
             }
-            VarType::VecArray(d, l, ..) => {
-                write!(f, "{}D {}VecArray", d, if *l { "local " } else { "" })
+            VarType::VecArray(dim, local, ..) => {
+                write!(f, "{}D {}VecArray", dim, if *local { "local " } else { "" })
             }
             VarType::Buffer { z, cs, x1y1: true } => write!(f, "{}ch {} x1y1 Buffer", z, cs),
             VarType::Buffer { z, cs, x1y1: false } => write!(f, "{}ch {} Buffer", z, cs),
@@ -69,15 +84,22 @@ impl std::fmt::Display for VarType {
     }
 }
 
+pub struct GenFunction {
+    pub declaration: String,
+    pub definition: String,
+    pub return_type: VarType,
+    pub dependencies: HashSet<String>,
+}
+
 pub struct Inference<'a> {
-    pub scope: ScopeTree,
-    pub functions: Option<&'a RefCell<HashMap<String, (String, String, VarType, HashSet<String>)>>>,
+    pub scope: Tree,
+    pub functions: Option<&'a RefCell<HashMap<String, GenFunction>>>,
 }
 
 impl<'a> Inference<'a> {
     pub fn new() -> Inference<'a> {
         Inference {
-            scope: ScopeTree::new(),
+            scope: Tree::new(),
             functions: None,
         }
     }
@@ -87,8 +109,8 @@ impl<'a> Inference<'a> {
         if let Expr::Index(expr, idx) = expr {
             if let (Expr::Index(expr, _), Index::Prop(Prop::Ptr)) = (&**expr, &**idx) {
                 if let Expr::Identifier(id) = &**expr {
-                    if let Some(t) = self.scope.get(id) {
-                        let t = match t {
+                    if let Some(var_type) = self.scope.get(id) {
+                        let var_type = match var_type {
                             VarType::IntArray(_, true, ..) => {
                                 VarType::IntArray(1, true, 0, 0, 0, 0)
                             }
@@ -102,66 +124,70 @@ impl<'a> Inference<'a> {
                                 VarType::FloatArray(1, false, 0, 0, 0, 0)
                             }
                             VarType::Buffer { .. } => VarType::FloatArray(1, false, 0, 0, 0, 0),
-                            t => {
+                            err_type => {
                                 return Err(format!(
                                 "Variable '{}' of type '{}' does not support the '.ptr' property",
-                                id, t
+                                id, err_type
                             ))
                             }
                         };
 
-                        return Ok(t);
-                    } else {
-                        return Err(format!("Variable '{}' is not defined", id));
+                        return Ok(var_type);
                     }
+                    return Err(format!("Variable '{}' is not defined", id));
                 }
             }
         }
 
-        let t = match expr {
+        let var_type = match expr {
             Expr::Literal(Literal::Bool(_)) => B,
             Expr::Literal(Literal::Int(_)) => I,
             Expr::Literal(Literal::Float(_)) => F,
-            Expr::Identifier(i) => {
-                if let Some(t) = self.scope.get(i) {
-                    t
-                } else {
-                    VarType::Unknown // identifier of unknown type
-                }
-            }
-            Expr::Unary(u) => match (&(*u).op, self.var_type(&u.right)?) {
+            Expr::Identifier(name) => self.scope.get(name).map_or(VarType::Unknown, |t| t),
+            Expr::Unary(expr) => match (&(*expr).op, self.var_type(&expr.right)?) {
                 (UnaryOp::Not, B) => B,
                 (UnaryOp::Neg, I) => I,
                 (UnaryOp::Neg, F) => F,
                 (UnaryOp::Neg, V) => V,
-                (op, t) => {
+                (op, err_type) => {
                     return Err(format!(
                         "Variable of type '{}' does not support unary operation '{:?}'",
-                        t, op
+                        err_type, op
                     ))
                 }
             },
-            Expr::Binary(b) => {
-                match (&(*b).op, self.var_type(&b.left)?, self.var_type(&b.right)?) {
-                    (BinaryOp::And, B, B) => B,
-                    (BinaryOp::Or, B, B) => B,
-                    (BinaryOp::Equal, _, _) => B,
-                    (BinaryOp::NotEqual, _, _) => B,
-                    (BinaryOp::Greater, l, r) if (l == I || l == F) && (r == I || r == F) => B,
-                    (BinaryOp::GreaterEqual, l, r) if (l == I || l == F) && (r == I || r == F) => B,
-                    (BinaryOp::Less, l, r) if (l == I || l == F) && (r == I || r == F) => B,
-                    (BinaryOp::LessEqual, l, r) if (l == I || l == F) && (r == I || r == F) => B,
-                    (BinaryOp::Pow, l, r) => self.promote(self.promote(l, r)?, F)?,
-                    (BinaryOp::Div, l, r) => self.promote(self.promote(l, r)?, F)?,
+            Expr::Binary(expr) => {
+                match (
+                    &(*expr).op,
+                    self.var_type(&expr.left)?,
+                    self.var_type(&expr.right)?,
+                ) {
+                    (BinaryOp::And | BinaryOp::Or, B, B)
+                    | (BinaryOp::Equal | BinaryOp::NotEqual, _, _) => B,
 
-                    (BinaryOp::Add, l, r) => self.promote_num(l, r)?,
-                    (BinaryOp::Sub, l, r) => self.promote_num(l, r)?,
-                    (BinaryOp::Mul, l, r) => self.promote_num(l, r)?,
-                    (BinaryOp::Mod, l, r) => self.promote_num(l, r)?,
-                    (op, l, r) => {
+                    (
+                        BinaryOp::Greater
+                        | BinaryOp::GreaterEqual
+                        | BinaryOp::Less
+                        | BinaryOp::LessEqual,
+                        left,
+                        right,
+                    ) if (left == I || left == F) && (right == I || right == F) => B,
+
+                    (BinaryOp::Pow | BinaryOp::Div, left, right) => {
+                        Inference::promote(Inference::promote(left, right)?, F)?
+                    }
+
+                    (
+                        BinaryOp::Add | BinaryOp::Sub | BinaryOp::Mul | BinaryOp::Mod,
+                        left,
+                        right,
+                    ) => Inference::promote_num(left, right)?,
+
+                    (op, left, right) => {
                         return Err(format!(
                     "Unable to infer type of operation '{:?}' with arguments of type '{}' and '{}'",
-                    op, l, r
+                    op, left, right
                 ))
                     }
                 }
@@ -171,185 +197,184 @@ impl<'a> Inference<'a> {
                 (VarType::Buffer { .. }, Index::Vec(_)) => I,
                 (V, Index::ColorSpace(c)) => match c {
                     // 3ch buffer
-                    ColorSpace::Srgb => V,
-                    ColorSpace::Lrgb => V,
-                    ColorSpace::Xyz => V,
-                    ColorSpace::Lab => V,
-                    ColorSpace::Lch => V,
-                    ColorSpace::Y => F,
-                    ColorSpace::L => F,
+                    ColorSpace::Srgb
+                    | ColorSpace::Lrgb
+                    | ColorSpace::Xyz
+                    | ColorSpace::Lab
+                    | ColorSpace::Lch => V,
+                    ColorSpace::Y | ColorSpace::L => F,
                 },
                 (F, Index::ColorSpace(c)) => match c {
                     // 1ch buffer
-                    ColorSpace::Srgb => V,
-                    ColorSpace::Lrgb => V,
-                    ColorSpace::Xyz => V,
-                    ColorSpace::Lab => V,
-                    ColorSpace::Lch => V,
-                    ColorSpace::Y => F,
-                    ColorSpace::L => F,
+                    ColorSpace::Srgb
+                    | ColorSpace::Lrgb
+                    | ColorSpace::Xyz
+                    | ColorSpace::Lab
+                    | ColorSpace::Lch => V,
+                    ColorSpace::Y | ColorSpace::L => F,
                 },
 
-                (F, Index::Prop(Prop::Int)) => I,
-                (F, Index::Prop(Prop::Idx)) => I,
                 (F, Index::Prop(Prop::IntPtr)) => VarType::IntArray(1, false, 0, 0, 0, 0), // only available for buffers
 
-                (VarType::Buffer { .. }, Index::Array1D(..)) => F,
-                (VarType::Buffer { z: 3, .. }, Index::Array2D(..)) => V,
-                (VarType::Buffer { z: 1, .. }, Index::Array2D(..)) => F,
-                (VarType::Buffer { .. }, Index::Array3D(..)) => F,
+                (VarType::BoolArray(1, ..), Index::Array1D(..))
+                | (VarType::BoolArray(2, ..), Index::Array2D(..))
+                | (VarType::BoolArray(3, ..), Index::Array3D(..))
+                | (VarType::BoolArray(4, ..), Index::Array4D(..)) => B,
 
-                (VarType::BoolArray(1, ..), Index::Array1D(..)) => B,
-                (VarType::BoolArray(2, ..), Index::Array2D(..)) => B,
-                (VarType::BoolArray(3, ..), Index::Array3D(..)) => B,
-                (VarType::BoolArray(4, ..), Index::Array4D(..)) => B,
+                (F, Index::Prop(Prop::Int))
+                | (F, Index::Prop(Prop::Idx))
+                | (VarType::IntArray(1, ..), Index::Array1D(..))
+                | (VarType::IntArray(2, ..), Index::Array2D(..))
+                | (VarType::IntArray(3, ..), Index::Array3D(..))
+                | (VarType::IntArray(4, ..), Index::Array4D(..)) => I,
 
-                (VarType::IntArray(1, ..), Index::Array1D(..)) => I,
-                (VarType::IntArray(2, ..), Index::Array2D(..)) => I,
-                (VarType::IntArray(3, ..), Index::Array3D(..)) => I,
-                (VarType::IntArray(4, ..), Index::Array4D(..)) => I,
+                (VarType::Buffer { .. }, Index::Array1D(..))
+                | (VarType::Buffer { z: 1, .. }, Index::Array2D(..))
+                | (VarType::Buffer { .. }, Index::Array3D(..))
+                | (VarType::FloatArray(1, ..), Index::Array1D(..))
+                | (VarType::FloatArray(2, ..), Index::Array2D(..))
+                | (VarType::FloatArray(3, ..), Index::Array3D(..))
+                | (VarType::FloatArray(4, ..), Index::Array4D(..)) => F,
 
-                (VarType::FloatArray(1, ..), Index::Array1D(..)) => F,
-                (VarType::FloatArray(2, ..), Index::Array2D(..)) => F,
-                (VarType::FloatArray(3, ..), Index::Array3D(..)) => F,
-                (VarType::FloatArray(4, ..), Index::Array4D(..)) => F,
-
-                (VarType::VecArray(1, ..), Index::Array1D(..)) => V,
-                (VarType::VecArray(2, ..), Index::Array2D(..)) => V,
-                (VarType::VecArray(3, ..), Index::Array3D(..)) => V,
-                (VarType::VecArray(4, ..), Index::Array4D(..)) => V,
+                (VarType::Buffer { z: 3, .. }, Index::Array2D(..))
+                | (VarType::VecArray(1, ..), Index::Array1D(..))
+                | (VarType::VecArray(2, ..), Index::Array2D(..))
+                | (VarType::VecArray(3, ..), Index::Array3D(..))
+                | (VarType::VecArray(4, ..), Index::Array4D(..)) => V,
 
                 _ => self.var_type(expr)?,
             },
-            Expr::Grouping(e) => self.var_type(&**e)?,
-            Expr::Call(id, e) => {
-                if let Ok(t) = self.builtin(&id, &**e) {
-                    t
-                } else if let Ok(t) = self.function(&id, &**e) {
-                    t
+            Expr::Grouping(expr) => self.var_type(&**expr)?,
+            Expr::Call(id, expr) => {
+                if let Ok(var_type) = self.builtin(id, &**expr) {
+                    var_type
+                } else if let Ok(var_type) = self.function(id, &**expr) {
+                    var_type
                 } else {
                     VarType::Unknown // function call with unknown return type
                 }
             }
-            Expr::Array(v) => {
-                if v.is_empty() {
+            Expr::Array(elems) => {
+                if elems.is_empty() {
                     return Err("Unable to construct empty array".into());
-                } else {
-                    // TODO: assert that all other elements have the same type
-                    match self.var_type(&v[0])? {
-                        B => VarType::BoolArray(1, false, v.len() as u64, 0, 0, 0),
-                        I => VarType::IntArray(1, false, v.len() as u64, 0, 0, 0),
-                        F => VarType::FloatArray(1, false, v.len() as u64, 0, 0, 0),
-                        V => VarType::VecArray(1, false, v.len() as u64, 0, 0, 0),
-                        VarType::BoolArray(1, _, a, ..) => {
-                            VarType::BoolArray(2, false, v.len() as u64, a, 0, 0)
-                        }
-                        VarType::BoolArray(2, _, a, b, ..) => {
-                            VarType::BoolArray(3, false, v.len() as u64, a, b, 0)
-                        }
-                        VarType::BoolArray(3, _, a, b, c, ..) => {
-                            VarType::BoolArray(4, false, v.len() as u64, a, b, c)
-                        }
-                        VarType::IntArray(1, _, a, ..) => {
-                            VarType::IntArray(2, false, v.len() as u64, a, 0, 0)
-                        }
-                        VarType::IntArray(2, _, a, b, ..) => {
-                            VarType::IntArray(3, false, v.len() as u64, a, b, 0)
-                        }
-                        VarType::IntArray(3, _, a, b, c, ..) => {
-                            VarType::IntArray(4, false, v.len() as u64, a, b, c)
-                        }
-                        VarType::FloatArray(1, _, a, ..) => {
-                            VarType::FloatArray(2, false, v.len() as u64, a, 0, 0)
-                        }
-                        VarType::FloatArray(2, _, a, b, ..) => {
-                            VarType::FloatArray(3, false, v.len() as u64, a, b, 0)
-                        }
-                        VarType::FloatArray(3, _, a, b, c, ..) => {
-                            VarType::FloatArray(4, false, v.len() as u64, a, b, c)
-                        }
-                        VarType::VecArray(1, _, a, ..) => {
-                            VarType::VecArray(2, false, v.len() as u64, a, 0, 0)
-                        }
-                        VarType::VecArray(2, _, a, b, ..) => {
-                            VarType::VecArray(3, false, v.len() as u64, a, b, 0)
-                        }
-                        VarType::VecArray(3, _, a, b, c, ..) => {
-                            VarType::VecArray(4, false, v.len() as u64, a, b, c)
-                        }
-                        t => return Err(format!("Unable to construct array of type '{}'", t)),
+                }
+
+                // TODO: assert that all other elements have the same type
+                match self.var_type(&elems[0])? {
+                    B => VarType::BoolArray(1, false, elems.len(), 0, 0, 0),
+                    I => VarType::IntArray(1, false, elems.len(), 0, 0, 0),
+                    F => VarType::FloatArray(1, false, elems.len(), 0, 0, 0),
+                    V => VarType::VecArray(1, false, elems.len(), 0, 0, 0),
+                    VarType::BoolArray(1, _, i1, ..) => {
+                        VarType::BoolArray(2, false, elems.len(), i1, 0, 0)
+                    }
+                    VarType::BoolArray(2, _, i1, i2, ..) => {
+                        VarType::BoolArray(3, false, elems.len(), i1, i2, 0)
+                    }
+                    VarType::BoolArray(3, _, i1, i2, i3, ..) => {
+                        VarType::BoolArray(4, false, elems.len(), i1, i2, i3)
+                    }
+                    VarType::IntArray(1, _, i1, ..) => {
+                        VarType::IntArray(2, false, elems.len(), i1, 0, 0)
+                    }
+                    VarType::IntArray(2, _, i1, i2, ..) => {
+                        VarType::IntArray(3, false, elems.len(), i1, i2, 0)
+                    }
+                    VarType::IntArray(3, _, i1, i2, i3, ..) => {
+                        VarType::IntArray(4, false, elems.len(), i1, i2, i3)
+                    }
+                    VarType::FloatArray(1, _, i1, ..) => {
+                        VarType::FloatArray(2, false, elems.len(), i1, 0, 0)
+                    }
+                    VarType::FloatArray(2, _, i1, i2, ..) => {
+                        VarType::FloatArray(3, false, elems.len(), i1, i2, 0)
+                    }
+                    VarType::FloatArray(3, _, i1, i2, i3, ..) => {
+                        VarType::FloatArray(4, false, elems.len(), i1, i2, i3)
+                    }
+                    VarType::VecArray(1, _, i1, ..) => {
+                        VarType::VecArray(2, false, elems.len(), i1, 0, 0)
+                    }
+                    VarType::VecArray(2, _, i1, i2, ..) => {
+                        VarType::VecArray(3, false, elems.len(), i1, i2, 0)
+                    }
+                    VarType::VecArray(3, _, i1, i2, i3, ..) => {
+                        VarType::VecArray(4, false, elems.len(), i1, i2, i3)
+                    }
+                    err_type => {
+                        return Err(format!("Unable to construct array of type '{}'", err_type))
                     }
                 }
             }
         };
 
-        Ok(t)
+        Ok(var_type)
     }
 
     // promote: int -> float -> vec
-    pub fn promote_num(&self, a: VarType, b: VarType) -> Result<VarType, String> {
-        Ok(match (a, b) {
+    pub fn promote_num(left: VarType, right: VarType) -> Result<VarType, String> {
+        Ok(match (left, right) {
             (I, I) => I,
-            (F, F) | (I, F) | (F, I) => F,
-            (V, V) | (V, F) | (F, V) | (V, I) | (I, V) => V,
-            (a, b) => {
+            (F | I, F) | (F, I) => F,
+            (V | F | I, V) | (V, F | I) => V,
+            (left, right) => {
                 return Err(format!(
                     "Unable to promote type '{}' and '{}' to a common numeric type",
-                    a, b
+                    left, right
                 ))
             }
         })
     }
 
-    pub fn promote(&self, a: VarType, b: VarType) -> Result<VarType, String> {
-        Ok(match (a, b) {
+    pub fn promote(left: VarType, right: VarType) -> Result<VarType, String> {
+        Ok(match (left, right) {
             (B, B) => B,
             (I, I) => I,
-            (F, F) | (I, F) | (F, I) => F,
-            (V, V) | (V, F) | (F, V) | (V, I) | (I, V) => V,
-            (a, b) => {
+            (F | I, F) | (F, I) => F,
+            (V | F | I, V) | (V, F | I) => V,
+            (left, right) => {
                 return Err(format!(
                     "Unable to promote type '{}' and '{}' to a common type",
-                    a, b
+                    left, right
                 ))
             }
         })
     }
 
     // can be coerced to float or int
-    fn is_num(&self, a: &Expr) -> Result<bool, String> {
-        let a = self.var_type(a)?;
-        Ok(a == I || a == F)
+    fn is_num(&self, x: &Expr) -> Result<bool, String> {
+        let x = self.var_type(x)?;
+        Ok(x == I || x == F)
     }
 
-    fn is_int_lit(&self, a: &Expr) -> bool {
-        matches!(a, Expr::Literal(Literal::Int(_)))
+    fn is_int_lit(x: &Expr) -> bool {
+        matches!(x, Expr::Literal(Literal::Int(_)))
     }
 
-    fn get_int_lit(&self, a: &Expr) -> Result<i32, String> {
-        if let Expr::Literal(Literal::Int(v)) = a {
-            Ok(*v)
+    fn get_int_lit(x: &Expr) -> Result<i32, String> {
+        if let Expr::Literal(Literal::Int(val)) = x {
+            Ok(*val)
         } else {
-            Err(format!("Expected an integer literal, found:\n{:?}", a))
+            Err(format!("Expected an integer literal, found:\n{:?}", x))
         }
     }
 
-    fn is_num_vec(&self, a: &Expr) -> Result<bool, String> {
-        let a = self.var_type(a)?;
-        Ok(a == I || a == F || a == V)
+    fn is_num_vec(&self, x: &Expr) -> Result<bool, String> {
+        let x = self.var_type(x)?;
+        Ok(x == I || x == F || x == V)
     }
 
     fn function(&self, id: &str, vars: &[Expr]) -> Result<VarType, String> {
         let vars = vars
             .iter()
-            .map(|e| self.var_type(e))
+            .map(|expr| self.var_type(expr))
             .collect::<Result<Vec<_>, _>>()?;
 
         let id = function_id(id, &vars);
 
-        if let Some(f) = self.functions {
-            if let Some((_, _, v, _)) = f.borrow().get(&id) {
-                Ok(*v)
+        if let Some(func) = self.functions {
+            if let Some(GenFunction { return_type, .. }) = func.borrow().get(&id) {
+                Ok(*return_type)
             } else {
                 Err(format!("Function '{}' is not defined", id))
             }
@@ -365,14 +390,13 @@ impl<'a> Inference<'a> {
                 vars.len()
             ));
         }
-        match self.is_num_vec(&vars[0])? {
-            true => self.promote_num(self.var_type(&vars[0])?, F),
-            false => {
-                return Err(format!(
-                    "Expected numeric argument to math function, found argument of type '{}'",
-                    self.var_type(&vars[0])?
-                ))
-            }
+        if self.is_num_vec(&vars[0])? {
+            Inference::promote_num(self.var_type(&vars[0])?, F)
+        } else {
+            return Err(format!(
+                "Expected numeric argument to math function, found argument of type '{}'",
+                self.var_type(&vars[0])?
+            ));
         }
     }
 
@@ -384,8 +408,8 @@ impl<'a> Inference<'a> {
             ));
         }
         match (self.is_num_vec(&vars[0])?, self.is_num_vec(&vars[1])?) {
-            (true, true) => self.promote_num(
-                self.promote_num(self.var_type(&vars[1])?, self.var_type(&vars[0])?)?,
+            (true, true) => Inference::promote_num(
+                Inference::promote_num(self.var_type(&vars[1])?, self.var_type(&vars[0])?)?,
                 F,
             ),
             (false, _) => {
@@ -403,25 +427,24 @@ impl<'a> Inference<'a> {
         }
     }
 
-    fn geom_1(&self, vars: &[Expr], t: VarType) -> Result<VarType, String> {
+    fn geom_1(&self, vars: &[Expr], var_type: VarType) -> Result<VarType, String> {
         if vars.len() != 1 {
             return Err(format!(
                 "Expected 1 argument to geometry function, found {}",
                 vars.len()
             ));
         }
-        match self.is_num_vec(&vars[0])? {
-            true => Ok(t),
-            false => {
-                return Err(format!(
-                    "Expected numeric argument to geometry function, found argument of type '{}'",
-                    self.var_type(&vars[0])?
-                ))
-            }
+        if self.is_num_vec(&vars[0])? {
+            Ok(var_type)
+        } else {
+            return Err(format!(
+                "Expected numeric argument to geometry function, found argument of type '{}'",
+                self.var_type(&vars[0])?
+            ));
         }
     }
 
-    fn geom_2(&self, vars: &[Expr], t: VarType) -> Result<VarType, String> {
+    fn geom_2(&self, vars: &[Expr], var_type: VarType) -> Result<VarType, String> {
         if vars.len() != 2 {
             return Err(format!(
                 "Expected 2 arguments to geometry function, found {}",
@@ -429,7 +452,7 @@ impl<'a> Inference<'a> {
             ));
         }
         match (self.is_num_vec(&vars[0])?, self.is_num_vec(&vars[1])?) {
-            (true, true) => Ok(t),
+            (true, true) => Ok(var_type),
             (false, _) => {
                 return Err(format!(
                 "Expected numeric 1st argument to geometry function, found argument of type '{}'",
@@ -445,39 +468,37 @@ impl<'a> Inference<'a> {
         }
     }
 
-    fn cs_v(&self, vars: &[Expr], t: VarType) -> Result<VarType, String> {
+    fn cs_v(&self, vars: &[Expr], var_type: VarType) -> Result<VarType, String> {
         if vars.len() != 1 {
             return Err(format!(
                 "Expected 1 argument to color space function, found {}",
                 vars.len()
             ));
         }
-        match self.is_num_vec(&vars[0])? {
-            true => Ok(t),
-            false => {
-                return Err(format!(
-                    "Expected numeric argument to geometry function, found argument of type '{}'",
-                    self.var_type(&vars[0])?
-                ))
-            }
+        if self.is_num_vec(&vars[0])? {
+            Ok(var_type)
+        } else {
+            return Err(format!(
+                "Expected numeric argument to geometry function, found argument of type '{}'",
+                self.var_type(&vars[0])?
+            ));
         }
     }
 
-    fn cs_f(&self, vars: &[Expr], t: VarType) -> Result<VarType, String> {
+    fn cs_f(&self, vars: &[Expr], var_type: VarType) -> Result<VarType, String> {
         if vars.len() != 1 {
             return Err(format!(
                 "Expected 1 argument to color space function, found {}",
                 vars.len()
             ));
         }
-        match self.is_num(&vars[0])? {
-            true => Ok(t),
-            false => {
-                return Err(format!(
+        if self.is_num(&vars[0])? {
+            Ok(var_type)
+        } else {
+            return Err(format!(
                 "Expected numeric argument to color space function, found argument of type '{}'",
                 self.var_type(&vars[0])?
-            ))
-            }
+            ));
         }
     }
 
@@ -491,9 +512,9 @@ impl<'a> Inference<'a> {
         match self.var_type(&vars[0])? {
             VarType::FloatArray(1, ..) => Ok(F),
             VarType::IntArray(1, ..) => Ok(I),
-            t => Err(format!(
+            err_type => Err(format!(
                 "Unable to perform atomic operation on variable of type '{}'",
-                t
+                err_type
             )),
         }
     }
@@ -509,90 +530,61 @@ impl<'a> Inference<'a> {
         match (self.var_type(&vars[0])?, self.var_type(&vars[1])?) {
             (VarType::FloatArray(1, ..), F) => Ok(F),
             (VarType::IntArray(1, ..), I) => Ok(I),
-            (t1 @ VarType::FloatArray(1, ..), t2) => Err(format!("Atomic operation on variable of type '{}' expected a 'Float' argument, found argument of type '{}'", t1, t2)),
-            (t1 @ VarType::IntArray(1, ..), t2) => Err(format!("Atomic operation on variable of type '{}' expected an 'Int' argument, found argument of type '{}'", t1, t2)),
-            (t, _) => Err(format!("Unable to perform atomic operation on variable of type '{}', expected Float or Int array", t)),
+            (type_1 @ VarType::FloatArray(1, ..), type_2) => Err(format!("Atomic operation on variable of type '{}' expected a 'Float' argument, found argument of type '{}'", type_1, type_2)),
+            (type_1 @ VarType::IntArray(1, ..), type_2) => Err(format!("Atomic operation on variable of type '{}' expected an 'Int' argument, found argument of type '{}'", type_1, type_2)),
+            (err_type, _) => Err(format!("Unable to perform atomic operation on variable of type '{}', expected Float or Int array", err_type)),
         }
     }
 
     pub fn builtin(&self, id: &str, vars: &[Expr]) -> Result<VarType, String> {
-        let t = match id {
+        let var_type = match id {
             "get_work_dim" if vars.is_empty() => I,
-            "get_global_size" if vars.len() == 1 && self.is_int_lit(&vars[0]) => I,
-            "get_global_id" if vars.len() == 1 && self.is_int_lit(&vars[0]) => I,
-            "get_local_size" if vars.len() == 1 && self.is_int_lit(&vars[0]) => I,
-            "get_local_id" if vars.len() == 1 && self.is_int_lit(&vars[0]) => I,
-            "get_num_groups" if vars.len() == 1 && self.is_int_lit(&vars[0]) => I,
-            "get_group_id" if vars.len() == 1 && self.is_int_lit(&vars[0]) => I,
-            "get_global_offset" if vars.len() == 1 && self.is_int_lit(&vars[0]) => I,
+            "get_global_size" | "get_global_id" | "get_local_size" | "get_local_id"
+            | "get_num_groups" | "get_group_id" | "get_global_offset"
+                if vars.len() == 1 && Inference::is_int_lit(&vars[0]) =>
+            {
+                I
+            }
 
             // type-inferred 0 and 1
-            "zero" if vars.len() == 1 && self.is_num_vec(&vars[0])? => self.var_type(&vars[0])?,
-            "one" if vars.len() == 1 && self.is_num_vec(&vars[0])? => self.var_type(&vars[0])?,
+            "zero" | "one" if vars.len() == 1 && self.is_num_vec(&vars[0])? => {
+                self.var_type(&vars[0])?
+            }
 
             // OpenCL math built-in functions: clamp, degrees, max, min, mix, radians, step, smoothstep, sign
             "clamp" if vars.len() == 3 => {
                 let v = self.var_type(&vars[0])?;
                 let l = self.var_type(&vars[1])?;
                 let h = self.var_type(&vars[2])?;
-                self.promote_num(v, self.promote_num(l, h)?)?
+                Inference::promote_num(v, Inference::promote_num(l, h)?)?
             }
             "mix" if vars.len() == 3 => {
                 let l = self.var_type(&vars[0])?;
                 let h = self.var_type(&vars[1])?;
                 let m = self.var_type(&vars[2])?;
-                self.promote_num(m, self.promote_num(l, h)?)?
+                Inference::promote_num(m, Inference::promote_num(l, h)?)?
             }
-            "min" if vars.len() == 2 => {
+            "min" | "max" if vars.len() == 2 => {
                 let l = self.var_type(&vars[0])?;
                 let r = self.var_type(&vars[1])?;
-                self.promote_num(l, r)?
+                Inference::promote_num(l, r)?
             }
-            "max" if vars.len() == 2 => {
-                let l = self.var_type(&vars[0])?;
-                let r = self.var_type(&vars[1])?;
-                self.promote_num(l, r)?
-            }
-            "sign" if vars.len() == 1 => self.var_type(&vars[0])?,
-            "abs" if vars.len() == 1 => self.var_type(&vars[0])?,
+            "sign" | "abs" if vars.len() == 1 => self.var_type(&vars[0])?,
             // min, max generate same instructions as fmin, fmax on GCN4
-            "range" if vars.len() == 3 => VarType::Float,
-            "runif" if vars.len() == 3 => VarType::Float,
-            "rnorm" if vars.len() == 3 => VarType::Float,
-            "rpois" if vars.len() == 3 => VarType::Float,
+            "range" | "runif" | "rnorm" | "rpois" if vars.len() == 3 => VarType::Float,
 
             // OpenCL math built-in functions (selection)
             // returns F or V
             // TODO: handle fmin/min, fmax/max, pow/pown/powr, fabs/abs
-            "cos" => self.math_1(vars)?,
-            "sin" => self.math_1(vars)?,
-            "tan" => self.math_1(vars)?,
-            "cosh" => self.math_1(vars)?,
-            "sinh" => self.math_1(vars)?,
-            "tanh" => self.math_1(vars)?,
-            "acos" => self.math_1(vars)?,
-            "asin" => self.math_1(vars)?,
-            "atan" => self.math_1(vars)?,
-            "acosh" => self.math_1(vars)?,
-            "asinh" => self.math_1(vars)?,
-            "atanh" => self.math_1(vars)?,
-            "atan2" => self.math_2(vars)?,
-            "exp" => self.math_1(vars)?,
-            "log" => self.math_1(vars)?,
-            "pow" => self.math_1(vars)?,
-            "sqrt" => self.math_1(vars)?,
-            "fabs" => self.math_1(vars)?,
-            "floor" => self.math_1(vars)?,
-            "ceil" => self.math_1(vars)?,
-            "round" => self.math_1(vars)?,
-            "fmin" => self.math_2(vars)?,
-            "fmax" => self.math_2(vars)?,
-            "mod" => self.math_2(vars)?,
+            "cos" | "sin" | "tan" | "cosh" | "sinh" | "tanh" | "acos" | "asin" | "atan"
+            | "acosh" | "asinh" | "atanh" | "exp" | "log" | "pow" | "sqrt" | "fabs" | "floor"
+            | "ceil" | "round" => self.math_1(vars)?,
+
+            "atan2" | "fmin" | "fmax" | "mod" => self.math_2(vars)?,
 
             // OpenCL geometric built-in functions
             "cross" => self.geom_2(vars, V)?,
-            "distance" => self.geom_2(vars, F)?,
-            "dot" => self.geom_2(vars, F)?,
+            "distance" | "dot" => self.geom_2(vars, F)?,
             "length" => self.geom_1(vars, F)?,
             "normalize" => self.geom_1(vars, V)?,
 
@@ -600,70 +592,24 @@ impl<'a> Inference<'a> {
             "barrier" => VarType::Void,
 
             // atomics "atomic_add(buf, idx1, idx2, idx3, value)" etc.
-            "atomic_add" => self.atomic_2(vars)?,
-            "atomic_sub" => self.atomic_2(vars)?,
-            "atomic_inc" => self.atomic_1(vars)?,
-            "atomic_dec" => self.atomic_1(vars)?,
-            "atomic_min" => self.atomic_2(vars)?,
-            "atomic_max" => self.atomic_2(vars)?,
+            "atomic_add" | "atomic_sub" | "atomic_min" | "atomic_max" => self.atomic_2(vars)?,
+            "atomic_inc" | "atomic_dec" => self.atomic_1(vars)?,
 
             // CS conversion functions
             // TODO: implement source code loading too
-            "SRGBtoSRGB" => self.cs_v(vars, V)?,
-            "SRGBtoLRGB" => self.cs_v(vars, V)?,
-            "SRGBtoXYZ" => self.cs_v(vars, V)?,
-            "SRGBtoLAB" => self.cs_v(vars, V)?,
-            "SRGBtoLCH" => self.cs_v(vars, V)?,
-            "SRGBtoY" => self.cs_v(vars, F)?,
-            "SRGBtoL" => self.cs_v(vars, F)?,
+            "SRGBtoSRGB" | "SRGBtoLRGB" | "SRGBtoXYZ" | "SRGBtoLAB" | "SRGBtoLCH"
+            | "LRGBtoSRGB" | "LRGBtoLRGB" | "LRGBtoXYZ" | "LRGBtoLAB" | "LRGBtoLCH"
+            | "XYZtoSRGB" | "XYZtoLRGB" | "XYZtoXYZ" | "XYZtoLAB" | "XYZtoLCH" | "LABtoSRGB"
+            | "LABtoLRGB" | "LABtoXYZ" | "LABtoLAB" | "LABtoLCH" | "LCHtoSRGB" | "LCHtoLRGB"
+            | "LCHtoXYZ" | "LCHtoLAB" | "LCHtoLCH" => self.cs_v(vars, V)?,
 
-            "LRGBtoSRGB" => self.cs_v(vars, V)?,
-            "LRGBtoLRGB" => self.cs_v(vars, V)?,
-            "LRGBtoXYZ" => self.cs_v(vars, V)?,
-            "LRGBtoLAB" => self.cs_v(vars, V)?,
-            "LRGBtoLCH" => self.cs_v(vars, V)?,
-            "LRGBtoY" => self.cs_v(vars, F)?,
-            "LRGBtoL" => self.cs_v(vars, F)?,
+            "YtoSRGB" | "YtoLRGB" | "YtoXYZ" | "YtoLAB" | "YtoLCH" | "LtoSRGB" | "LtoLRGB"
+            | "LtoXYZ" | "LtoLAB" | "LtoLCH" => self.cs_f(vars, V)?,
 
-            "XYZtoSRGB" => self.cs_v(vars, V)?,
-            "XYZtoLRGB" => self.cs_v(vars, V)?,
-            "XYZtoXYZ" => self.cs_v(vars, V)?,
-            "XYZtoLAB" => self.cs_v(vars, V)?,
-            "XYZtoLCH" => self.cs_v(vars, V)?,
-            "XYZtoY" => self.cs_v(vars, F)?,
-            "XYZtoL" => self.cs_v(vars, F)?,
+            "SRGBtoY" | "SRGBtoL" | "LRGBtoY" | "LRGBtoL" | "XYZtoY" | "XYZtoL" | "LABtoY"
+            | "LABtoL" | "LCHtoY" | "LCHtoL" => self.cs_v(vars, F)?,
 
-            "LABtoSRGB" => self.cs_v(vars, V)?,
-            "LABtoLRGB" => self.cs_v(vars, V)?,
-            "LABtoXYZ" => self.cs_v(vars, V)?,
-            "LABtoLAB" => self.cs_v(vars, V)?,
-            "LABtoLCH" => self.cs_v(vars, V)?,
-            "LABtoY" => self.cs_v(vars, F)?,
-            "LABtoL" => self.cs_v(vars, F)?,
-
-            "LCHtoSRGB" => self.cs_v(vars, V)?,
-            "LCHtoLRGB" => self.cs_v(vars, V)?,
-            "LCHtoXYZ" => self.cs_v(vars, V)?,
-            "LCHtoLAB" => self.cs_v(vars, V)?,
-            "LCHtoLCH" => self.cs_v(vars, V)?,
-            "LCHtoY" => self.cs_v(vars, F)?,
-            "LCHtoL" => self.cs_v(vars, F)?,
-
-            "YtoSRGB" => self.cs_f(vars, V)?,
-            "YtoLRGB" => self.cs_f(vars, V)?,
-            "YtoXYZ" => self.cs_f(vars, V)?,
-            "YtoLAB" => self.cs_f(vars, V)?,
-            "YtoLCH" => self.cs_f(vars, V)?,
-            "YtoY" => self.cs_f(vars, F)?,
-            "YtoL" => self.cs_f(vars, F)?,
-
-            "LtoSRGB" => self.cs_f(vars, V)?,
-            "LtoLRGB" => self.cs_f(vars, V)?,
-            "LtoXYZ" => self.cs_f(vars, V)?,
-            "LtoLAB" => self.cs_f(vars, V)?,
-            "LtoLCH" => self.cs_f(vars, V)?,
-            "LtoY" => self.cs_f(vars, F)?,
-            "LtoL" => self.cs_f(vars, F)?,
+            "YtoY" | "YtoL" | "LtoY" | "LtoL" => self.cs_f(vars, F)?,
 
             "RGBA" if vars.len() == 2 => F,
             "FasI" if vars.len() == 1 => I,
@@ -682,481 +628,766 @@ impl<'a> Inference<'a> {
             "float" if vars.len() == 1 && self.is_num(&vars[0])? => F,
             "int" if vars.len() == 1 && self.is_num(&vars[0])? => I,
 
-            "isnan" if vars.len() == 1 && self.is_num(&vars[0])? => I,
-            "isinf" if vars.len() == 1 && self.is_num(&vars[0])? => I,
-            "isfinite" if vars.len() == 1 && self.is_num(&vars[0])? => I,
-            "isnormal" if vars.len() == 1 && self.is_num(&vars[0])? => I,
+            "isnan" | "isinf" | "isfinite" | "isnormal"
+                if vars.len() == 1 && self.is_num(&vars[0])? =>
+            {
+                I
+            }
 
             // array constructors
-            "array" if vars.len() == 1 && self.is_int_lit(&vars[0]) => {
-                VarType::FloatArray(1, false, self.get_int_lit(&vars[0])? as u64, 0, 0, 0)
-            }
+            "array" if vars.len() == 1 && Inference::is_int_lit(&vars[0]) => VarType::FloatArray(
+                1,
+                false,
+                Inference::get_int_lit(&vars[0])?
+                    .try_into()
+                    .map_err(|_| "Negative array index")?,
+                0,
+                0,
+                0,
+            ),
             "array"
-                if vars.len() == 2 && self.is_int_lit(&vars[0]) && self.is_int_lit(&vars[1]) =>
+                if vars.len() == 2
+                    && Inference::is_int_lit(&vars[0])
+                    && Inference::is_int_lit(&vars[1]) =>
             {
                 VarType::FloatArray(
                     2,
                     false,
-                    self.get_int_lit(&vars[0])? as u64,
-                    self.get_int_lit(&vars[1])? as u64,
+                    Inference::get_int_lit(&vars[0])?
+                        .try_into()
+                        .map_err(|_| "Negative array index")?,
+                    Inference::get_int_lit(&vars[1])?
+                        .try_into()
+                        .map_err(|_| "Negative array index")?,
                     0,
-                    0,
-                )
-            }
-            "array"
-                if vars.len() == 3
-                    && self.is_int_lit(&vars[0])
-                    && self.is_int_lit(&vars[1])
-                    && self.is_int_lit(&vars[2]) =>
-            {
-                VarType::FloatArray(
-                    3,
-                    false,
-                    self.get_int_lit(&vars[0])? as u64,
-                    self.get_int_lit(&vars[1])? as u64,
-                    self.get_int_lit(&vars[2])? as u64,
                     0,
                 )
             }
             "array"
+                if vars.len() == 3
+                    && Inference::is_int_lit(&vars[0])
+                    && Inference::is_int_lit(&vars[1])
+                    && Inference::is_int_lit(&vars[2]) =>
+            {
+                VarType::FloatArray(
+                    3,
+                    false,
+                    Inference::get_int_lit(&vars[0])?
+                        .try_into()
+                        .map_err(|_| "Negative array index")?,
+                    Inference::get_int_lit(&vars[1])?
+                        .try_into()
+                        .map_err(|_| "Negative array index")?,
+                    Inference::get_int_lit(&vars[2])?
+                        .try_into()
+                        .map_err(|_| "Negative array index")?,
+                    0,
+                )
+            }
+            "array"
                 if vars.len() == 4
-                    && self.is_int_lit(&vars[0])
-                    && self.is_int_lit(&vars[1])
-                    && self.is_int_lit(&vars[2])
-                    && self.is_int_lit(&vars[3]) =>
+                    && Inference::is_int_lit(&vars[0])
+                    && Inference::is_int_lit(&vars[1])
+                    && Inference::is_int_lit(&vars[2])
+                    && Inference::is_int_lit(&vars[3]) =>
             {
                 VarType::FloatArray(
                     4,
                     false,
-                    self.get_int_lit(&vars[0])? as u64,
-                    self.get_int_lit(&vars[1])? as u64,
-                    self.get_int_lit(&vars[2])? as u64,
-                    self.get_int_lit(&vars[3])? as u64,
+                    Inference::get_int_lit(&vars[0])?
+                        .try_into()
+                        .map_err(|_| "Negative array index")?,
+                    Inference::get_int_lit(&vars[1])?
+                        .try_into()
+                        .map_err(|_| "Negative array index")?,
+                    Inference::get_int_lit(&vars[2])?
+                        .try_into()
+                        .map_err(|_| "Negative array index")?,
+                    Inference::get_int_lit(&vars[3])?
+                        .try_into()
+                        .map_err(|_| "Negative array index")?,
                 )
             }
 
-            "bool_array" if vars.len() == 1 && self.is_int_lit(&vars[0]) => {
-                VarType::BoolArray(1, false, self.get_int_lit(&vars[0])? as u64, 0, 0, 0)
+            "bool_array" if vars.len() == 1 && Inference::is_int_lit(&vars[0]) => {
+                VarType::BoolArray(
+                    1,
+                    false,
+                    Inference::get_int_lit(&vars[0])?
+                        .try_into()
+                        .map_err(|_| "Negative array index")?,
+                    0,
+                    0,
+                    0,
+                )
             }
             "bool_array"
-                if vars.len() == 2 && self.is_int_lit(&vars[0]) && self.is_int_lit(&vars[1]) =>
+                if vars.len() == 2
+                    && Inference::is_int_lit(&vars[0])
+                    && Inference::is_int_lit(&vars[1]) =>
             {
                 VarType::BoolArray(
                     2,
                     false,
-                    self.get_int_lit(&vars[0])? as u64,
-                    self.get_int_lit(&vars[1])? as u64,
+                    Inference::get_int_lit(&vars[0])?
+                        .try_into()
+                        .map_err(|_| "Negative array index")?,
+                    Inference::get_int_lit(&vars[1])?
+                        .try_into()
+                        .map_err(|_| "Negative array index")?,
                     0,
                     0,
                 )
             }
             "bool_array"
                 if vars.len() == 3
-                    && self.is_int_lit(&vars[0])
-                    && self.is_int_lit(&vars[1])
-                    && self.is_int_lit(&vars[2]) =>
+                    && Inference::is_int_lit(&vars[0])
+                    && Inference::is_int_lit(&vars[1])
+                    && Inference::is_int_lit(&vars[2]) =>
             {
                 VarType::BoolArray(
                     3,
                     false,
-                    self.get_int_lit(&vars[0])? as u64,
-                    self.get_int_lit(&vars[1])? as u64,
-                    self.get_int_lit(&vars[2])? as u64,
+                    Inference::get_int_lit(&vars[0])?
+                        .try_into()
+                        .map_err(|_| "Negative array index")?,
+                    Inference::get_int_lit(&vars[1])?
+                        .try_into()
+                        .map_err(|_| "Negative array index")?,
+                    Inference::get_int_lit(&vars[2])?
+                        .try_into()
+                        .map_err(|_| "Negative array index")?,
                     0,
                 )
             }
             "bool_array"
                 if vars.len() == 4
-                    && self.is_int_lit(&vars[0])
-                    && self.is_int_lit(&vars[1])
-                    && self.is_int_lit(&vars[2])
-                    && self.is_int_lit(&vars[3]) =>
+                    && Inference::is_int_lit(&vars[0])
+                    && Inference::is_int_lit(&vars[1])
+                    && Inference::is_int_lit(&vars[2])
+                    && Inference::is_int_lit(&vars[3]) =>
             {
                 VarType::BoolArray(
                     4,
                     false,
-                    self.get_int_lit(&vars[0])? as u64,
-                    self.get_int_lit(&vars[1])? as u64,
-                    self.get_int_lit(&vars[2])? as u64,
-                    self.get_int_lit(&vars[3])? as u64,
+                    Inference::get_int_lit(&vars[0])?
+                        .try_into()
+                        .map_err(|_| "Negative array index")?,
+                    Inference::get_int_lit(&vars[1])?
+                        .try_into()
+                        .map_err(|_| "Negative array index")?,
+                    Inference::get_int_lit(&vars[2])?
+                        .try_into()
+                        .map_err(|_| "Negative array index")?,
+                    Inference::get_int_lit(&vars[3])?
+                        .try_into()
+                        .map_err(|_| "Negative array index")?,
                 )
             }
 
-            "int_array" if vars.len() == 1 && self.is_int_lit(&vars[0]) => {
-                VarType::IntArray(1, false, self.get_int_lit(&vars[0])? as u64, 0, 0, 0)
-            }
+            "int_array" if vars.len() == 1 && Inference::is_int_lit(&vars[0]) => VarType::IntArray(
+                1,
+                false,
+                Inference::get_int_lit(&vars[0])?
+                    .try_into()
+                    .map_err(|_| "Negative array index")?,
+                0,
+                0,
+                0,
+            ),
             "int_array"
-                if vars.len() == 2 && self.is_int_lit(&vars[0]) && self.is_int_lit(&vars[1]) =>
+                if vars.len() == 2
+                    && Inference::is_int_lit(&vars[0])
+                    && Inference::is_int_lit(&vars[1]) =>
             {
                 VarType::IntArray(
                     2,
                     false,
-                    self.get_int_lit(&vars[0])? as u64,
-                    self.get_int_lit(&vars[1])? as u64,
+                    Inference::get_int_lit(&vars[0])?
+                        .try_into()
+                        .map_err(|_| "Negative array index")?,
+                    Inference::get_int_lit(&vars[1])?
+                        .try_into()
+                        .map_err(|_| "Negative array index")?,
                     0,
                     0,
                 )
             }
             "int_array"
                 if vars.len() == 3
-                    && self.is_int_lit(&vars[0])
-                    && self.is_int_lit(&vars[1])
-                    && self.is_int_lit(&vars[2]) =>
+                    && Inference::is_int_lit(&vars[0])
+                    && Inference::is_int_lit(&vars[1])
+                    && Inference::is_int_lit(&vars[2]) =>
             {
                 VarType::IntArray(
                     3,
                     false,
-                    self.get_int_lit(&vars[0])? as u64,
-                    self.get_int_lit(&vars[1])? as u64,
-                    self.get_int_lit(&vars[2])? as u64,
+                    Inference::get_int_lit(&vars[0])?
+                        .try_into()
+                        .map_err(|_| "Negative array index")?,
+                    Inference::get_int_lit(&vars[1])?
+                        .try_into()
+                        .map_err(|_| "Negative array index")?,
+                    Inference::get_int_lit(&vars[2])?
+                        .try_into()
+                        .map_err(|_| "Negative array index")?,
                     0,
                 )
             }
             "int_array"
                 if vars.len() == 4
-                    && self.is_int_lit(&vars[0])
-                    && self.is_int_lit(&vars[1])
-                    && self.is_int_lit(&vars[2])
-                    && self.is_int_lit(&vars[3]) =>
+                    && Inference::is_int_lit(&vars[0])
+                    && Inference::is_int_lit(&vars[1])
+                    && Inference::is_int_lit(&vars[2])
+                    && Inference::is_int_lit(&vars[3]) =>
             {
                 VarType::IntArray(
                     4,
                     false,
-                    self.get_int_lit(&vars[0])? as u64,
-                    self.get_int_lit(&vars[1])? as u64,
-                    self.get_int_lit(&vars[2])? as u64,
-                    self.get_int_lit(&vars[3])? as u64,
+                    Inference::get_int_lit(&vars[0])?
+                        .try_into()
+                        .map_err(|_| "Negative array index")?,
+                    Inference::get_int_lit(&vars[1])?
+                        .try_into()
+                        .map_err(|_| "Negative array index")?,
+                    Inference::get_int_lit(&vars[2])?
+                        .try_into()
+                        .map_err(|_| "Negative array index")?,
+                    Inference::get_int_lit(&vars[3])?
+                        .try_into()
+                        .map_err(|_| "Negative array index")?,
                 )
             }
 
-            "float_array" if vars.len() == 1 && self.is_int_lit(&vars[0]) => {
-                VarType::FloatArray(1, false, self.get_int_lit(&vars[0])? as u64, 0, 0, 0)
+            "float_array" if vars.len() == 1 && Inference::is_int_lit(&vars[0]) => {
+                VarType::FloatArray(
+                    1,
+                    false,
+                    Inference::get_int_lit(&vars[0])?
+                        .try_into()
+                        .map_err(|_| "Negative array index")?,
+                    0,
+                    0,
+                    0,
+                )
             }
 
             "float_array"
-                if vars.len() == 2 && self.is_int_lit(&vars[0]) && self.is_int_lit(&vars[1]) =>
+                if vars.len() == 2
+                    && Inference::is_int_lit(&vars[0])
+                    && Inference::is_int_lit(&vars[1]) =>
             {
                 VarType::FloatArray(
                     2,
                     false,
-                    self.get_int_lit(&vars[0])? as u64,
-                    self.get_int_lit(&vars[1])? as u64,
+                    Inference::get_int_lit(&vars[0])?
+                        .try_into()
+                        .map_err(|_| "Negative array index")?,
+                    Inference::get_int_lit(&vars[1])?
+                        .try_into()
+                        .map_err(|_| "Negative array index")?,
                     0,
                     0,
                 )
             }
             "float_array"
                 if vars.len() == 3
-                    && self.is_int_lit(&vars[0])
-                    && self.is_int_lit(&vars[1])
-                    && self.is_int_lit(&vars[2]) =>
+                    && Inference::is_int_lit(&vars[0])
+                    && Inference::is_int_lit(&vars[1])
+                    && Inference::is_int_lit(&vars[2]) =>
             {
                 VarType::FloatArray(
                     3,
                     false,
-                    self.get_int_lit(&vars[0])? as u64,
-                    self.get_int_lit(&vars[1])? as u64,
-                    self.get_int_lit(&vars[2])? as u64,
+                    Inference::get_int_lit(&vars[0])?
+                        .try_into()
+                        .map_err(|_| "Negative array index")?,
+                    Inference::get_int_lit(&vars[1])?
+                        .try_into()
+                        .map_err(|_| "Negative array index")?,
+                    Inference::get_int_lit(&vars[2])?
+                        .try_into()
+                        .map_err(|_| "Negative array index")?,
                     0,
                 )
             }
             "float_array"
                 if vars.len() == 4
-                    && self.is_int_lit(&vars[0])
-                    && self.is_int_lit(&vars[1])
-                    && self.is_int_lit(&vars[2])
-                    && self.is_int_lit(&vars[3]) =>
+                    && Inference::is_int_lit(&vars[0])
+                    && Inference::is_int_lit(&vars[1])
+                    && Inference::is_int_lit(&vars[2])
+                    && Inference::is_int_lit(&vars[3]) =>
             {
                 VarType::FloatArray(
                     4,
                     false,
-                    self.get_int_lit(&vars[0])? as u64,
-                    self.get_int_lit(&vars[1])? as u64,
-                    self.get_int_lit(&vars[2])? as u64,
-                    self.get_int_lit(&vars[3])? as u64,
+                    Inference::get_int_lit(&vars[0])?
+                        .try_into()
+                        .map_err(|_| "Negative array index")?,
+                    Inference::get_int_lit(&vars[1])?
+                        .try_into()
+                        .map_err(|_| "Negative array index")?,
+                    Inference::get_int_lit(&vars[2])?
+                        .try_into()
+                        .map_err(|_| "Negative array index")?,
+                    Inference::get_int_lit(&vars[3])?
+                        .try_into()
+                        .map_err(|_| "Negative array index")?,
                 )
             }
 
-            "vec_array" if vars.len() == 1 && self.is_int_lit(&vars[0]) => {
-                VarType::VecArray(1, false, self.get_int_lit(&vars[0])? as u64, 0, 0, 0)
-            }
+            "vec_array" if vars.len() == 1 && Inference::is_int_lit(&vars[0]) => VarType::VecArray(
+                1,
+                false,
+                Inference::get_int_lit(&vars[0])?
+                    .try_into()
+                    .map_err(|_| "Negative array index")?,
+                0,
+                0,
+                0,
+            ),
             "vec_array"
-                if vars.len() == 2 && self.is_int_lit(&vars[0]) && self.is_int_lit(&vars[1]) =>
+                if vars.len() == 2
+                    && Inference::is_int_lit(&vars[0])
+                    && Inference::is_int_lit(&vars[1]) =>
             {
                 VarType::VecArray(
                     2,
                     false,
-                    self.get_int_lit(&vars[0])? as u64,
-                    self.get_int_lit(&vars[1])? as u64,
+                    Inference::get_int_lit(&vars[0])?
+                        .try_into()
+                        .map_err(|_| "Negative array index")?,
+                    Inference::get_int_lit(&vars[1])?
+                        .try_into()
+                        .map_err(|_| "Negative array index")?,
                     0,
                     0,
                 )
             }
             "vec_array"
                 if vars.len() == 3
-                    && self.is_int_lit(&vars[0])
-                    && self.is_int_lit(&vars[1])
-                    && self.is_int_lit(&vars[2]) =>
+                    && Inference::is_int_lit(&vars[0])
+                    && Inference::is_int_lit(&vars[1])
+                    && Inference::is_int_lit(&vars[2]) =>
             {
                 VarType::VecArray(
                     3,
                     false,
-                    self.get_int_lit(&vars[0])? as u64,
-                    self.get_int_lit(&vars[1])? as u64,
-                    self.get_int_lit(&vars[2])? as u64,
+                    Inference::get_int_lit(&vars[0])?
+                        .try_into()
+                        .map_err(|_| "Negative array index")?,
+                    Inference::get_int_lit(&vars[1])?
+                        .try_into()
+                        .map_err(|_| "Negative array index")?,
+                    Inference::get_int_lit(&vars[2])?
+                        .try_into()
+                        .map_err(|_| "Negative array index")?,
                     0,
                 )
             }
             "vec_array"
                 if vars.len() == 4
-                    && self.is_int_lit(&vars[0])
-                    && self.is_int_lit(&vars[1])
-                    && self.is_int_lit(&vars[2])
-                    && self.is_int_lit(&vars[3]) =>
+                    && Inference::is_int_lit(&vars[0])
+                    && Inference::is_int_lit(&vars[1])
+                    && Inference::is_int_lit(&vars[2])
+                    && Inference::is_int_lit(&vars[3]) =>
             {
                 VarType::VecArray(
                     4,
                     false,
-                    self.get_int_lit(&vars[0])? as u64,
-                    self.get_int_lit(&vars[1])? as u64,
-                    self.get_int_lit(&vars[2])? as u64,
-                    self.get_int_lit(&vars[3])? as u64,
+                    Inference::get_int_lit(&vars[0])?
+                        .try_into()
+                        .map_err(|_| "Negative array index")?,
+                    Inference::get_int_lit(&vars[1])?
+                        .try_into()
+                        .map_err(|_| "Negative array index")?,
+                    Inference::get_int_lit(&vars[2])?
+                        .try_into()
+                        .map_err(|_| "Negative array index")?,
+                    Inference::get_int_lit(&vars[3])?
+                        .try_into()
+                        .map_err(|_| "Negative array index")?,
                 )
             }
 
             // local array constructors
-            "local_array" if vars.len() == 1 && self.is_int_lit(&vars[0]) => {
-                VarType::FloatArray(1, true, self.get_int_lit(&vars[0])? as u64, 0, 0, 0)
-            }
-            "local_array"
-                if vars.len() == 2 && self.is_int_lit(&vars[0]) && self.is_int_lit(&vars[1]) =>
-            {
+            "local_array" if vars.len() == 1 && Inference::is_int_lit(&vars[0]) => {
                 VarType::FloatArray(
-                    2,
+                    1,
                     true,
-                    self.get_int_lit(&vars[0])? as u64,
-                    self.get_int_lit(&vars[1])? as u64,
+                    Inference::get_int_lit(&vars[0])?
+                        .try_into()
+                        .map_err(|_| "Negative array index")?,
+                    0,
                     0,
                     0,
                 )
             }
             "local_array"
+                if vars.len() == 2
+                    && Inference::is_int_lit(&vars[0])
+                    && Inference::is_int_lit(&vars[1]) =>
+            {
+                VarType::FloatArray(
+                    2,
+                    true,
+                    Inference::get_int_lit(&vars[0])?
+                        .try_into()
+                        .map_err(|_| "Negative array index")?,
+                    Inference::get_int_lit(&vars[1])?
+                        .try_into()
+                        .map_err(|_| "Negative array index")?,
+                    0,
+                    0,
+                )
+            }
+            "local_array"
                 if vars.len() == 3
-                    && self.is_int_lit(&vars[0])
-                    && self.is_int_lit(&vars[1])
-                    && self.is_int_lit(&vars[2]) =>
+                    && Inference::is_int_lit(&vars[0])
+                    && Inference::is_int_lit(&vars[1])
+                    && Inference::is_int_lit(&vars[2]) =>
             {
                 VarType::FloatArray(
                     3,
                     true,
-                    self.get_int_lit(&vars[0])? as u64,
-                    self.get_int_lit(&vars[1])? as u64,
-                    self.get_int_lit(&vars[2])? as u64,
+                    Inference::get_int_lit(&vars[0])?
+                        .try_into()
+                        .map_err(|_| "Negative array index")?,
+                    Inference::get_int_lit(&vars[1])?
+                        .try_into()
+                        .map_err(|_| "Negative array index")?,
+                    Inference::get_int_lit(&vars[2])?
+                        .try_into()
+                        .map_err(|_| "Negative array index")?,
                     0,
                 )
             }
             "local_array"
                 if vars.len() == 4
-                    && self.is_int_lit(&vars[0])
-                    && self.is_int_lit(&vars[1])
-                    && self.is_int_lit(&vars[2])
-                    && self.is_int_lit(&vars[3]) =>
+                    && Inference::is_int_lit(&vars[0])
+                    && Inference::is_int_lit(&vars[1])
+                    && Inference::is_int_lit(&vars[2])
+                    && Inference::is_int_lit(&vars[3]) =>
             {
                 VarType::FloatArray(
                     4,
                     true,
-                    self.get_int_lit(&vars[0])? as u64,
-                    self.get_int_lit(&vars[1])? as u64,
-                    self.get_int_lit(&vars[2])? as u64,
-                    self.get_int_lit(&vars[3])? as u64,
+                    Inference::get_int_lit(&vars[0])?
+                        .try_into()
+                        .map_err(|_| "Negative array index")?,
+                    Inference::get_int_lit(&vars[1])?
+                        .try_into()
+                        .map_err(|_| "Negative array index")?,
+                    Inference::get_int_lit(&vars[2])?
+                        .try_into()
+                        .map_err(|_| "Negative array index")?,
+                    Inference::get_int_lit(&vars[3])?
+                        .try_into()
+                        .map_err(|_| "Negative array index")?,
                 )
             }
 
-            "local_bool_array" if vars.len() == 1 && self.is_int_lit(&vars[0]) => {
-                VarType::BoolArray(1, true, self.get_int_lit(&vars[0])? as u64, 0, 0, 0)
-            }
-            "local_bool_array"
-                if vars.len() == 2 && self.is_int_lit(&vars[0]) && self.is_int_lit(&vars[1]) =>
-            {
+            "local_bool_array" if vars.len() == 1 && Inference::is_int_lit(&vars[0]) => {
                 VarType::BoolArray(
-                    2,
+                    1,
                     true,
-                    self.get_int_lit(&vars[0])? as u64,
-                    self.get_int_lit(&vars[1])? as u64,
+                    Inference::get_int_lit(&vars[0])?
+                        .try_into()
+                        .map_err(|_| "Negative array index")?,
                     0,
                     0,
-                )
-            }
-            "local_bool_array"
-                if vars.len() == 3
-                    && self.is_int_lit(&vars[0])
-                    && self.is_int_lit(&vars[1])
-                    && self.is_int_lit(&vars[2]) =>
-            {
-                VarType::BoolArray(
-                    3,
-                    true,
-                    self.get_int_lit(&vars[0])? as u64,
-                    self.get_int_lit(&vars[1])? as u64,
-                    self.get_int_lit(&vars[2])? as u64,
                     0,
                 )
             }
             "local_bool_array"
+                if vars.len() == 2
+                    && Inference::is_int_lit(&vars[0])
+                    && Inference::is_int_lit(&vars[1]) =>
+            {
+                VarType::BoolArray(
+                    2,
+                    true,
+                    Inference::get_int_lit(&vars[0])?
+                        .try_into()
+                        .map_err(|_| "Negative array index")?,
+                    Inference::get_int_lit(&vars[1])?
+                        .try_into()
+                        .map_err(|_| "Negative array index")?,
+                    0,
+                    0,
+                )
+            }
+            "local_bool_array"
+                if vars.len() == 3
+                    && Inference::is_int_lit(&vars[0])
+                    && Inference::is_int_lit(&vars[1])
+                    && Inference::is_int_lit(&vars[2]) =>
+            {
+                VarType::BoolArray(
+                    3,
+                    true,
+                    Inference::get_int_lit(&vars[0])?
+                        .try_into()
+                        .map_err(|_| "Negative array index")?,
+                    Inference::get_int_lit(&vars[1])?
+                        .try_into()
+                        .map_err(|_| "Negative array index")?,
+                    Inference::get_int_lit(&vars[2])?
+                        .try_into()
+                        .map_err(|_| "Negative array index")?,
+                    0,
+                )
+            }
+            "local_bool_array"
                 if vars.len() == 4
-                    && self.is_int_lit(&vars[0])
-                    && self.is_int_lit(&vars[1])
-                    && self.is_int_lit(&vars[2])
-                    && self.is_int_lit(&vars[3]) =>
+                    && Inference::is_int_lit(&vars[0])
+                    && Inference::is_int_lit(&vars[1])
+                    && Inference::is_int_lit(&vars[2])
+                    && Inference::is_int_lit(&vars[3]) =>
             {
                 VarType::BoolArray(
                     4,
                     true,
-                    self.get_int_lit(&vars[0])? as u64,
-                    self.get_int_lit(&vars[1])? as u64,
-                    self.get_int_lit(&vars[2])? as u64,
-                    self.get_int_lit(&vars[3])? as u64,
+                    Inference::get_int_lit(&vars[0])?
+                        .try_into()
+                        .map_err(|_| "Negative array index")?,
+                    Inference::get_int_lit(&vars[1])?
+                        .try_into()
+                        .map_err(|_| "Negative array index")?,
+                    Inference::get_int_lit(&vars[2])?
+                        .try_into()
+                        .map_err(|_| "Negative array index")?,
+                    Inference::get_int_lit(&vars[3])?
+                        .try_into()
+                        .map_err(|_| "Negative array index")?,
                 )
             }
 
-            "local_int_array" if vars.len() == 1 && self.is_int_lit(&vars[0]) => {
-                VarType::IntArray(1, true, self.get_int_lit(&vars[0])? as u64, 0, 0, 0)
+            "local_int_array" if vars.len() == 1 && Inference::is_int_lit(&vars[0]) => {
+                VarType::IntArray(
+                    1,
+                    true,
+                    Inference::get_int_lit(&vars[0])?
+                        .try_into()
+                        .map_err(|_| "Negative array index")?,
+                    0,
+                    0,
+                    0,
+                )
             }
             "local_int_array"
-                if vars.len() == 2 && self.is_int_lit(&vars[0]) && self.is_int_lit(&vars[1]) =>
+                if vars.len() == 2
+                    && Inference::is_int_lit(&vars[0])
+                    && Inference::is_int_lit(&vars[1]) =>
             {
                 VarType::IntArray(
                     2,
                     true,
-                    self.get_int_lit(&vars[0])? as u64,
-                    self.get_int_lit(&vars[1])? as u64,
+                    Inference::get_int_lit(&vars[0])?
+                        .try_into()
+                        .map_err(|_| "Negative array index")?,
+                    Inference::get_int_lit(&vars[1])?
+                        .try_into()
+                        .map_err(|_| "Negative array index")?,
                     0,
                     0,
                 )
             }
             "local_int_array"
                 if vars.len() == 3
-                    && self.is_int_lit(&vars[0])
-                    && self.is_int_lit(&vars[1])
-                    && self.is_int_lit(&vars[2]) =>
+                    && Inference::is_int_lit(&vars[0])
+                    && Inference::is_int_lit(&vars[1])
+                    && Inference::is_int_lit(&vars[2]) =>
             {
                 VarType::IntArray(
                     3,
                     true,
-                    self.get_int_lit(&vars[0])? as u64,
-                    self.get_int_lit(&vars[1])? as u64,
-                    self.get_int_lit(&vars[2])? as u64,
+                    Inference::get_int_lit(&vars[0])?
+                        .try_into()
+                        .map_err(|_| "Negative array index")?,
+                    Inference::get_int_lit(&vars[1])?
+                        .try_into()
+                        .map_err(|_| "Negative array index")?,
+                    Inference::get_int_lit(&vars[2])?
+                        .try_into()
+                        .map_err(|_| "Negative array index")?,
                     0,
                 )
             }
             "local_int_array"
                 if vars.len() == 4
-                    && self.is_int_lit(&vars[0])
-                    && self.is_int_lit(&vars[1])
-                    && self.is_int_lit(&vars[2])
-                    && self.is_int_lit(&vars[3]) =>
+                    && Inference::is_int_lit(&vars[0])
+                    && Inference::is_int_lit(&vars[1])
+                    && Inference::is_int_lit(&vars[2])
+                    && Inference::is_int_lit(&vars[3]) =>
             {
                 VarType::IntArray(
                     4,
                     true,
-                    self.get_int_lit(&vars[0])? as u64,
-                    self.get_int_lit(&vars[1])? as u64,
-                    self.get_int_lit(&vars[2])? as u64,
-                    self.get_int_lit(&vars[3])? as u64,
+                    Inference::get_int_lit(&vars[0])?
+                        .try_into()
+                        .map_err(|_| "Negative array index")?,
+                    Inference::get_int_lit(&vars[1])?
+                        .try_into()
+                        .map_err(|_| "Negative array index")?,
+                    Inference::get_int_lit(&vars[2])?
+                        .try_into()
+                        .map_err(|_| "Negative array index")?,
+                    Inference::get_int_lit(&vars[3])?
+                        .try_into()
+                        .map_err(|_| "Negative array index")?,
                 )
             }
 
-            "local_float_array" if vars.len() == 1 && self.is_int_lit(&vars[0]) => {
-                VarType::FloatArray(1, true, self.get_int_lit(&vars[0])? as u64, 0, 0, 0)
+            "local_float_array" if vars.len() == 1 && Inference::is_int_lit(&vars[0]) => {
+                VarType::FloatArray(
+                    1,
+                    true,
+                    Inference::get_int_lit(&vars[0])?
+                        .try_into()
+                        .map_err(|_| "Negative array index")?,
+                    0,
+                    0,
+                    0,
+                )
             }
             "local_float_array"
-                if vars.len() == 2 && self.is_int_lit(&vars[0]) && self.is_int_lit(&vars[1]) =>
+                if vars.len() == 2
+                    && Inference::is_int_lit(&vars[0])
+                    && Inference::is_int_lit(&vars[1]) =>
             {
                 VarType::FloatArray(
                     2,
                     true,
-                    self.get_int_lit(&vars[0])? as u64,
-                    self.get_int_lit(&vars[1])? as u64,
+                    Inference::get_int_lit(&vars[0])?
+                        .try_into()
+                        .map_err(|_| "Negative array index")?,
+                    Inference::get_int_lit(&vars[1])?
+                        .try_into()
+                        .map_err(|_| "Negative array index")?,
                     0,
                     0,
                 )
             }
             "local_float_array"
                 if vars.len() == 3
-                    && self.is_int_lit(&vars[0])
-                    && self.is_int_lit(&vars[1])
-                    && self.is_int_lit(&vars[2]) =>
+                    && Inference::is_int_lit(&vars[0])
+                    && Inference::is_int_lit(&vars[1])
+                    && Inference::is_int_lit(&vars[2]) =>
             {
                 VarType::FloatArray(
                     3,
                     true,
-                    self.get_int_lit(&vars[0])? as u64,
-                    self.get_int_lit(&vars[1])? as u64,
-                    self.get_int_lit(&vars[2])? as u64,
+                    Inference::get_int_lit(&vars[0])?
+                        .try_into()
+                        .map_err(|_| "Negative array index")?,
+                    Inference::get_int_lit(&vars[1])?
+                        .try_into()
+                        .map_err(|_| "Negative array index")?,
+                    Inference::get_int_lit(&vars[2])?
+                        .try_into()
+                        .map_err(|_| "Negative array index")?,
                     0,
                 )
             }
             "local_float_array"
                 if vars.len() == 4
-                    && self.is_int_lit(&vars[0])
-                    && self.is_int_lit(&vars[1])
-                    && self.is_int_lit(&vars[2])
-                    && self.is_int_lit(&vars[3]) =>
+                    && Inference::is_int_lit(&vars[0])
+                    && Inference::is_int_lit(&vars[1])
+                    && Inference::is_int_lit(&vars[2])
+                    && Inference::is_int_lit(&vars[3]) =>
             {
                 VarType::FloatArray(
                     4,
                     true,
-                    self.get_int_lit(&vars[0])? as u64,
-                    self.get_int_lit(&vars[1])? as u64,
-                    self.get_int_lit(&vars[2])? as u64,
-                    self.get_int_lit(&vars[3])? as u64,
+                    Inference::get_int_lit(&vars[0])?
+                        .try_into()
+                        .map_err(|_| "Negative array index")?,
+                    Inference::get_int_lit(&vars[1])?
+                        .try_into()
+                        .map_err(|_| "Negative array index")?,
+                    Inference::get_int_lit(&vars[2])?
+                        .try_into()
+                        .map_err(|_| "Negative array index")?,
+                    Inference::get_int_lit(&vars[3])?
+                        .try_into()
+                        .map_err(|_| "Negative array index")?,
                 )
             }
 
-            "local_vec_array" if vars.len() == 1 && self.is_int_lit(&vars[0]) => {
-                VarType::VecArray(1, true, self.get_int_lit(&vars[0])? as u64, 0, 0, 0)
+            "local_vec_array" if vars.len() == 1 && Inference::is_int_lit(&vars[0]) => {
+                VarType::VecArray(
+                    1,
+                    true,
+                    Inference::get_int_lit(&vars[0])?
+                        .try_into()
+                        .map_err(|_| "Negative array index")?,
+                    0,
+                    0,
+                    0,
+                )
             }
             "local_vec_array"
-                if vars.len() == 2 && self.is_int_lit(&vars[0]) && self.is_int_lit(&vars[1]) =>
+                if vars.len() == 2
+                    && Inference::is_int_lit(&vars[0])
+                    && Inference::is_int_lit(&vars[1]) =>
             {
                 VarType::VecArray(
                     2,
                     true,
-                    self.get_int_lit(&vars[0])? as u64,
-                    self.get_int_lit(&vars[1])? as u64,
+                    Inference::get_int_lit(&vars[0])?
+                        .try_into()
+                        .map_err(|_| "Negative array index")?,
+                    Inference::get_int_lit(&vars[1])?
+                        .try_into()
+                        .map_err(|_| "Negative array index")?,
                     0,
                     0,
                 )
             }
             "local_vec_array"
                 if vars.len() == 3
-                    && self.is_int_lit(&vars[0])
-                    && self.is_int_lit(&vars[1])
-                    && self.is_int_lit(&vars[2]) =>
+                    && Inference::is_int_lit(&vars[0])
+                    && Inference::is_int_lit(&vars[1])
+                    && Inference::is_int_lit(&vars[2]) =>
             {
                 VarType::VecArray(
                     3,
                     true,
-                    self.get_int_lit(&vars[0])? as u64,
-                    self.get_int_lit(&vars[1])? as u64,
-                    self.get_int_lit(&vars[2])? as u64,
+                    Inference::get_int_lit(&vars[0])?
+                        .try_into()
+                        .map_err(|_| "Negative array index")?,
+                    Inference::get_int_lit(&vars[1])?
+                        .try_into()
+                        .map_err(|_| "Negative array index")?,
+                    Inference::get_int_lit(&vars[2])?
+                        .try_into()
+                        .map_err(|_| "Negative array index")?,
                     0,
                 )
             }
             "local_vec_array"
                 if vars.len() == 4
-                    && self.is_int_lit(&vars[0])
-                    && self.is_int_lit(&vars[1])
-                    && self.is_int_lit(&vars[2])
-                    && self.is_int_lit(&vars[3]) =>
+                    && Inference::is_int_lit(&vars[0])
+                    && Inference::is_int_lit(&vars[1])
+                    && Inference::is_int_lit(&vars[2])
+                    && Inference::is_int_lit(&vars[3]) =>
             {
                 VarType::VecArray(
                     4,
                     true,
-                    self.get_int_lit(&vars[0])? as u64,
-                    self.get_int_lit(&vars[1])? as u64,
-                    self.get_int_lit(&vars[2])? as u64,
-                    self.get_int_lit(&vars[3])? as u64,
+                    Inference::get_int_lit(&vars[0])?
+                        .try_into()
+                        .map_err(|_| "Negative array index")?,
+                    Inference::get_int_lit(&vars[1])?
+                        .try_into()
+                        .map_err(|_| "Negative array index")?,
+                    Inference::get_int_lit(&vars[2])?
+                        .try_into()
+                        .map_err(|_| "Negative array index")?,
+                    Inference::get_int_lit(&vars[3])?
+                        .try_into()
+                        .map_err(|_| "Negative array index")?,
                 )
             }
 
@@ -1166,9 +1397,9 @@ impl<'a> Inference<'a> {
             "float" if vars.len() == 1 => F,
             "vec" if vars.len() == 1 => V,
             "vec" if vars.len() == 3 => V,
-            n => return Err(format!("Built-in function '{}' not found", n)),
+            name => return Err(format!("Built-in function '{}' not found", name)),
         };
 
-        Ok(t)
+        Ok(var_type)
     }
 }

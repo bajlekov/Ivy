@@ -23,68 +23,67 @@ use crate::ast::{
 };
 use crate::function_id::function_id;
 
-use crate::inference::{Inference, VarType};
+use crate::inference::{GenFunction, Inference, VarType};
 
 pub struct Generator<'a> {
-    ast: Vec<Stmt>,
     inference: RefCell<Inference<'a>>,
-    constants: RefCell<HashMap<String, &'a Expr>>,
-    functions: RefCell<HashMap<String, &'a Stmt>>,
-    kernels: RefCell<HashMap<String, &'a Stmt>>,
+    constants: RefCell<HashMap<String, Expr>>,
+    functions: RefCell<HashMap<String, Stmt>>,
+    kernels: RefCell<HashMap<String, Stmt>>,
     generated_constants: RefCell<Option<String>>,
-    generated_functions: RefCell<HashMap<String, (String, String, VarType, HashSet<String>)>>, // collect specialized functions: (declaration, definition, return value, dependencies)
+    generated_functions: RefCell<HashMap<String, GenFunction>>, // collect specialized functions: (declaration, definition, return value, dependencies)
     generated_kernels: RefCell<HashMap<String, String>>, // collect specialized kernels: (kernel)
     dependencies: RefCell<Vec<HashSet<String>>>, // collects dependencies of currently parsed function in a stack
 }
 
 // helper function for generating up to 4D array indices
-fn idx4(dim: u8, a: u64, b: u64, c: u64, d: u64) -> Result<String, String> {
+fn idx4(dim: u8, i1: usize, i2: usize, i3: usize, i4: usize) -> Result<String, String> {
     Ok(match dim {
-        1 => format!("[{}]", a),
-        2 => format!("[{}][{}]", a, b),
-        3 => format!("[{}][{}][{}]", a, b, c),
-        4 => format!("[{}][{}][{}][{}]", a, b, c, d),
-        n => {
+        1 => format!("[{}]", i1),
+        2 => format!("[{}][{}]", i1, i2),
+        3 => format!("[{}][{}][{}]", i1, i2, i3),
+        4 => format!("[{}][{}][{}][{}]", i1, i2, i3, i4),
+        dim => {
             return Err(format!(
                 "Array dimensions must be between 1 and 4, found: {}",
-                n
+                dim
             ))
         }
     })
 }
 
 impl<'a> Generator<'a> {
-    #[allow(clippy::ptr_arg)]
+    //#[allow(clippy::ptr_arg)]
     pub fn new(ast: Vec<Stmt>) -> Generator<'a> {
+        let mut constants = HashMap::new();
+        let mut functions = HashMap::new();
+        let mut kernels = HashMap::new();
+
+        for stmt in ast {
+            match stmt {
+                Stmt::Const(ref id, expr) => {
+                    constants.insert(id.clone(), expr);
+                }
+                Stmt::Function { ref id, .. } => {
+                    functions.insert(id.clone(), stmt);
+                }
+                Stmt::Kernel { ref id, .. } => {
+                    kernels.insert(id.clone(), stmt);
+                }
+                Stmt::Comment(..) | Stmt::Eof => {}
+                _ => panic!("Unexpected statement in file scope!"),
+            }
+        }
+
         Generator {
-            ast,
             inference: RefCell::new(Inference::new()),
-            constants: RefCell::new(HashMap::new()),
-            functions: RefCell::new(HashMap::new()),
-            kernels: RefCell::new(HashMap::new()),
+            constants: RefCell::new(constants),
+            functions: RefCell::new(functions),
+            kernels: RefCell::new(kernels),
             generated_constants: RefCell::new(None),
             generated_functions: RefCell::new(HashMap::new()),
             generated_kernels: RefCell::new(HashMap::new()),
             dependencies: RefCell::new(Vec::new()),
-        }
-    }
-
-    pub fn prepare(&'a self) {
-        for stmt in &self.ast {
-            match stmt {
-                Stmt::Const(id, expr) => {
-                    self.constants.borrow_mut().insert(id.clone(), &expr);
-                }
-                Stmt::Function { id, .. } => {
-                    self.functions.borrow_mut().insert(id.clone(), &stmt);
-                }
-                Stmt::Kernel { id, .. } => {
-                    self.kernels.borrow_mut().insert(id.clone(), &stmt);
-                }
-                Stmt::Comment(..) => {}
-                Stmt::Eof => {}
-                _ => panic!("Unexpected statement in file scope!"),
-            }
         }
     }
 
@@ -110,61 +109,61 @@ impl<'a> Generator<'a> {
             let mut declaration;
 
             // generate argument signatures
-            for (k, v) in args.iter().enumerate() {
-                let arg = match input[k] {
+            for (idx, arg) in args.iter().enumerate() {
+                let arg_type = match input[idx] {
                     VarType::Buffer { .. } => {
-                        format!("global float *{}, global int *___str_{}", v, v)
+                        format!("global float *{}, global int *___str_{}", arg, arg)
                     }
-                    VarType::Int => format!("int {}", v),
-                    VarType::Float => format!("float {}", v),
-                    VarType::Vec => format!("float3 {}", v),
-                    VarType::BoolArray(n, l, a, b, c, d) => {
+                    VarType::Int => format!("int {}", arg),
+                    VarType::Float => format!("float {}", arg),
+                    VarType::Vec => format!("float3 {}", arg),
+                    VarType::BoolArray(dim, local, i1, i2, i3, i4) => {
                         format!(
                             "{}bool {}{}",
-                            if l { "local " } else { "" },
-                            v,
-                            idx4(n, a, b, c, d)?
+                            if local { "local " } else { "" },
+                            arg,
+                            idx4(dim, i1, i2, i3, i4)?
                         )
                     }
-                    VarType::IntArray(n, l, a, b, c, d) => {
+                    VarType::IntArray(dim, local, i1, i2, i3, i4) => {
                         format!(
                             "{}int {}{}",
-                            if l { "local " } else { "" },
-                            v,
-                            idx4(n, a, b, c, d)?
+                            if local { "local " } else { "" },
+                            arg,
+                            idx4(dim, i1, i2, i3, i4)?
                         )
                     }
-                    VarType::FloatArray(n, l, a, b, c, d) => {
+                    VarType::FloatArray(dim, local, i1, i2, i3, i4) => {
                         format!(
                             "{}float {}{}",
-                            if l { "local " } else { "" },
-                            v,
-                            idx4(n, a, b, c, d)?
+                            if local { "local " } else { "" },
+                            arg,
+                            idx4(dim, i1, i2, i3, i4)?
                         )
                     }
-                    VarType::VecArray(n, l, a, b, c, d) => {
+                    VarType::VecArray(dim, local, i1, i2, i3, i4) => {
                         format!(
                             "{}float3 {}{}",
-                            if l { "local " } else { "" },
-                            v,
-                            idx4(n, a, b, c, d)?
+                            if local { "local " } else { "" },
+                            arg,
+                            idx4(dim, i1, i2, i3, i4)?
                         )
                     }
-                    t => {
+                    err_type => {
                         return Err(format!(
                             "Argument '{}' of function '{}' has unsupported type '{}'",
-                            v, name, t
+                            arg, name, err_type
                         ))
                     }
                 };
 
-                self.inference.borrow().scope.add(v, input[k]); // add argument to scope
+                self.inference.borrow().scope.add(arg, input[idx]); // add argument to scope
 
                 // comma-separate arguments
-                if k < args.len() - 1 {
-                    definition.push_str(&format!("\t{},\n", arg));
+                if idx < args.len() - 1 {
+                    definition.push_str(&format!("\t{},\n", arg_type));
                 } else {
-                    definition.push_str(&format!("\t{}\n", arg));
+                    definition.push_str(&format!("\t{}\n", arg_type));
                 }
             }
             definition.push(')');
@@ -173,18 +172,18 @@ impl<'a> Generator<'a> {
 
             // construct function body
             definition.push_str(" {\n");
-            for v in body {
-                definition.push_str(&self.gen_stmt(v)?);
+            for stmt in body {
+                definition.push_str(&self.gen_stmt(stmt)?);
             }
 
             // get function return type
-            let ret_type = self
+            let return_type = self
                 .inference
                 .borrow()
                 .scope
                 .get("return")
                 .unwrap_or(VarType::Void); // use void return type if none specified
-            let ret_string = match ret_type {
+            let return_string = match return_type {
                 VarType::Bool => "bool",
                 VarType::Int => "int",
                 VarType::Float => "float",
@@ -196,22 +195,28 @@ impl<'a> Generator<'a> {
             self.inference.borrow().scope.set_current(outer_scope);
 
             // collect function dependencies from stack
-            let deps = self
+            let dependencies = self
                 .dependencies
                 .borrow_mut()
                 .pop()
                 .ok_or_else(|| "No dependency frame found!".to_string())?;
 
             // add function return type to definition
-            definition = format!("{} {} {}}}", ret_string, id, definition);
+            definition = format!("{} {} {}}}", return_string, id, definition);
 
             // add function return type to declaration
-            declaration = format!("{} {} {};", ret_string, id, declaration);
+            declaration = format!("{} {} {};", return_string, id, declaration);
 
             // register generated_functions
-            self.generated_functions
-                .borrow_mut()
-                .insert(id.clone(), (declaration, definition, ret_type, deps));
+            self.generated_functions.borrow_mut().insert(
+                id.clone(),
+                GenFunction {
+                    declaration,
+                    definition,
+                    return_type,
+                    dependencies,
+                },
+            );
 
             Ok(id)
         } else {
@@ -222,8 +227,8 @@ impl<'a> Generator<'a> {
     pub fn kernel(&'a self, name: &str, input: &[VarType]) -> Result<String, String> {
         let id = function_id(name, input);
 
-        if let Some(k) = self.generated_kernels.borrow().get(&id) {
-            return Ok(k.clone());
+        if let Some(kernel) = self.generated_kernels.borrow().get(&id) {
+            return Ok(kernel.clone());
         }
 
         self.inference.borrow_mut().functions = Some(&self.generated_functions); // link generated functions to inference engine
@@ -233,8 +238,8 @@ impl<'a> Generator<'a> {
         // parse constants
         if self.generated_constants.borrow().is_none() {
             let mut consts = String::new();
-            for (k, v) in self.constants.borrow().iter() {
-                consts.push_str(&format!("constant {}", self.gen_var(k, v)?));
+            for (name, expr) in self.constants.borrow().iter() {
+                consts.push_str(&format!("constant {}", self.gen_var(name, expr)?));
             }
             self.generated_constants.replace(Some(consts));
         }
@@ -249,39 +254,39 @@ impl<'a> Generator<'a> {
 
             // construct kernel signature
             let mut kernel = format!("kernel void {} (\n", id);
-            for (k, v) in args.iter().enumerate() {
+            for (idx, arg) in args.iter().enumerate() {
                 // construct argument signature
-                let arg = format!(
+                let arg_out = format!(
                     "{}{}",
-                    match input[k] {
+                    match input[idx] {
                         VarType::Buffer { .. } =>
-                            format!("global float *{}, global int *___str_", v),
+                            format!("global float *{}, global int *___str_", arg),
                         VarType::Int => "int ".into(),
                         VarType::Float => "float ".into(),
                         VarType::IntArray(1, ..) => "int *".into(),
                         VarType::FloatArray(1, ..) => "float *".into(),
-                        t =>
+                        err_type =>
                             return Err(format!(
                                 "Type '{}' of argument '{}' not supported in kernel arguments",
-                                t, v
+                                err_type, arg
                             )),
                     },
-                    v
+                    arg
                 );
 
-                self.inference.borrow().scope.add(v, input[k]); // add argument to scope
+                self.inference.borrow().scope.add(arg, input[idx]); // add argument to scope
 
                 // comma-separate arguments
-                if k < args.len() - 1 {
-                    kernel.push_str(&format!("\t{},\n", arg));
+                if idx < args.len() - 1 {
+                    kernel.push_str(&format!("\t{},\n", arg_out));
                 } else {
-                    kernel.push_str(&format!("\t{}\n", arg));
+                    kernel.push_str(&format!("\t{}\n", arg_out));
                 }
             }
             kernel.push_str(") {\n");
             // construct kernel body
-            for v in body {
-                kernel.push_str(&self.gen_stmt(v)?);
+            for stmt in body {
+                kernel.push_str(&self.gen_stmt(stmt)?);
             }
             kernel.push('}');
 
@@ -323,35 +328,35 @@ impl<'a> Generator<'a> {
 
         // get nested dependencies
         while let Some(id) = deps.pop() {
-            let deps_nested = self
+            let dependencies_nested = self
                 .generated_functions
                 .borrow()
                 .get(&id)
                 .ok_or::<String>(format!("No function dependency '{}' found", &id))?
-                .3
+                .dependencies
                 .clone();
             satisfied.insert(id);
 
-            deps_nested.into_iter().for_each(|id| {
+            for id in dependencies_nested {
                 if satisfied.get(&id).is_none() {
                     deps.push(id);
                 }
-            })
+            }
         }
 
         let deps = satisfied;
 
         let mut declarations = String::new();
         let mut definitions = String::new();
-        for id in deps.iter() {
+        for id in &deps {
             let function = self.generated_functions.borrow();
             let function = function
                 .get(id)
                 .ok_or::<String>(format!("No function dependency '{}' found", id))?;
 
-            declarations.push_str(&function.0);
+            declarations.push_str(&function.declaration);
             declarations.push_str("\n\n");
-            definitions.push_str(&function.1);
+            definitions.push_str(&function.definition);
             definitions.push_str("\n\n");
         }
 
@@ -366,17 +371,17 @@ impl<'a> Generator<'a> {
             Stmt::Call(id, args) => {
                 let args_str = args
                     .iter()
-                    .map(|e| self.gen_expr(e))
+                    .map(|expr| self.gen_expr(expr))
                     .collect::<Result<Vec<_>, _>>()?;
                 let vars = args
                     .iter()
-                    .map(|e| self.inference.borrow().var_type(e))
+                    .map(|expr| self.inference.borrow().var_type(expr))
                     .collect::<Result<Vec<_>, _>>()?;
                 if self.inference.borrow().builtin(id, args).is_ok() {
-                    format!("{};\n", self.gen_call(id, &args_str, &vars)?)
+                    format!("{};\n", Generator::gen_call(id, &args_str, &vars))
                 } else {
                     let id = self.function(id, &vars)?;
-                    format!("{};\n", self.gen_call(&id, &args_str, &vars)?)
+                    format!("{};\n", Generator::gen_call(&id, &args_str, &vars))
                 }
             }
             Stmt::For {
@@ -393,10 +398,10 @@ impl<'a> Generator<'a> {
             Stmt::While { cond, body } => self.gen_while(cond, body)?,
             Stmt::Return(None) => match self.inference.borrow().scope.get("return") {
                 Some(VarType::Void) | None => "return;\n".into(),
-                Some(t) => {
+                Some(return_type) => {
                     return Err(format!(
                         "Void return statement inconsistent with previously used return type '{}'",
-                        t
+                        return_type
                     ))
                 }
             },
@@ -408,13 +413,13 @@ impl<'a> Generator<'a> {
                 // return value is either new, same as--, or promoted from the previous one
                 let new = self.inference.borrow().var_type(expr)?;
                 let old = self.inference.borrow().scope.get("return").unwrap_or(new);
-                let promoted = self.inference.borrow().promote(new, old)?;
+                let promoted = Inference::promote(new, old)?;
 
                 self.inference.borrow().scope.overwrite("return", promoted);
 
                 format!("return {};\n", expr_str)
             }
-            Stmt::Comment(c) => format!("//{}\n", c),
+            Stmt::Comment(comment) => format!("//{}\n", comment),
             stmt => return Err(format!("Unable to generate code for:\n{:?}", stmt)),
         };
 
@@ -431,21 +436,19 @@ impl<'a> Generator<'a> {
     ) -> Result<String, String> {
         self.inference.borrow().scope.open();
 
-        let mut s;
-
         // infer var type
         // TODO: does code need to be generated before inference? e.g. function calls?
         let from_type = self.inference.borrow().var_type(from)?;
         let to_type = self.inference.borrow().var_type(to)?;
 
-        let mut var_type = self.inference.borrow().promote_num(from_type, to_type)?;
+        let mut var_type = Inference::promote_num(from_type, to_type)?;
 
-        if let Some(step) = &step {
+        let mut out = if let Some(step) = &step {
             let step_type = self.inference.borrow().var_type(step)?;
-            var_type = self.inference.borrow().promote_num(var_type, step_type)?;
+            var_type = Inference::promote_num(var_type, step_type)?;
             self.inference.borrow().scope.add(var, var_type);
 
-            s = format!(
+            format!(
                 "for ({var_type} {var} = {from}; ({step}>0)?({var}<={to}):({var}>={to}); {var} += {step}) {{\n",
                 var_type = match var_type {
                     VarType::Int => "int",
@@ -454,9 +457,9 @@ impl<'a> Generator<'a> {
                     _ => return Err(format!("Incompatible loop variable type '{}'", var_type)),
                 },
                 var = var,
-                from = self.gen_expr(&from)?,
-                to = self.gen_expr(&to)?,
-                step = self.gen_expr(&step)?,
+                from = self.gen_expr(from)?,
+                to = self.gen_expr(to)?,
+                step = self.gen_expr(step)?,
             )
         } else {
             let step = match var_type {
@@ -467,7 +470,7 @@ impl<'a> Generator<'a> {
             };
             self.inference.borrow().scope.add(var, var_type);
 
-            s = format!(
+            format!(
                 "for ({var_type} {var} = {from}; {var}<={to}; {var} += {step}) {{\n",
                 var_type = match var_type {
                     VarType::Int => "int",
@@ -476,20 +479,20 @@ impl<'a> Generator<'a> {
                     _ => return Err(format!("Incompatible loop variable type '{}'", var_type)),
                 },
                 var = var,
-                from = self.gen_expr(&from)?,
-                to = self.gen_expr(&to)?,
+                from = self.gen_expr(from)?,
+                to = self.gen_expr(to)?,
                 step = self.gen_expr(&step)?,
             )
+        };
+
+        for stmt in body {
+            out.push_str(&self.gen_stmt(stmt)?);
         }
 
-        for v in body {
-            s.push_str(&self.gen_stmt(v)?);
-        }
-
-        s.push_str("}\n");
+        out.push_str("}\n");
         self.inference.borrow().scope.close();
 
-        Ok(s)
+        Ok(out)
     }
 
     fn gen_if_else(&'a self, cond_list: &[Cond], else_body: &[Stmt]) -> Result<String, String> {
@@ -497,137 +500,130 @@ impl<'a> Generator<'a> {
 
         let Cond { ref cond, ref body } = cond_list[0];
 
-        let mut s = format!("if ({}) {{\n", self.gen_expr(cond)?);
+        let mut out = format!("if ({}) {{\n", self.gen_expr(cond)?);
         assert!(self.inference.borrow().var_type(cond)? == VarType::Bool); // type info available only after generation!
 
         self.inference.borrow().scope.open();
-        for v in body {
-            s.push_str(&self.gen_stmt(v)?);
+        for stmt in body {
+            out.push_str(&self.gen_stmt(stmt)?);
         }
         self.inference.borrow().scope.close();
 
         for cond_item in cond_list.iter().skip(1) {
             let Cond { ref cond, ref body } = cond_item;
 
-            s.push_str(&format!("}} else if ({}) {{\n", self.gen_expr(cond)?));
+            out.push_str(&format!("}} else if ({}) {{\n", self.gen_expr(cond)?));
             assert!(self.inference.borrow().var_type(cond)? == VarType::Bool); // type info available only after generation!
 
             self.inference.borrow().scope.open();
-            for v in body {
-                s.push_str(&self.gen_stmt(v)?);
+            for stmt in body {
+                out.push_str(&self.gen_stmt(stmt)?);
             }
             self.inference.borrow().scope.close();
         }
 
         if !else_body.is_empty() {
-            s.push_str("} else {\n");
+            out.push_str("} else {\n");
             self.inference.borrow().scope.open();
-            for v in else_body {
-                s.push_str(&self.gen_stmt(v)?);
+            for stmt in else_body {
+                out.push_str(&self.gen_stmt(stmt)?);
             }
             self.inference.borrow().scope.close();
         }
-        s.push_str("}\n");
+        out.push_str("}\n");
 
-        Ok(s)
+        Ok(out)
     }
 
     fn gen_while(&'a self, cond: &Expr, body: &[Stmt]) -> Result<String, String> {
         assert!(self.inference.borrow().var_type(cond)? == VarType::Bool);
 
-        let mut s = format!("while ({}) {{\n", self.gen_expr(cond)?);
+        let mut out = format!("while ({}) {{\n", self.gen_expr(cond)?);
 
         self.inference.borrow().scope.open();
-        for v in body {
-            s.push_str(&self.gen_stmt(v)?);
+        for stmt in body {
+            out.push_str(&self.gen_stmt(stmt)?);
         }
         self.inference.borrow().scope.close();
-        s.push_str("}}\n");
+        out.push_str("}}\n");
 
-        Ok(s)
+        Ok(out)
     }
 
     fn gen_var(&'a self, id: &str, expr: &Expr) -> Result<String, String> {
         let no_init = String::new();
         let expr_str = match expr {
-            Expr::Call(f, _) => match f.as_ref() {
-                "array" => no_init,
-                "bool_array" => no_init,
-                "int_array" => no_init,
-                "float_array" => no_init,
-                "vec_array" => no_init,
-                "local_array" => no_init,
-                "local_bool_array" => no_init,
-                "local_int_array" => no_init,
-                "local_float_array" => no_init,
-                "local_vec_array" => no_init,
+            Expr::Call(name, _) => match name.as_ref() {
+                "array" | "bool_array" | "int_array" | "float_array" | "vec_array"
+                | "local_array" | "local_bool_array" | "local_int_array" | "local_float_array"
+                | "local_vec_array" => no_init,
                 "zero" => "0".into(),
                 "one" => "1".into(),
-                _ => self.gen_expr(&expr)?,
+                _ => self.gen_expr(expr)?,
             },
-            Expr::Array(_) => format!(" = {}", self.gen_expr(&expr)?),
-            _ => self.gen_expr(&expr)?,
+            Expr::Array(_) => format!(" = {}", self.gen_expr(expr)?),
+            _ => self.gen_expr(expr)?,
         };
 
         let var_type = self.inference.borrow().var_type(expr)?;
         self.inference.borrow().scope.add(id, var_type);
 
-        let s = match var_type {
+        let out = match var_type {
             VarType::Bool => format!("bool {} = {};\n", id, expr_str),
             VarType::Int => format!("int {} = {};\n", id, expr_str),
             VarType::Float => format!("float {} = {};\n", id, expr_str),
             VarType::Vec => format!("float3 {} = {};\n", id, expr_str),
 
-            VarType::BoolArray(n, l, a, b, c, d) => {
+            VarType::BoolArray(dim, local, i1, i2, i3, i4) => {
                 format!(
                     "{}bool {} {}{};\n",
-                    if l { "local " } else { "" },
+                    if local { "local " } else { "" },
                     id,
-                    idx4(n, a, b, c, d)?,
+                    idx4(dim, i1, i2, i3, i4)?,
                     expr_str
                 )
             }
-            VarType::IntArray(n, l, a, b, c, d) => {
+            VarType::IntArray(dim, local, i1, i2, i3, i4) => {
                 format!(
                     "{}int {} {}{};\n",
-                    if l { "local " } else { "" },
+                    if local { "local " } else { "" },
                     id,
-                    idx4(n, a, b, c, d)?,
+                    idx4(dim, i1, i2, i3, i4)?,
                     expr_str
                 )
             }
-            VarType::FloatArray(n, l, a, b, c, d) => {
+            VarType::FloatArray(dim, local, i1, i2, i3, i4) => {
                 format!(
                     "{}float {} {}{};\n",
-                    if l { "local " } else { "" },
+                    if local { "local " } else { "" },
                     id,
-                    idx4(n, a, b, c, d)?,
+                    idx4(dim, i1, i2, i3, i4)?,
                     expr_str
                 )
             }
-            VarType::VecArray(n, l, a, b, c, d) => {
+            VarType::VecArray(dim, local, i1, i2, i3, i4) => {
                 format!(
                     "{}float3 {} {}{};\n",
-                    if l { "local " } else { "" },
+                    if local { "local " } else { "" },
                     id,
-                    idx4(n, a, b, c, d)?,
+                    idx4(dim, i1, i2, i3, i4)?,
                     expr_str
                 )
             }
 
-            t => {
+            err_type => {
                 return Err(format!(
                 "Unable to create variable '{}' of type '{}'.\nType inferred from expression:\n{}",
-                id, t, expr_str
+                id, err_type, expr_str
             ))
             }
         };
 
-        Ok(s)
+        Ok(out)
     }
 
     fn gen_expr(&'a self, expr: &Expr) -> Result<String, String> {
-        let s = match expr {
+        let out = match expr {
             Expr::Literal(Literal::Bool(true)) => "true".into(),
             Expr::Literal(Literal::Bool(false)) => "false".into(),
             Expr::Literal(Literal::Int(n)) => format!("{}", n),
@@ -640,14 +636,14 @@ impl<'a> Generator<'a> {
             Expr::Call(id, args) => {
                 let args_str = args
                     .iter()
-                    .map(|e| self.gen_expr(e))
+                    .map(|expr| self.gen_expr(expr))
                     .collect::<Result<Vec<_>, _>>()?;
                 let vars = args
                     .iter()
-                    .map(|e| self.inference.borrow().var_type(e))
+                    .map(|expr| self.inference.borrow().var_type(expr))
                     .collect::<Result<Vec<_>, _>>()?;
                 if self.inference.borrow().builtin(id, args).is_ok() {
-                    self.gen_call(id, &args_str, &vars)?
+                    Generator::gen_call(id, &args_str, &vars)
                 } else {
                     let id = self.function(id, &vars)?;
                     self.dependencies
@@ -655,35 +651,35 @@ impl<'a> Generator<'a> {
                         .last_mut()
                         .ok_or_else(|| "No dependency frame found!".to_string())?
                         .insert(id.clone());
-                    self.gen_call(&id, &args_str, &vars)?
+                    Generator::gen_call(&id, &args_str, &vars)
                 }
             }
             Expr::Array(elems) => {
                 let mut s = String::new();
-                for (k, v) in elems.iter().enumerate() {
-                    s.push_str(&self.gen_expr(v)?);
-                    if k < elems.len() - 1 {
-                        s.push_str(", ");
+                for (idx, expr) in elems.iter().enumerate() {
+                    if idx > 0 {
+                        s.push(',');
                     }
+                    s.push_str(&self.gen_expr(expr)?);
                 }
                 format!("{{{}}}", s)
             }
         };
 
-        Ok(s)
+        Ok(out)
     }
 
     fn gen_unary(&'a self, expr: &UnaryExpr) -> Result<String, String> {
-        let s = match expr.op {
+        let out = match expr.op {
             UnaryOp::Not => format!("!{}", self.gen_expr(&expr.right)?),
             UnaryOp::Neg => format!("(-{})", self.gen_expr(&expr.right)?),
         };
 
-        Ok(s)
+        Ok(out)
     }
 
     fn gen_binary(&'a self, expr: &BinaryExpr) -> Result<String, String> {
-        let s = match expr.op {
+        let out = match expr.op {
             BinaryOp::And => format!(
                 "{} && {}",
                 self.gen_expr(&expr.left)?,
@@ -787,10 +783,10 @@ impl<'a> Generator<'a> {
             ),
         };
 
-        Ok(s)
+        Ok(out)
     }
 
-    fn gen_call(&'a self, id: &str, args: &[String], vars: &[VarType]) -> Result<String, String> {
+    fn gen_call(id: &str, args: &[String], vars: &[VarType]) -> String {
         let mut id = match id {
             "bool" => "(bool)",
             "int" => "(int)",
@@ -802,8 +798,7 @@ impl<'a> Generator<'a> {
 
         if !vars.is_empty() {
             id = match (id, vars[0]) {
-                ("abs", VarType::Float) => "fabs",
-                ("abs", VarType::Vec) => "fabs",
+                ("abs", VarType::Vec | VarType::Float) => "fabs",
                 ("atomic_add", VarType::FloatArray(1, false, ..)) => "_atomic_float_add",
                 ("atomic_sub", VarType::FloatArray(1, false, ..)) => "_atomic_float_sub",
                 ("atomic_inc", VarType::FloatArray(1, false, ..)) => "_atomic_float_inc",
@@ -820,52 +815,51 @@ impl<'a> Generator<'a> {
             }
         }
 
-        let mut s = String::new();
-        for (k, v) in args.iter().enumerate() {
-            s.push_str(&v);
-            if let VarType::Buffer { .. } = vars[k] {
-                s.push_str(", ___str_");
-                s.push_str(&v);
+        let mut out = String::new();
+        for (idx, arg) in args.iter().enumerate() {
+            if idx > 0 {
+                out.push(',');
             }
-
-            if k < args.len() - 1 {
-                s.push_str(", ");
+            out.push_str(arg);
+            if let VarType::Buffer { .. } = vars[idx] {
+                out.push_str(", ___str_");
+                out.push_str(arg);
             }
         }
 
-        Ok(format!("{}({})", id, s))
+        format!("{}({})", id, out)
     }
 
     fn gen_assign(&'a self, expr: &Expr, val: &Expr) -> Result<String, String> {
-        let s = if let Expr::Index(expr, idx) = expr {
+        let out = if let Expr::Index(expr, idx) = expr {
             if let Index::ColorSpace(cs_from) = &**idx {
                 // assign vec with color space conversion
                 if let Expr::Index(id, idx) = &**expr {
                     if let Expr::Identifier(name) = &**id {
-                        if let Index::Array2D(a, b) = &**idx {
+                        if let Index::Array2D(i1, i2) = &**idx {
                             let var = self.inference.borrow().var_type(id)?;
                             if let VarType::Buffer { z, cs, x1y1 } = var {
                                 let cs = format!("{}to{}", cs_from, cs);
-                                let a = self.gen_expr(a)?;
-                                let b = self.gen_expr(b)?;
+                                let i1 = self.gen_expr(i1)?;
+                                let i2 = self.gen_expr(i2)?;
                                 let guard = if x1y1 {
-                                    format!("if ({}==0 && {}==0) ", a, b,)
+                                    format!("if ({}==0 && {}==0) ", i1, i2,)
                                 } else {
                                     format!(
                                         "if ({}>=0 && {}<___str_{}[0] && {}>=0 && {}<___str_{}[1]) ",
-                                        a, a, name, b, b, name
+                                        i1, i1, name, i2, i2, name
                                     )
                                 };
                                 let val = self.gen_expr(val)?;
                                 if z == 3 {
-                                    let id_x = var.buf_idx_3d(name, &a, &b, "0");
-                                    let id_y = var.buf_idx_3d(name, &a, &b, "1");
-                                    let id_z = var.buf_idx_3d(name, &a, &b, "2");
+                                    let id_x = var.buf_idx_3d(name, &i1, &i2, "0");
+                                    let id_y = var.buf_idx_3d(name, &i1, &i2, "1");
+                                    let id_z = var.buf_idx_3d(name, &i1, &i2, "2");
                                     format!("{} {{ float3 __v = {}({}); {} = __v.x; {} = __v.y; {} = __v.z; }}\n",
                                         guard, cs, val, id_x, id_y, id_z)
                                 } else if z == 1 {
                                     // match buffer storage size to color space
-                                    let id = var.buf_idx_3d(name, &a, &b, "0");
+                                    let id = var.buf_idx_3d(name, &i1, &i2, "0");
                                     format!("{} {} = {}({});\n", guard, id, cs, val)
                                 } else {
                                     return Err(format!(
@@ -888,7 +882,7 @@ impl<'a> Generator<'a> {
                         expr
                     ));
                 }
-            } else if let Index::Array1D(a) = &**idx {
+            } else if let Index::Array1D(i1) = &**idx {
                 let var = self.inference.borrow().var_type(expr)?;
                 if let Expr::Identifier(name) = &**expr {
                     match var {
@@ -899,26 +893,26 @@ impl<'a> Generator<'a> {
                             format!(
                                 "{}[{}] = {};\n",
                                 name,
-                                self.gen_expr(a)?,
+                                self.gen_expr(i1)?,
                                 self.gen_expr(val)?
                             )
                         }
                         VarType::Buffer { x1y1, .. } => {
-                            let a = self.gen_expr(a)?;
+                            let i1 = self.gen_expr(i1)?;
                             let val = self.gen_expr(val)?;
                             let guard = if x1y1 {
-                                format!("if ({}>=0 && {}<___str_{}[2]) ", a, a, name,)
+                                format!("if ({}>=0 && {}<___str_{}[2]) ", i1, i1, name,)
                             } else {
                                 format!("if ({}>=0 && {}<(___str_{}[0] * ___str_{}[1] * ___str_{}[2])) ",
-                                a, a, name, name, name)
+                                i1, i1, name, name, name)
                             };
-                            let id = var.buf_idx_1d(name, &a);
+                            let id = var.buf_idx_1d(name, &i1);
                             format!("{} {} = {};\n", guard, id, val)
                         }
-                        t => {
+                        err_type => {
                             return Err(format!(
                                 "Unable to index variable '{}' of type '{}'",
-                                name, t
+                                name, err_type
                             ))
                         }
                     }
@@ -928,42 +922,42 @@ impl<'a> Generator<'a> {
                         expr
                     ));
                 }
-            } else if let Index::Array2D(a, b) = &**idx {
+            } else if let Index::Array2D(i1, i2) = &**idx {
                 let var = self.inference.borrow().var_type(expr)?;
                 if let Expr::Identifier(name) = &**expr {
                     match var {
                         VarType::Buffer { z: 1, x1y1, .. } => {
-                            let a = self.gen_expr(a)?;
-                            let b = self.gen_expr(b)?;
+                            let i1 = self.gen_expr(i1)?;
+                            let i2 = self.gen_expr(i2)?;
                             let guard = if x1y1 {
-                                format!("if ({}==0 && {}==0) ", a, b,)
+                                format!("if ({}==0 && {}==0) ", i1, i2,)
                             } else {
                                 format!(
                                     "if ({}>=0 && {}<___str_{}[0] && {}>=0 && {}<___str_{}[1]) ",
-                                    a, a, name, b, b, name
+                                    i1, i1, name, i2, i2, name
                                 )
                             };
                             let val = self.gen_expr(val)?;
 
-                            let id = var.buf_idx_3d(name, &a, &b, "0");
+                            let id = var.buf_idx_3d(name, &i1, &i2, "0");
                             format!("{} {} = {};\n", guard, id, val)
                         }
                         VarType::Buffer { z: 3, x1y1, .. } => {
-                            let a = self.gen_expr(a)?;
-                            let b = self.gen_expr(b)?;
+                            let i1 = self.gen_expr(i1)?;
+                            let i2 = self.gen_expr(i2)?;
                             let guard = if x1y1 {
-                                format!("if ({}==0 && {}==0) ", a, b,)
+                                format!("if ({}==0 && {}==0) ", i1, i2,)
                             } else {
                                 format!(
                                     "if ({}>=0 && {}<___str_{}[0] && {}>=0 && {}<___str_{}[1]) ",
-                                    a, a, name, b, b, name
+                                    i1, i1, name, i2, i2, name
                                 )
                             };
                             let val = self.gen_expr(val)?;
 
-                            let id_x = var.buf_idx_3d(name, &a, &b, "0");
-                            let id_y = var.buf_idx_3d(name, &a, &b, "1");
-                            let id_z = var.buf_idx_3d(name, &a, &b, "2");
+                            let id_x = var.buf_idx_3d(name, &i1, &i2, "0");
+                            let id_y = var.buf_idx_3d(name, &i1, &i2, "1");
+                            let id_z = var.buf_idx_3d(name, &i1, &i2, "2");
                             format!(
                                 "{} {{ float3 __v = {}; {} = __v.x; {} = __v.y; {} = __v.z; }}\n",
                                 guard, val, id_x, id_y, id_z
@@ -975,14 +969,14 @@ impl<'a> Generator<'a> {
                         | VarType::VecArray(2, ..) => format!(
                             "{}[{}][{}] = {};\n",
                             name,
-                            self.gen_expr(a)?,
-                            self.gen_expr(b)?,
+                            self.gen_expr(i1)?,
+                            self.gen_expr(i2)?,
                             self.gen_expr(val)?
                         ),
-                        t => {
+                        err_type => {
                             return Err(format!(
                                 "Unable to index variable '{}' of type '{}'",
-                                name, t
+                                name, err_type
                             ))
                         }
                     }
@@ -992,7 +986,7 @@ impl<'a> Generator<'a> {
                         expr
                     ));
                 }
-            } else if let Index::Array3D(a, b, c) = &**idx {
+            } else if let Index::Array3D(i1, i2, i3) = &**idx {
                 let var = self.inference.borrow().var_type(expr)?;
                 if let Expr::Identifier(name) = &**expr {
                     match var {
@@ -1002,35 +996,35 @@ impl<'a> Generator<'a> {
                         | VarType::VecArray(3, ..) => format!(
                             "{}[{}][{}][{}] = {};\n",
                             name,
-                            self.gen_expr(a)?,
-                            self.gen_expr(b)?,
-                            self.gen_expr(c)?,
+                            self.gen_expr(i1)?,
+                            self.gen_expr(i2)?,
+                            self.gen_expr(i3)?,
                             self.gen_expr(val)?
                         ),
                         VarType::Buffer { x1y1, .. } => {
-                            let a = self.gen_expr(a)?;
-                            let b = self.gen_expr(b)?;
-                            let c = self.gen_expr(c)?;
+                            let i1 = self.gen_expr(i1)?;
+                            let i2 = self.gen_expr(i2)?;
+                            let i3 = self.gen_expr(i3)?;
                             let guard = if x1y1 {
                                 format!(
                                     "if ({}==0 && {}==0 && {}>=0 && {}<___str_{}[2]) ",
-                                    a, b, c, c, name
+                                    i1, i2, i3, i3, name
                                 )
                             } else {
                                 format!(
                                     "if ({}>=0 && {}<___str_{}[0] && {}>=0 && {}<___str_{}[1] && {}>=0 && {}<___str_{}[2]) ",
-                                    a, a, name, b, b, name, c, c, name
+                                    i1, i1, name, i2, i2, name, i3, i3, name
                                 )
                             };
                             let val = self.gen_expr(val)?;
 
-                            let id = var.buf_idx_3d(name, &a, &b, &c);
+                            let id = var.buf_idx_3d(name, &i1, &i2, &i3);
                             format!("{} {} = {};\n", guard, id, val)
                         }
-                        t => {
+                        err_type => {
                             return Err(format!(
                                 "Unable to index variable '{}' of type '{}'",
-                                name, t
+                                name, err_type
                             ))
                         }
                     }
@@ -1040,7 +1034,7 @@ impl<'a> Generator<'a> {
                         expr
                     ));
                 }
-            } else if let Index::Array4D(a, b, c, d) = &**idx {
+            } else if let Index::Array4D(i1, i2, i3, i4) = &**idx {
                 let var = self.inference.borrow().var_type(expr)?;
                 if let Expr::Identifier(name) = &**expr {
                     match var {
@@ -1050,16 +1044,16 @@ impl<'a> Generator<'a> {
                         | VarType::VecArray(4, ..) => format!(
                             "{}[{}][{}][{}][{}] = {};\n",
                             name,
-                            self.gen_expr(a)?,
-                            self.gen_expr(b)?,
-                            self.gen_expr(c)?,
-                            self.gen_expr(d)?,
+                            self.gen_expr(i1)?,
+                            self.gen_expr(i2)?,
+                            self.gen_expr(i3)?,
+                            self.gen_expr(i4)?,
                             self.gen_expr(val)?
                         ),
-                        t => {
+                        err_type => {
                             return Err(format!(
                                 "Unable to index variable '{}' of type '{}'",
-                                name, t
+                                name, err_type
                             ))
                         }
                     }
@@ -1077,7 +1071,7 @@ impl<'a> Generator<'a> {
             format!("{} = {};\n", self.gen_expr(expr)?, self.gen_expr(val)?)
         };
 
-        Ok(s)
+        Ok(out)
     }
 
     fn gen_index(&'a self, expr: &Expr, idx: &Index) -> Result<String, String> {
@@ -1102,16 +1096,16 @@ impl<'a> Generator<'a> {
             }
         }
 
-        let s = match idx {
+        let out = match idx {
             Index::Vec(0) => {
                 let var = self.inference.borrow().var_type(expr)?;
                 match var {
                     VarType::Vec => format!("{}.x", self.gen_expr(expr)?),
                     VarType::Buffer { .. } => format!("___str_{}[0]", name),
-                    t => {
+                    err_type => {
                         return Err(format!(
                             "Variable '{}' of type '{}' does not support property access",
-                            name, t
+                            name, err_type
                         ))
                     }
                 }
@@ -1121,10 +1115,10 @@ impl<'a> Generator<'a> {
                 match var {
                     VarType::Vec => format!("{}.y", self.gen_expr(expr)?),
                     VarType::Buffer { .. } => format!("___str_{}[1]", name),
-                    t => {
+                    err_type => {
                         return Err(format!(
                             "Variable '{}' of type '{}' does not support property access",
-                            name, t
+                            name, err_type
                         ))
                     }
                 }
@@ -1134,27 +1128,27 @@ impl<'a> Generator<'a> {
                 match var {
                     VarType::Vec => format!("{}.z", self.gen_expr(expr)?),
                     VarType::Buffer { .. } => format!("___str_{}[2]", name),
-                    t => {
+                    err_type => {
                         return Err(format!(
                             "Variable '{}' of type '{}' does not support property access",
-                            name, t
+                            name, err_type
                         ))
                     }
                 }
             }
-            Index::Array1D(a) => {
+            Index::Array1D(i1) => {
                 if let Expr::Identifier(id) = expr {
                     let var = self.inference.borrow().var_type(expr)?;
                     match var {
-                        VarType::Buffer { .. } => var.buf_idx_1d(id, &self.gen_expr(a)?),
+                        VarType::Buffer { .. } => var.buf_idx_1d(id, &self.gen_expr(i1)?),
                         VarType::BoolArray(1, ..)
                         | VarType::IntArray(1, ..)
                         | VarType::FloatArray(1, ..)
-                        | VarType::VecArray(1, ..) => format!("{}[{}]", id, self.gen_expr(a)?),
-                        t => {
+                        | VarType::VecArray(1, ..) => format!("{}[{}]", id, self.gen_expr(i1)?),
+                        err_type => {
                             return Err(format!(
                                 "Unable to index variable '{}' of type '{}'",
-                                name, t
+                                name, err_type
                             ))
                         }
                     }
@@ -1165,27 +1159,27 @@ impl<'a> Generator<'a> {
                     ));
                 }
             }
-            Index::Array2D(a, b) => {
+            Index::Array2D(i1, i2) => {
                 if let Expr::Identifier(id) = expr {
                     let var = self.inference.borrow().var_type(expr)?;
                     match var {
                         VarType::Buffer { z: 1, .. } => {
-                            var.buf_idx_3d(id, &self.gen_expr(a)?, &self.gen_expr(b)?, "0")
+                            var.buf_idx_3d(id, &self.gen_expr(i1)?, &self.gen_expr(i2)?, "0")
                         }
                         VarType::Buffer { z: 3, .. } => format!(
                             "(float3){}",
-                            var.buf_idx_2d(id, &self.gen_expr(a)?, &self.gen_expr(b)?)
+                            var.buf_idx_2d(id, &self.gen_expr(i1)?, &self.gen_expr(i2)?)
                         ),
                         VarType::BoolArray(2, ..)
                         | VarType::IntArray(2, ..)
                         | VarType::FloatArray(2, ..)
                         | VarType::VecArray(2, ..) => {
-                            format!("{}[{}][{}]", id, self.gen_expr(a)?, self.gen_expr(b)?)
+                            format!("{}[{}][{}]", id, self.gen_expr(i1)?, self.gen_expr(i2)?)
                         }
-                        t => {
+                        err_type => {
                             return Err(format!(
                                 "Unable to index variable '{}' of type '{}'",
-                                name, t
+                                name, err_type
                             ))
                         }
                     }
@@ -1196,15 +1190,15 @@ impl<'a> Generator<'a> {
                     ));
                 }
             }
-            Index::Array3D(a, b, c) => {
+            Index::Array3D(i1, i2, i3) => {
                 if let Expr::Identifier(id) = expr {
                     let var = self.inference.borrow().var_type(expr)?;
                     match var {
                         VarType::Buffer { .. } => var.buf_idx_3d(
                             id,
-                            &self.gen_expr(a)?,
-                            &self.gen_expr(b)?,
-                            &self.gen_expr(c)?,
+                            &self.gen_expr(i1)?,
+                            &self.gen_expr(i2)?,
+                            &self.gen_expr(i3)?,
                         ),
                         VarType::BoolArray(3, ..)
                         | VarType::IntArray(3, ..)
@@ -1212,14 +1206,14 @@ impl<'a> Generator<'a> {
                         | VarType::VecArray(3, ..) => format!(
                             "{}[{}][{}][{}]",
                             id,
-                            self.gen_expr(a)?,
-                            self.gen_expr(b)?,
-                            self.gen_expr(c)?,
+                            self.gen_expr(i1)?,
+                            self.gen_expr(i2)?,
+                            self.gen_expr(i3)?,
                         ),
-                        t => {
+                        err_type => {
                             return Err(format!(
                                 "Unable to index variable '{}' of type '{}'",
-                                name, t
+                                name, err_type
                             ))
                         }
                     }
@@ -1230,7 +1224,7 @@ impl<'a> Generator<'a> {
                     ));
                 }
             }
-            Index::Array4D(a, b, c, d) => {
+            Index::Array4D(i1, i2, i3, i4) => {
                 if let Expr::Identifier(id) = expr {
                     let var = self.inference.borrow().var_type(expr)?;
                     match var {
@@ -1240,15 +1234,15 @@ impl<'a> Generator<'a> {
                         | VarType::VecArray(4, ..) => format!(
                             "{}[{}][{}][{}][{}]",
                             id,
-                            self.gen_expr(a)?,
-                            self.gen_expr(b)?,
-                            self.gen_expr(c)?,
-                            self.gen_expr(d)?,
+                            self.gen_expr(i1)?,
+                            self.gen_expr(i2)?,
+                            self.gen_expr(i3)?,
+                            self.gen_expr(i4)?,
                         ),
-                        t => {
+                        err_type => {
                             return Err(format!(
                                 "Unable to index variable '{}' of type '{}'",
-                                name, t
+                                name, err_type
                             ))
                         }
                     }
@@ -1264,13 +1258,22 @@ impl<'a> Generator<'a> {
                     if let Expr::Identifier(id) = &**expr {
                         let var = self.inference.borrow().var_type(expr)?;
                         if let VarType::Buffer { z, cs, .. } = var {
-                            let id = if let Index::Array2D(a, b) = &**idx {
+                            let id = if let Index::Array2D(i1, i2) = &**idx {
                                 if z == 1 {
-                                    var.buf_idx_3d(id, &self.gen_expr(a)?, &self.gen_expr(b)?, "0")
+                                    var.buf_idx_3d(
+                                        id,
+                                        &self.gen_expr(i1)?,
+                                        &self.gen_expr(i2)?,
+                                        "0",
+                                    )
                                 } else if z == 3 {
                                     format!(
                                         "(float3){}",
-                                        var.buf_idx_2d(id, &self.gen_expr(a)?, &self.gen_expr(b)?)
+                                        var.buf_idx_2d(
+                                            id,
+                                            &self.gen_expr(i1)?,
+                                            &self.gen_expr(i2)?
+                                        )
                                     )
                                 } else {
                                     return Err(format!(
@@ -1304,20 +1307,20 @@ impl<'a> Generator<'a> {
                         match var {
                             VarType::Buffer { .. } => {
                                 let idx = match (var, idx) {
-                                    (VarType::Buffer { .. }, Index::Array1D(a)) => {
-                                        var.idx_1d(id, &self.gen_expr(a)?)
+                                    (VarType::Buffer { .. }, Index::Array1D(i1)) => {
+                                        var.idx_1d(id, &self.gen_expr(i1)?)
                                     }
-                                    (VarType::Buffer { z: 1, .. }, Index::Array2D(a, b)) => {
-                                        var.idx_3d(id, &self.gen_expr(a)?, &self.gen_expr(b)?, "0")
+                                    (VarType::Buffer { z: 1, .. }, Index::Array2D(i1, i2)) => {
+                                        var.idx_3d(id, &self.gen_expr(i1)?, &self.gen_expr(i2)?, "0")
                                     }
-                                    (VarType::Buffer { .. }, Index::Array3D(a, b, c)) => var
+                                    (VarType::Buffer { .. }, Index::Array3D(i1, i2, i3)) => var
                                         .idx_3d(
                                             id,
-                                            &self.gen_expr(a)?,
-                                            &self.gen_expr(b)?,
-                                            &self.gen_expr(c)?,
+                                            &self.gen_expr(i1)?,
+                                            &self.gen_expr(i2)?,
+                                            &self.gen_expr(i3)?,
                                         ),
-                                    (t, _) => return Err(format!("Variable '{}' of type '{}' does not support property access", name, t)),
+                                    (err_type, _) => return Err(format!("Variable '{}' of type '{}' does not support property access", name, err_type)),
                                 };
                                 match prop {
                                     Prop::Int => format!("(((global int*){})[{}])", id, idx), //only for buffers
@@ -1329,38 +1332,38 @@ impl<'a> Generator<'a> {
                             VarType::FloatArray(..) => {
                                 if let Prop::Ptr = prop {
                                     match (var, idx) {
-                                        (VarType::FloatArray(1, ..), Index::Array1D(a)) => {
-                                            format!("({} + {})", id, self.gen_expr(a)?)
+                                        (VarType::FloatArray(1, ..), Index::Array1D(i1)) => {
+                                            format!("({} + {})", id, self.gen_expr(i1)?)
                                         }
-                                        (VarType::FloatArray(2, ..), Index::Array2D(a, b)) => {
+                                        (VarType::FloatArray(2, ..), Index::Array2D(i1, i2)) => {
                                             format!(
                                                 "({}[{}] + {})",
                                                 id,
-                                                self.gen_expr(a)?,
-                                                self.gen_expr(b)?
+                                                self.gen_expr(i1)?,
+                                                self.gen_expr(i2)?
                                             )
                                         }
-                                        (VarType::FloatArray(3, ..), Index::Array3D(a, b, c)) => {
+                                        (VarType::FloatArray(3, ..), Index::Array3D(i1, i2, i3)) => {
                                             format!(
                                                 "({}[{}][{}] + {})",
                                                 id,
-                                                self.gen_expr(a)?,
-                                                self.gen_expr(b)?,
-                                                self.gen_expr(c)?
+                                                self.gen_expr(i1)?,
+                                                self.gen_expr(i2)?,
+                                                self.gen_expr(i3)?
                                             )
                                         }
                                         (
                                             VarType::FloatArray(4, ..),
-                                            Index::Array4D(a, b, c, d),
+                                            Index::Array4D(i1, i2, i3, i4),
                                         ) => format!(
                                             "({}[{}][{}][{}] + {})",
                                             id,
-                                            self.gen_expr(a)?,
-                                            self.gen_expr(b)?,
-                                            self.gen_expr(c)?,
-                                            self.gen_expr(d)?
+                                            self.gen_expr(i1)?,
+                                            self.gen_expr(i2)?,
+                                            self.gen_expr(i3)?,
+                                            self.gen_expr(i4)?
                                         ),
-                                        (t, _) => return Err(format!("Variable '{}' of type '{}' does not support property access", name, t)),
+                                        (err_type, _) => return Err(format!("Variable '{}' of type '{}' does not support property access", name, err_type)),
                                     }
                                 } else {
                                     return Err(format!("Array '{}' does not support property access except for '.ptr'", name));
@@ -1369,46 +1372,46 @@ impl<'a> Generator<'a> {
                             VarType::IntArray(..) => {
                                 if let Prop::Ptr = prop {
                                     match (var, idx) {
-                                        (VarType::IntArray(1, ..), Index::Array1D(a)) => {
-                                            format!("({} + {})", id, self.gen_expr(a)?)
+                                        (VarType::IntArray(1, ..), Index::Array1D(i1)) => {
+                                            format!("({} + {})", id, self.gen_expr(i1)?)
                                         }
-                                        (VarType::IntArray(2, ..), Index::Array2D(a, b)) => {
+                                        (VarType::IntArray(2, ..), Index::Array2D(i1, i2)) => {
                                             format!(
                                                 "({}[{}] + {})",
                                                 id,
-                                                self.gen_expr(a)?,
-                                                self.gen_expr(b)?
+                                                self.gen_expr(i1)?,
+                                                self.gen_expr(i2)?
                                             )
                                         }
-                                        (VarType::IntArray(3, ..), Index::Array3D(a, b, c)) => {
+                                        (VarType::IntArray(3, ..), Index::Array3D(i1, i2, i3)) => {
                                             format!(
                                                 "({}[{}][{}] + {})",
                                                 id,
-                                                self.gen_expr(a)?,
-                                                self.gen_expr(b)?,
-                                                self.gen_expr(c)?
+                                                self.gen_expr(i1)?,
+                                                self.gen_expr(i2)?,
+                                                self.gen_expr(i3)?
                                             )
                                         }
-                                        (VarType::IntArray(4, ..), Index::Array4D(a, b, c, d)) => {
+                                        (VarType::IntArray(4, ..), Index::Array4D(i1, i2, i3, i4)) => {
                                             format!(
                                                 "({}[{}][{}][{}] + {})",
                                                 id,
-                                                self.gen_expr(a)?,
-                                                self.gen_expr(b)?,
-                                                self.gen_expr(c)?,
-                                                self.gen_expr(d)?
+                                                self.gen_expr(i1)?,
+                                                self.gen_expr(i2)?,
+                                                self.gen_expr(i3)?,
+                                                self.gen_expr(i4)?
                                             )
                                         }
-                                        (t, _) => return Err(format!("Variable '{}' of type '{}' does not support property access", name, t)),
+                                        (err_type, _) => return Err(format!("Variable '{}' of type '{}' does not support property access", name, err_type)),
                                     }
                                 } else {
                                     return Err(format!("Array '{}' does not support property access except for '.ptr'", name));
                                 }
                             }
-                            t => {
+                            err_type => {
                                 return Err(format!(
                                     "Variable '{}' of type '{}' does not support property access",
-                                    name, t
+                                    name, err_type
                                 ))
                             }
                         }
@@ -1425,14 +1428,14 @@ impl<'a> Generator<'a> {
                     ));
                 }
             }
-            i => {
+            idx @ Index::Vec(_) => {
                 return Err(format!(
                     "Variable '{}' cannot be indexed with '{:?}'",
-                    name, i
+                    name, idx
                 ))
             }
         };
 
-        Ok(s)
+        Ok(out)
     }
 }

@@ -34,7 +34,7 @@ mod tokens;
 use function_id::function_id;
 use generator_ispc::Generator as GeneratorISPC;
 use generator_ocl::Generator as GeneratorOCL;
-use parser::Parser;
+use parser::{ParseError, Parser};
 use scanner::Scanner;
 
 use ast::ColorSpace;
@@ -50,17 +50,20 @@ pub struct Translator<'a> {
     inputs: Vec<VarType>,
 }
 
+unsafe fn unsafe_cstr<'a>(source: *const i8) -> &'a CStr {
+    assert!(!source.is_null());
+    CStr::from_ptr(source)
+}
+
 // create new generator with source file:
 #[no_mangle]
 pub extern "C" fn translator_new_ocl<'a>(source: *const i8) -> *mut Translator<'a> {
-    let source = unsafe {
-        assert!(!source.is_null());
-        CStr::from_ptr(source)
-    };
+    let source = unsafe { unsafe_cstr(source) }
+        .to_str()
+        .unwrap_or_default()
+        .to_string();
 
-    let source = source.to_str().unwrap_or_default().to_string();
-
-    let mut scanner = Scanner::new(source.clone());
+    let mut scanner = Scanner::new(&source);
     let tokens = scanner.scan();
     if let Err((err, line)) = &tokens {
         println!("[Line {}]: {}", line, err);
@@ -72,8 +75,13 @@ pub extern "C" fn translator_new_ocl<'a>(source: *const i8) -> *mut Translator<'
             .enumerate()
             .skip(start)
             .take(7)
-            .for_each(|(l, s)| {
-                println!("{} {}: {}", if l == line { "=>" } else { "  " }, l + 1, s)
+            .for_each(|(current_line, source)| {
+                println!(
+                    "{} {}: {}",
+                    if current_line == line { "=>" } else { "  " },
+                    line + 1,
+                    source
+                );
             });
     }
 
@@ -81,8 +89,8 @@ pub extern "C" fn translator_new_ocl<'a>(source: *const i8) -> *mut Translator<'
 
     let parser = Parser::new(tokens);
     let ast = parser.parse();
-    if let Err((err, line)) = &ast {
-        println!("[Line {}]: {}", line, err);
+    if let Err(ParseError { error, line }) = &ast {
+        println!("[Line {}]: {}", line, error);
         let line = line - 1;
 
         let start = if line >= 3 { line - 3 } else { 0 };
@@ -91,44 +99,35 @@ pub extern "C" fn translator_new_ocl<'a>(source: *const i8) -> *mut Translator<'
             .enumerate()
             .skip(start)
             .take(7)
-            .for_each(|(l, s)| {
-                println!("{} {}: {}", if l == line { "=>" } else { "  " }, l + 1, s)
+            .for_each(|(current_line, source)| {
+                println!(
+                    "{} {}: {}",
+                    if current_line == line { "=>" } else { "  " },
+                    line + 1,
+                    source
+                );
             });
     }
     let ast = ast.unwrap_or_default();
 
     let generator = GeneratorOCL::new(ast);
 
-    let translator = Box::new(Translator {
+    let translator = Translator {
         generator: Generator::Ocl(generator),
         inputs: Vec::new(),
-    });
-
-    let ptr = Box::into_raw(translator);
-
-    let translator = unsafe {
-        assert!(!ptr.is_null());
-        &mut *ptr
     };
 
-    match &translator.generator {
-        Generator::Ocl(g) => g.prepare(),
-        Generator::Ispc(g) => g.prepare(),
-    }
-
-    ptr
+    Box::into_raw(Box::new(translator))
 }
 
 #[no_mangle]
 pub extern "C" fn translator_new_ispc<'a>(source: *const i8) -> *mut Translator<'a> {
-    let source = unsafe {
-        assert!(!source.is_null());
-        CStr::from_ptr(source)
-    };
+    let source = unsafe { unsafe_cstr(source) }
+        .to_str()
+        .unwrap_or_default()
+        .to_string();
 
-    let source = source.to_str().unwrap_or_default().to_string();
-
-    let mut scanner = Scanner::new(source.clone());
+    let mut scanner = Scanner::new(&source);
     let tokens = scanner.scan();
     if let Err((err, line)) = &tokens {
         println!("[Line {}]: {}", line, err);
@@ -140,8 +139,13 @@ pub extern "C" fn translator_new_ispc<'a>(source: *const i8) -> *mut Translator<
             .enumerate()
             .skip(start)
             .take(7)
-            .for_each(|(l, s)| {
-                println!("{} {}: {}", if l == line { "=>" } else { "  " }, l + 1, s)
+            .for_each(|(current_line, source)| {
+                println!(
+                    "{} {}: {}",
+                    if current_line == line { "=>" } else { "  " },
+                    line + 1,
+                    source
+                );
             });
     }
 
@@ -149,8 +153,8 @@ pub extern "C" fn translator_new_ispc<'a>(source: *const i8) -> *mut Translator<
 
     let parser = Parser::new(tokens);
     let ast = parser.parse();
-    if let Err((err, line)) = &ast {
-        println!("[Line {}]: {}", line, err);
+    if let Err(ParseError { error, line }) = &ast {
+        println!("[Line {}]: {}", line, error);
         let line = line - 1;
 
         let start = if line >= 3 { line - 3 } else { 0 };
@@ -159,32 +163,25 @@ pub extern "C" fn translator_new_ispc<'a>(source: *const i8) -> *mut Translator<
             .enumerate()
             .skip(start)
             .take(7)
-            .for_each(|(l, s)| {
-                println!("{} {}: {}", if l == line { "=>" } else { "  " }, l + 1, s)
+            .for_each(|(current_line, source)| {
+                println!(
+                    "{} {}: {}",
+                    if current_line == line { "=>" } else { "  " },
+                    line + 1,
+                    source
+                );
             });
     }
     let ast = ast.unwrap_or_default();
 
     let generator = GeneratorISPC::new(ast);
 
-    let translator = Box::new(Translator {
+    let translator = Translator {
         generator: Generator::Ispc(generator),
         inputs: Vec::new(),
-    });
-
-    let ptr = Box::into_raw(translator);
-
-    let translator = unsafe {
-        assert!(!ptr.is_null());
-        &mut *ptr
     };
 
-    match &translator.generator {
-        Generator::Ocl(g) => g.prepare(),
-        Generator::Ispc(g) => g.prepare(),
-    }
-
-    ptr
+    Box::into_raw(Box::new(translator))
 }
 
 #[no_mangle]
@@ -203,11 +200,7 @@ pub extern "C" fn translator_generate(t: *mut Translator, kernel: *const i8) -> 
         assert!(!t.is_null());
         &mut *t
     };
-    let kernel = unsafe {
-        assert!(!kernel.is_null());
-        CStr::from_ptr(kernel)
-    };
-    let kernel = kernel.to_str().unwrap_or_default();
+    let kernel = unsafe { unsafe_cstr(kernel) }.to_str().unwrap_or_default();
 
     let source = match &t.generator {
         Generator::Ocl(g) => g.kernel(kernel, &t.inputs),
@@ -228,12 +221,9 @@ pub extern "C" fn translator_get_id(t: *mut Translator, name: *const i8) -> *con
         assert!(!t.is_null());
         &mut *t
     };
-    let name = unsafe {
-        assert!(!name.is_null());
-        CStr::from_ptr(name)
-    };
+    let name = unsafe { unsafe_cstr(name) }.to_str().unwrap_or_default();
 
-    CString::new(function_id(name.to_str().unwrap_or_default(), &t.inputs))
+    CString::new(function_id(name, &t.inputs))
         .unwrap()
         .into_raw()
 }
@@ -274,7 +264,7 @@ pub extern "C" fn translator_add_buffer_srgb(t: *mut Translator, x: u64, y: u64,
         &mut *t
     };
     t.inputs.push(VarType::Buffer {
-        z,
+        z: z as usize,
         cs: ColorSpace::Srgb,
         x1y1: x == 1 && y == 1,
     });
@@ -288,7 +278,7 @@ pub extern "C" fn translator_add_buffer_lrgb(t: *mut Translator, x: u64, y: u64,
         &mut *t
     };
     t.inputs.push(VarType::Buffer {
-        z,
+        z: z as usize,
         cs: ColorSpace::Lrgb,
         x1y1: x == 1 && y == 1,
     });
@@ -302,7 +292,7 @@ pub extern "C" fn translator_add_buffer_xyz(t: *mut Translator, x: u64, y: u64, 
         &mut *t
     };
     t.inputs.push(VarType::Buffer {
-        z,
+        z: z as usize,
         cs: ColorSpace::Xyz,
         x1y1: x == 1 && y == 1,
     });
@@ -316,7 +306,7 @@ pub extern "C" fn translator_add_buffer_lab(t: *mut Translator, x: u64, y: u64, 
         &mut *t
     };
     t.inputs.push(VarType::Buffer {
-        z,
+        z: z as usize,
         cs: ColorSpace::Lab,
         x1y1: x == 1 && y == 1,
     });
@@ -330,7 +320,7 @@ pub extern "C" fn translator_add_buffer_lch(t: *mut Translator, x: u64, y: u64, 
         &mut *t
     };
     t.inputs.push(VarType::Buffer {
-        z,
+        z: z as usize,
         cs: ColorSpace::Lch,
         x1y1: x == 1 && y == 1,
     });
@@ -344,7 +334,7 @@ pub extern "C" fn translator_add_buffer_y(t: *mut Translator, x: u64, y: u64, z:
         &mut *t
     };
     t.inputs.push(VarType::Buffer {
-        z,
+        z: z as usize,
         cs: ColorSpace::Y,
         x1y1: x == 1 && y == 1,
     });
@@ -358,7 +348,7 @@ pub extern "C" fn translator_add_buffer_l(t: *mut Translator, x: u64, y: u64, z:
         &mut *t
     };
     t.inputs.push(VarType::Buffer {
-        z,
+        z: z as usize,
         cs: ColorSpace::L,
         x1y1: x == 1 && y == 1,
     });

@@ -24,6 +24,36 @@ use crate::ast::{
 
 use crate::tokens::{Token, TokenType};
 
+pub struct ParseError {
+    pub error: String,
+    pub line: usize,
+}
+
+struct VarDecl {
+    id: String,
+    expr: Expr,
+}
+struct IfBranch {
+    cond_list: Vec<Cond>,
+    else_body: Vec<Stmt>,
+}
+struct WhileLoop {
+    cond: Expr,
+    body: Vec<Stmt>,
+}
+struct ForLoop {
+    var: String,
+    from: Expr,
+    to: Expr,
+    step: Option<Expr>,
+    body: Vec<Stmt>,
+}
+struct FunDecl {
+    id: String,
+    args: Vec<String>,
+    body: Vec<Stmt>,
+}
+
 pub struct Parser {
     tokens: Vec<Token>,
     current: Cell<Option<usize>>,
@@ -37,10 +67,10 @@ impl Parser {
         }
     }
 
-    pub fn parse(&self) -> Result<Vec<Stmt>, (String, usize)> {
+    pub fn parse(&self) -> Result<Vec<Stmt>, ParseError> {
         let mut stmts = Vec::new();
         while self.current.get().is_some() {
-            stmts.push(self.statement()?.0)
+            stmts.push(self.statement()?.0);
         }
         Ok(stmts)
     }
@@ -54,26 +84,22 @@ impl Parser {
     }
 
     fn peek(&self) -> &TokenType {
-        if let Some(current) = self.current.get() {
-            match &self.tokens.get(current) {
+        self.current
+            .get()
+            .map_or(&TokenType::Eof, |current| match &self.tokens.get(current) {
                 Some(token) => &token.token,
                 None => &TokenType::Eof,
-            }
-        } else {
-            &TokenType::Eof
-        }
+            })
     }
 
     fn peek_next(&self) -> &TokenType {
-        if let Some(current) = self.current.get() {
+        self.current.get().map_or(&TokenType::Eof, |current| {
             if current + 1 < self.tokens.len() {
                 &self.tokens[current + 1].token
             } else {
                 &TokenType::Eof
             }
-        } else {
-            &TokenType::Eof
-        }
+        })
     }
 
     fn line(&self) -> usize {
@@ -86,34 +112,41 @@ impl Parser {
             }
         }
 
-        if let Some(last) = self.tokens.iter().last() {
-            last.fragment.line
-        } else {
-            0
-        }
+        self.tokens
+            .iter()
+            .last()
+            .map_or(0, |last| last.fragment.line)
     }
 
-    fn var_decl(&self) -> Result<(String, Expr, usize), (String, usize)> {
+    fn var_decl(&self) -> Result<VarDecl, ParseError> {
         let line = self.line();
         self.advance(); // skip var
         if let TokenType::Identifier(id) = self.peek() {
             self.advance(); // skip identifier
             if &TokenType::Equal == self.peek() {
                 self.advance(); // skip =
-                Ok((id.clone(), self.expression()?.0, line))
+                Ok(VarDecl {
+                    id: id.clone(),
+                    expr: self.expression()?.0,
+                })
             } else {
-                Err((format!("Missing initial value assignment to {}", id), line))
+                Err(ParseError {
+                    error: format!("Missing initial value assignment to {}", id),
+                    line,
+                })
             }
         } else {
-            Err(("Missing identifier".into(), line))
+            Err(ParseError {
+                error: "Missing identifier".into(),
+                line,
+            })
         }
     }
 
-    fn if_branch(&self) -> Result<(Vec<Cond>, Vec<Stmt>, usize), (String, usize)> {
+    fn if_branch(&self) -> Result<IfBranch, ParseError> {
         let mut cond_list = Vec::new();
         let mut else_body = Vec::new();
 
-        let line = self.line();
         self.advance(); // skip if
         let (cond, _) = self.expression()?;
         let mut body = Vec::new();
@@ -122,15 +155,16 @@ impl Parser {
         }
         loop {
             match self.peek() {
-                TokenType::ElseIf => break,
-                TokenType::Else => break,
-                TokenType::End => break,
+                TokenType::ElseIf | TokenType::Else | TokenType::End => break,
                 _ => {}
             }
 
             match self.statement()? {
                 (Stmt::Eof, line) => {
-                    return Err(("Unexpected end of file in 'if' body".into(), line))
+                    return Err(ParseError {
+                        error: "Unexpected end of file in 'if' body".into(),
+                        line,
+                    })
                 }
                 (stmt, _) => body.push(stmt),
             }
@@ -147,14 +181,16 @@ impl Parser {
             loop {
                 match self.peek() {
                     TokenType::ElseIf => continue,
-                    TokenType::Else => break,
-                    TokenType::End => break,
+                    TokenType::Else | TokenType::End => break,
                     _ => {}
                 }
 
                 match self.statement()? {
                     (Stmt::Eof, line) => {
-                        return Err(("Unexpected end of file in 'elseif' body".into(), line))
+                        return Err(ParseError {
+                            error: "Unexpected end of file in 'elseif' body".into(),
+                            line,
+                        })
                     }
                     (stmt, _) => body.push(stmt),
                 }
@@ -171,7 +207,10 @@ impl Parser {
 
                 match self.statement()? {
                     (Stmt::Eof, line) => {
-                        return Err(("Unexpected end of file in 'else' body".into(), line))
+                        return Err(ParseError {
+                            error: "Unexpected end of file in 'else' body".into(),
+                            line,
+                        })
                     }
                     (stmt, _) => else_body.push(stmt),
                 }
@@ -179,11 +218,13 @@ impl Parser {
         }
 
         self.advance(); // skip end
-        Ok((cond_list, else_body, line))
+        Ok(IfBranch {
+            cond_list,
+            else_body,
+        })
     }
 
-    fn while_loop(&self) -> Result<(Expr, Vec<Stmt>, usize), (String, usize)> {
-        let line = self.line();
+    fn while_loop(&self) -> Result<WhileLoop, ParseError> {
         self.advance(); // skip while
 
         let (cond, _) = self.expression()?;
@@ -201,38 +242,48 @@ impl Parser {
             }
             match self.statement()? {
                 (Stmt::Eof, line) => {
-                    return Err(("Unexpected end of file in 'while' loop body".into(), line))
+                    return Err(ParseError {
+                        error: "Unexpected end of file in 'while' loop body".into(),
+                        line,
+                    })
                 }
                 (stmt, _) => body.push(stmt),
             }
         }
 
-        Ok((cond, body, line))
+        Ok(WhileLoop { cond, body })
     }
 
-    fn for_loop(
-        &self,
-    ) -> Result<(String, Expr, Expr, Option<Expr>, Vec<Stmt>, usize), (String, usize)> {
+    fn for_loop(&self) -> Result<ForLoop, ParseError> {
         let line = self.line();
         self.advance(); // skip for
 
         let var;
-        if let TokenType::Identifier(s) = self.peek() {
-            var = s.clone();
+        if let TokenType::Identifier(name) = self.peek() {
+            var = name.clone();
             self.advance(); // skip identifier
         } else {
-            return Err(("Missing for loop variable".into(), line));
+            return Err(ParseError {
+                error: "Missing for loop variable".into(),
+                line,
+            });
         }
 
         if self.peek() != &TokenType::Equal {
-            return Err(("Missing for loop range assignment".into(), line));
+            return Err(ParseError {
+                error: "Missing for loop range assignment".into(),
+                line,
+            });
         }
         self.advance(); // skip =
 
         let (from, _) = self.expression()?;
 
         if self.peek() != &TokenType::Comma {
-            return Err(("Expected ',' in loop range".into(), line));
+            return Err(ParseError {
+                error: "Expected ',' in loop range".into(),
+                line,
+            });
         }
         self.advance(); // skip ,
 
@@ -243,7 +294,7 @@ impl Parser {
             self.advance(); // skip comma
             step = Some(self.expression()?.0);
         } else {
-            step = None
+            step = None;
         }
 
         if self.peek() == &TokenType::Do {
@@ -260,25 +311,37 @@ impl Parser {
             }
             match self.statement()? {
                 (Stmt::Eof, line) => {
-                    return Err(("Unexpected end of file in 'for' loop body".into(), line))
+                    return Err(ParseError {
+                        error: "Unexpected end of file in 'for' loop body".into(),
+                        line,
+                    })
                 }
                 (stmt, _) => body.push(stmt),
             }
         }
 
-        Ok((var, from, to, step, body, line))
+        Ok(ForLoop {
+            var,
+            from,
+            to,
+            step,
+            body,
+        })
     }
 
-    fn fun_decl(&self) -> Result<(String, Vec<String>, Vec<Stmt>, usize), (String, usize)> {
+    fn fun_decl(&self) -> Result<FunDecl, ParseError> {
         let line = self.line();
         self.advance(); // skip fun
 
         let id;
-        if let TokenType::Identifier(s) = self.peek() {
-            id = s.clone();
+        if let TokenType::Identifier(name) = self.peek() {
+            id = name.clone();
             self.advance(); // skip identifier
         } else {
-            return Err(("Missing function declaration idetifier".into(), line));
+            return Err(ParseError {
+                error: "Missing function declaration idetifier".into(),
+                line,
+            });
         }
 
         // get arguments
@@ -288,25 +351,25 @@ impl Parser {
             let mut args = Vec::new();
             loop {
                 match self.peek() {
-                    TokenType::Identifier(s) => {
-                        args.push(s.clone());
+                    TokenType::Identifier(name) => {
+                        args.push(name.clone());
                     }
                     TokenType::RightParen => break,
-                    _ => return Err((
-                        "Expected argument identifier or ')' in function declaration argument list"
+                    _ => return Err(ParseError{ error: "Expected argument identifier or ')' in function declaration argument list"
                             .into(),
                         line,
-                    )),
+                    }),
                 }
                 self.advance();
                 match self.peek() {
                     TokenType::Comma => self.advance(), // skip comma
                     TokenType::RightParen => break,
                     _ => {
-                        return Err((
-                            "Expected ',' or ')' in function declaration argument list".into(),
+                        return Err(ParseError {
+                            error: "Expected ',' or ')' in function declaration argument list"
+                                .into(),
                             line,
-                        ))
+                        })
                     }
                 }
             }
@@ -321,25 +384,25 @@ impl Parser {
                 }
                 match self.statement()? {
                     (Stmt::Eof, line) => {
-                        return Err((
-                            "Unexpected end of file in function declaration body".into(),
+                        return Err(ParseError {
+                            error: "Unexpected end of file in function declaration body".into(),
                             line,
-                        ))
+                        })
                     }
                     (stmt, _) => body.push(stmt),
                 }
             }
 
-            Ok((id, args, body, line))
+            Ok(FunDecl { id, args, body })
         } else {
-            Err((
-                "Expected argument list in function declaration".into(),
+            Err(ParseError {
+                error: "Expected argument list in function declaration".into(),
                 line,
-            ))
+            })
         }
     }
 
-    fn fun_return(&self) -> Result<(Option<Expr>, usize), (String, usize)> {
+    fn fun_return(&self) -> Result<(Option<Expr>, usize), ParseError> {
         let line = self.line();
         self.advance(); // skip return
 
@@ -350,30 +413,33 @@ impl Parser {
 
         match self.peek() {
             TokenType::End | TokenType::Else | TokenType::ElseIf => Ok((Some(expr), line)),
-            _ => Err(("Expected end of body after return statement".into(), line)),
+            _ => Err(ParseError {
+                error: "Expected end of body after return statement".into(),
+                line,
+            }),
         }
     }
 
-    fn statement(&self) -> Result<(Stmt, usize), (String, usize)> {
+    fn statement(&self) -> Result<(Stmt, usize), ParseError> {
         let line = self.line();
         let stmt = match self.peek() {
             TokenType::Var => {
-                let (id, expr, _) = self.var_decl()?;
+                let VarDecl { id, expr } = self.var_decl()?;
                 Stmt::Var(id, expr)
             }
 
             TokenType::Const => {
-                let (id, expr, _) = self.var_decl()?;
+                let VarDecl { id, expr } = self.var_decl()?;
                 Stmt::Const(id, expr)
             }
 
             TokenType::Function => {
-                let (id, args, body, _) = self.fun_decl()?;
+                let FunDecl { id, args, body } = self.fun_decl()?;
                 Stmt::Function { id, args, body }
             }
 
             TokenType::Kernel => {
-                let (id, args, body, _) = self.fun_decl()?;
+                let FunDecl { id, args, body } = self.fun_decl()?;
                 Stmt::Kernel { id, args, body }
             }
 
@@ -385,19 +451,28 @@ impl Parser {
             TokenType::Continue => match self.fun_return()? {
                 (None, _) => Stmt::Continue,
                 (_, line) => {
-                    return Err(("Expected end of body after continue statement".into(), line))
+                    return Err(ParseError {
+                        error: "Expected end of body after continue statement".into(),
+                        line,
+                    })
                 }
             },
 
             TokenType::Break => match self.fun_return()? {
                 (None, _) => Stmt::Break,
                 (_, line) => {
-                    return Err(("Expected end of body after break statement".into(), line))
+                    return Err(ParseError {
+                        error: "Expected end of body after break statement".into(),
+                        line,
+                    })
                 }
             },
 
             TokenType::If => {
-                let (cond_list, else_body, _) = self.if_branch()?;
+                let IfBranch {
+                    cond_list,
+                    else_body,
+                } = self.if_branch()?;
                 Stmt::IfElse {
                     cond_list,
                     else_body,
@@ -405,12 +480,18 @@ impl Parser {
             }
 
             TokenType::While => {
-                let (cond, body, _) = self.while_loop()?;
+                let WhileLoop { cond, body } = self.while_loop()?;
                 Stmt::While { cond, body }
             }
 
             TokenType::For => {
-                let (var, from, to, step, body, _) = self.for_loop()?;
+                let ForLoop {
+                    var,
+                    from,
+                    to,
+                    step,
+                    body,
+                } = self.for_loop()?;
                 Stmt::For {
                     var,
                     from,
@@ -434,10 +515,10 @@ impl Parser {
                             break;
                         }
                         _ => {
-                            return Err((
-                                "Expected ',' or ')' in function call argument list".into(),
+                            return Err(ParseError {
+                                error: "Expected ',' or ')' in function call argument list".into(),
                                 line,
-                            ))
+                            })
                         }
                     }
                 }
@@ -463,35 +544,41 @@ impl Parser {
                     TokenType::PercentEqual => Stmt::AssignOp(id, AssignOp::Mod, expr),
                     TokenType::CaretEqual => Stmt::AssignOp(id, AssignOp::Pow, expr),
                     _ => {
-                        return Err((
-                            format!("Expected assignment to or call of identifier {}", id_str),
+                        return Err(ParseError {
+                            error: format!(
+                                "Expected assignment to or call of identifier {}",
+                                id_str
+                            ),
                             line,
-                        ))
+                        })
                     }
                 }
             }
 
-            TokenType::Comment(s) => {
+            TokenType::Comment(comment) => {
                 self.advance();
-                Stmt::Comment(s.clone())
+                Stmt::Comment(comment.clone())
             }
             TokenType::Eof => {
                 self.advance();
                 Stmt::Eof
             }
             _ => {
-                return Err(("Unable to parse statement".into(), self.line()));
+                return Err(ParseError {
+                    error: "Unable to parse statement".into(),
+                    line: self.line(),
+                });
             }
         };
 
         Ok((stmt, line))
     }
 
-    fn expression(&self) -> Result<(Expr, usize), (String, usize)> {
+    fn expression(&self) -> Result<(Expr, usize), ParseError> {
         self.logic_or()
     }
 
-    fn logic_or(&self) -> Result<(Expr, usize), (String, usize)> {
+    fn logic_or(&self) -> Result<(Expr, usize), ParseError> {
         let (mut left, line) = self.logic_and()?;
         while let Some(op) = match self.peek() {
             TokenType::Or => Some(BinaryOp::Or),
@@ -504,7 +591,7 @@ impl Parser {
         Ok((left, line))
     }
 
-    fn logic_and(&self) -> Result<(Expr, usize), (String, usize)> {
+    fn logic_and(&self) -> Result<(Expr, usize), ParseError> {
         let (mut left, line) = self.equality()?;
         while let Some(op) = match self.peek() {
             TokenType::And => Some(BinaryOp::And),
@@ -512,12 +599,12 @@ impl Parser {
         } {
             self.advance();
             let (right, _) = self.equality()?;
-            left = Expr::Binary(Box::new(BinaryExpr { left, op, right }))
+            left = Expr::Binary(Box::new(BinaryExpr { left, op, right }));
         }
         Ok((left, line))
     }
 
-    fn equality(&self) -> Result<(Expr, usize), (String, usize)> {
+    fn equality(&self) -> Result<(Expr, usize), ParseError> {
         let (mut left, line) = self.comparison()?;
         while let Some(op) = match self.peek() {
             TokenType::NotEqual => Some(BinaryOp::NotEqual),
@@ -526,12 +613,12 @@ impl Parser {
         } {
             self.advance();
             let (right, _) = self.comparison()?;
-            left = Expr::Binary(Box::new(BinaryExpr { left, op, right }))
+            left = Expr::Binary(Box::new(BinaryExpr { left, op, right }));
         }
         Ok((left, line))
     }
 
-    fn comparison(&self) -> Result<(Expr, usize), (String, usize)> {
+    fn comparison(&self) -> Result<(Expr, usize), ParseError> {
         let (mut left, line) = self.addition()?;
         while let Some(op) = match self.peek() {
             TokenType::Greater => Some(BinaryOp::Greater),
@@ -542,12 +629,12 @@ impl Parser {
         } {
             self.advance();
             let (right, _) = self.addition()?;
-            left = Expr::Binary(Box::new(BinaryExpr { left, op, right }))
+            left = Expr::Binary(Box::new(BinaryExpr { left, op, right }));
         }
         Ok((left, line))
     }
 
-    fn addition(&self) -> Result<(Expr, usize), (String, usize)> {
+    fn addition(&self) -> Result<(Expr, usize), ParseError> {
         let (mut left, line) = self.multiplication()?;
         while let Some(op) = match self.peek() {
             TokenType::Minus => Some(BinaryOp::Sub),
@@ -556,12 +643,12 @@ impl Parser {
         } {
             self.advance();
             let (right, _) = self.multiplication()?;
-            left = Expr::Binary(Box::new(BinaryExpr { left, op, right }))
+            left = Expr::Binary(Box::new(BinaryExpr { left, op, right }));
         }
         Ok((left, line))
     }
 
-    fn multiplication(&self) -> Result<(Expr, usize), (String, usize)> {
+    fn multiplication(&self) -> Result<(Expr, usize), ParseError> {
         let (mut left, line) = self.unary()?;
         while let Some(op) = match self.peek() {
             TokenType::Slash => Some(BinaryOp::Div),
@@ -571,12 +658,12 @@ impl Parser {
         } {
             self.advance();
             let (right, _) = self.unary()?;
-            left = Expr::Binary(Box::new(BinaryExpr { left, op, right }))
+            left = Expr::Binary(Box::new(BinaryExpr { left, op, right }));
         }
         Ok((left, line))
     }
 
-    fn unary(&self) -> Result<(Expr, usize), (String, usize)> {
+    fn unary(&self) -> Result<(Expr, usize), ParseError> {
         if let Some(op) = match self.peek() {
             TokenType::Not => Some(UnaryOp::Not),
             TokenType::Minus => Some(UnaryOp::Neg),
@@ -590,7 +677,7 @@ impl Parser {
         }
     }
 
-    fn exponentiation(&self) -> Result<(Expr, usize), (String, usize)> {
+    fn exponentiation(&self) -> Result<(Expr, usize), ParseError> {
         let (mut left, line) = self.primary()?;
         while let Some(op) = match self.peek() {
             TokenType::Caret => Some(BinaryOp::Pow),
@@ -598,25 +685,28 @@ impl Parser {
         } {
             self.advance();
             let (right, _) = self.primary()?;
-            left = Expr::Binary(Box::new(BinaryExpr { left, op, right }))
+            left = Expr::Binary(Box::new(BinaryExpr { left, op, right }));
         }
         Ok((left, line))
     }
 
-    fn primary(&self) -> Result<(Expr, usize), (String, usize)> {
+    fn primary(&self) -> Result<(Expr, usize), ParseError> {
         let line = self.line();
         let expr = match self.peek() {
             TokenType::Identifier(_) => self.identifier()?.0,
-            TokenType::Bool(b) => Expr::Literal(Literal::Bool(*b)),
-            TokenType::Float(n) => Expr::Literal(Literal::Float(*n)),
-            TokenType::Int(n) => Expr::Literal(Literal::Int(*n)),
+            TokenType::Bool(val) => Expr::Literal(Literal::Bool(*val)),
+            TokenType::Float(val) => Expr::Literal(Literal::Float(*val)),
+            TokenType::Int(val) => Expr::Literal(Literal::Int(*val)),
             TokenType::LeftParen => {
                 self.advance();
                 let (expr, _) = self.expression()?;
                 if self.peek() == &TokenType::RightParen {
                     Expr::Grouping(Box::new(expr))
                 } else {
-                    return Err(("Invalid sub-expression".into(), line));
+                    return Err(ParseError {
+                        error: "Invalid sub-expression".into(),
+                        line,
+                    });
                 }
             }
             TokenType::LeftBrace => {
@@ -627,26 +717,39 @@ impl Parser {
                     match self.peek() {
                         TokenType::Comma => self.advance(), // skip comma
                         TokenType::RightBrace => break,     // advanced in identifier
-                        _ => return Err(("Expected ',' or '}}' in array list".into(), line)),
+                        _ => {
+                            return Err(ParseError {
+                                error: "Expected ',' or '}}' in array list".into(),
+                                line,
+                            })
+                        }
                     }
                 }
                 Expr::Array(elems)
             }
-            _ => return Err(("Invalid expression".into(), line)),
+            _ => {
+                return Err(ParseError {
+                    error: "Invalid expression".into(),
+                    line,
+                })
+            }
         };
 
         self.advance();
         Ok((expr, line))
     }
 
-    fn identifier(&self) -> Result<(Expr, usize), (String, usize)> {
+    fn identifier(&self) -> Result<(Expr, usize), ParseError> {
         let line = self.line();
         let id;
 
-        if let TokenType::Identifier(s) = self.peek() {
-            id = s.clone();
+        if let TokenType::Identifier(name) = self.peek() {
+            id = name.clone();
         } else {
-            return Err(("Missing identifier".into(), line));
+            return Err(ParseError {
+                error: "Missing identifier".into(),
+                line,
+            });
         }
 
         // function call()
@@ -661,10 +764,10 @@ impl Parser {
                     TokenType::Comma => self.advance(), // skip comma
                     TokenType::RightParen => break,     // advanced in identifier
                     _ => {
-                        return Err((
-                            "Expected ',' or ')' in function call argument list".into(),
+                        return Err(ParseError {
+                            error: "Expected ',' or ')' in function call argument list".into(),
                             line,
-                        ))
+                        })
                     }
                 }
             }
@@ -684,7 +787,12 @@ impl Parser {
                 match self.peek() {
                     TokenType::Comma => self.advance(),
                     TokenType::RightBracket => break,
-                    _ => return Err(("Expected ',' or ']' in index list".into(), line)),
+                    _ => {
+                        return Err(ParseError {
+                            error: "Expected ',' or ']' in index list".into(),
+                            line,
+                        })
+                    }
                 }
             }
 
@@ -707,7 +815,12 @@ impl Parser {
                         idx.remove(0),
                     )),
                 ),
-                _ => return Err(("Invalid index count in index list".into(), line)),
+                _ => {
+                    return Err(ParseError {
+                        error: "Invalid index count in index list".into(),
+                        line,
+                    })
+                }
             }
         }
 
@@ -715,8 +828,8 @@ impl Parser {
         while &TokenType::Dot == self.peek_next() {
             self.advance(); // skip identifier
             self.advance(); // skip dot
-            if let TokenType::Identifier(s) = self.peek() {
-                id = match s.as_ref() {
+            if let TokenType::Identifier(name) = self.peek() {
+                id = match name.as_ref() {
                     "SRGB" => {
                         Expr::Index(Box::new(id), Box::new(Index::ColorSpace(ColorSpace::Srgb)))
                     }
@@ -734,16 +847,9 @@ impl Parser {
                     }
                     "Y" => Expr::Index(Box::new(id), Box::new(Index::ColorSpace(ColorSpace::Y))),
                     "L" => Expr::Index(Box::new(id), Box::new(Index::ColorSpace(ColorSpace::L))),
-                    "r" => Expr::Index(Box::new(id), Box::new(Index::Vec(0))),
-                    "g" => Expr::Index(Box::new(id), Box::new(Index::Vec(1))),
-                    "b" => Expr::Index(Box::new(id), Box::new(Index::Vec(2))),
-                    "x" => Expr::Index(Box::new(id), Box::new(Index::Vec(0))), // also buffer size x
-                    "y" => Expr::Index(Box::new(id), Box::new(Index::Vec(1))), // also buffer size y
-                    "z" => Expr::Index(Box::new(id), Box::new(Index::Vec(2))), // also buffer size z
-                    "l" => Expr::Index(Box::new(id), Box::new(Index::Vec(0))),
-                    "a" => Expr::Index(Box::new(id), Box::new(Index::Vec(1))),
-                    "c" => Expr::Index(Box::new(id), Box::new(Index::Vec(1))),
-                    "h" => Expr::Index(Box::new(id), Box::new(Index::Vec(2))),
+                    "x" | "r" | "l" => Expr::Index(Box::new(id), Box::new(Index::Vec(0))), // also buffer size x
+                    "y" | "g" | "a" | "c" => Expr::Index(Box::new(id), Box::new(Index::Vec(1))), // also buffer size y
+                    "z" | "b" | "h" => Expr::Index(Box::new(id), Box::new(Index::Vec(2))), // also buffer size z
 
                     // property access
                     "int" => Expr::Index(Box::new(id), Box::new(Index::Prop(Prop::Int))), // cast to int* before access
@@ -751,15 +857,19 @@ impl Parser {
                     "ptr" => Expr::Index(Box::new(id), Box::new(Index::Prop(Prop::Ptr))), // returns ptr at origin or index
                     "intptr" => Expr::Index(Box::new(id), Box::new(Index::Prop(Prop::IntPtr))), // returns ptr at origin or index
                     _ => {
-                        return Err((
-                            "Invalid property, channel selection or color space transformation"
-                                .into(),
+                        return Err(ParseError {
+                            error:
+                                "Invalid property, channel selection or color space transformation"
+                                    .into(),
                             line,
-                        ))
+                        })
                     }
                 }
             } else {
-                return Err(("Invalid '.' syntax, expected identifier".into(), line));
+                return Err(ParseError {
+                    error: "Invalid '.' syntax, expected identifier".into(),
+                    line,
+                });
             }
         }
 
