@@ -28,12 +28,26 @@ kernel display(I, O, P)
   const y = get_global_id(1)
 
   var i = I[x, y].LRGB
+
+  var t1 = (x + y)*0.125
+  t1 = t1 - floor(t1)
+  var t2 = (x + O.y - y - 1)*0.125
+  t2 = t2 - floor(t2)
+
 	if P[0]>0.5 and (i.x>hi or i.y>hi or i.z>hi) then
-		i = 0.0
+    if t1 >= 0.25 then
+      i = 0.0
+    else
+      i = 1.0
+    end
 	end
 
 	if P[0]>0.5 and (i.x<lo or i.y<lo or i.z<lo) then
-		i = 1.0
+    if t2 >= 0.25 then
+      i = 1.0
+    else
+      i = 0.0
+    end
 	end
 
   var m = max(max(i.x, i.y), i.z)
