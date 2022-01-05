@@ -29,7 +29,7 @@ pub struct Scanner {
 }
 
 impl Scanner {
-    pub fn new(source: String) -> Scanner {
+    pub fn new(source: &str) -> Scanner {
         Scanner {
             source: source.chars().collect(),
             start: 0,
@@ -72,11 +72,11 @@ impl Scanner {
         if self.is_at_end() {
             return false;
         }
-        if self.source[self.current] != expected {
-            false
-        } else {
+        if self.source[self.current] == expected {
             self.current += 1;
             true
+        } else {
+            false
         }
     }
 
@@ -173,7 +173,7 @@ impl Scanner {
             "var" => TokenType::Var,
             "const" => TokenType::Const,
 
-            v => TokenType::Identifier(v.into()),
+            id => TokenType::Identifier(id.into()),
         }
     }
 
@@ -238,14 +238,7 @@ impl Scanner {
                     TokenType::Percent
                 }
             }
-            '!' => {
-                if self.match_advance('=') {
-                    TokenType::NotEqual
-                } else {
-                    TokenType::Not
-                }
-            }
-            '~' => {
+            '!' | '~' => {
                 if self.match_advance('=') {
                     TokenType::NotEqual
                 } else {
