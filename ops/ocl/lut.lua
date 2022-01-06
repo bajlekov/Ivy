@@ -23,28 +23,30 @@ const F = 12
 
 function getColor(LUT, r, g, b)
 	r = clamp(r, 0, Q-1)
-	g = clamp(g + 1, 0, Q-1)
-	b = clamp(b, 0, Q-1)
+	g = clamp(g, 0, Q-1)
+  b = clamp(b, 0, Q-1)
+
 	var gf = floor(g/F)
-	var x = r + (g - gf*F - 1)*Q
+	var x = r + (g - gf*F)*Q
 	var y = b*F + gf
 
-	y = Q*F - y - 1
+	y = Q*F - y - 1 
 	return LUT[x, y]
 end
 
-kernel clut(I, LUT, O, MIX)
+kernel lut(I, LUT, O, MIX)
   const x = get_global_id(0)
   const y = get_global_id(1)
 
-	var i = max(I[x, y], 0)
-  var v = LRGBtoSRGB(i)*(Q-1) -- sample CLUT based on sRGB coordinates
- 	var s = clamp(floor(v), 0, Q-1)
-  var d = v - s
+	var i = max(I[x, y], vec(0))
+  var v = LRGBtoSRGB(i)*(Q-1) -- sample LUT based on sRGB coordinates
+ 	var s = clamp(v, vec(0), vec(Q-1))
+  var fs = floor(s)
+  var d = s - fs
 
-	var r = int(s.x)
-	var g = int(s.y)
-	var b = int(s.z)
+	var r = int(fs.x)
+	var g = int(fs.y)
+	var b = int(fs.z)
 
   var s1 = getColor(LUT, r  , g  , b  )
 	var s2 = getColor(LUT, r+1, g  , b  )
@@ -68,13 +70,12 @@ kernel clut(I, LUT, O, MIX)
 	o = i + (o-i) * MIX[x, y]
 
   O[x, y] = o
-	--O[x, y] = getColor(LUT, r, g, b)
 end
 ]]
 
 local function execute()
   local I, LUT, O, MIX = proc:getAllBuffers(4)
-  proc:executeKernel("clut", proc:size2D(O), {I, LUT, O, MIX})
+  proc:executeKernel("lut", proc:size2D(O), {I, LUT, O, MIX})
 end
 
 local function init(d, c, q)
