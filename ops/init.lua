@@ -712,9 +712,10 @@ local function previewProcess(self)
 	local w, h = i:shape()
 
 	h = h==1 and 2 or math.max(math.floor(h / w * 150), 50)
-	if self.data.preview.y ~= h then
+	if self.data.preview.y ~= h*settings.scaleUI then
 		require "thread".keepData(self.data.preview)
-		self.data.preview = require "ui.image":new(150, h)
+		self.data.preview = require "ui.image":new(150*settings.scaleUI, h*settings.scaleUI)
+		self.data.preview.scale = 1/settings.scaleUI
 		self.graph.h = h
 	end
 
@@ -728,7 +729,8 @@ function ops.preview(x, y)
 	require "ui.graph".preview(n)
 	local w, h = t.imageShape()
 	h = h==1 and 2 or math.max(math.floor(h / w * 150), 50)
-	n.data.preview = require "ui.image":new(150, h)
+	n.data.preview = require "ui.image":new(150*settings.scaleUI, h*settings.scaleUI)
+	n.data.preview.scale = 1/settings.scaleUI
 	n.graph.h = h
 	n.compute = true
 	n:setPos(x, y)
