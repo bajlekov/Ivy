@@ -113,12 +113,11 @@ local function parse(parseType, device, context, queue)
 			end
 
 			local ops = require "ops"
-			local tools = require "ops.tools"
-			tools.register(ops, spec)
+			require "ops.tools.register"(ops, spec)
 
 			if menuRegister then
 				local overlay = require "ui.overlay"
-				local overlayCustom = overlay.defaultFrame.elem[9].frame
+				local overlayCustom = overlay.defaultFrame.elem[7].frame
 				overlayCustom:addElem("addNode", overlayCustom.elem.n + 1, fullName, {ops, "__custom_"..name})
 			end
 

@@ -16,6 +16,7 @@
 ]]
 print(
 	[[    Ivy
+
 	Copyright (C) 2011-2021 G. Bajlekov
 
     This program is free software: you can redistribute it and/or modify
@@ -820,7 +821,7 @@ function love.mousepressed(x, y, button, isTouch)
 end
 
 function love.mousereleased(x, y, button, isTouch)
-	uiInput.mouseReleased(x / settings.scaleUI, y / settings.scaleUI, button)
+	uiInput.mouseReleased(x / settings.scaleUI, y / settings.scaleUI)
 
 	mousePressed = false
 	cycles = nodeDFS(node) -- populate cycle indication
@@ -932,8 +933,8 @@ function love.keypressed(key)
 		require "ui.notice".blocking("Saving image: out.png")
 
 		local ts = displayScale
-		local tx = imageOffset:get(0, 0, 0, 0)
-		local ty = imageOffset:get(0, 0, 1, 0)
+		local tx = imageOffset:get(0, 0, 0)
+		local ty = imageOffset:get(0, 0, 1)
 
 		scrollable = false
 		displayScale = false

@@ -170,7 +170,7 @@ end
 local function setArgs(kernel, buffers)
 	local n = 0
 	for k, v in ipairs(buffers) do
-		if type(v)=="table" then
+		if type(v)=="table" and v.type=="data" then
 			assert(type(v.buffer[0].dataDev)=="cdata")
 			assert(type(v.buffer[0].strDev)=="cdata")
 			v:allocDev()

@@ -138,7 +138,6 @@ function curve:drawLines(x, y, w, h, n)
 		pts[px*2+1] = x + px/(n or 255)*w
 		pts[px*2+2] = y + h - py*h
 	end
-
 	love.graphics.line(pts)
 end
 

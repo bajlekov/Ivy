@@ -208,8 +208,8 @@ local function gradient(mode, p1, p2, p3, p4) -- x, y, a, w
 	end
 	function o.toolButton(node, idx, name)
 		local elem = node:addElem("bool", idx, name, false)
-    widget.setExclusive(elem)
-    elem.onChange = setToolCallback
+    	widget.setExclusive(elem)
+    	elem.onChange = setToolCallback
 	end
 
 	return o

@@ -28,7 +28,7 @@ kernel post_LL(I, O)
 
   var i = I[x, y]
   var o_y = O[x, y, 1]
-  O[x, y] = (i*o_y/i.y)
+  O[x, y] = max(i*o_y/i.y, 0.0)
 end
 
 -- I (XYZ | Y), D (Y), R (Y) -> O (XYZ | Y)

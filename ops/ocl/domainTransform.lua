@@ -38,8 +38,8 @@ kernel derivative(J, dHdx, dVdy, S, R)
 	var jx = J[x+1, y].LAB
 	var jy = J[x, y+1].LAB
 
-	var s = S[x, y]
-	var r = R[x, y]
+	var s = S[x, y]^2
+	var r = R[x, y]^2
 	var sr = s/max(r, eps)
 
 	var h3 = abs(jx-jo)
@@ -59,7 +59,7 @@ kernel horizontal(I, dHdx, O, S, h)
 	for x = 1, O.x-1 do
 		var io = I[x, y]
 		var ix = O[x-1, y]
-		var a = exp( -sqrt(2.0) / (S[x, y]*h) )
+		var a = exp( -sqrt(2.0) / (S[x, y]^2*h) )
 		var v = a ^ dHdx[x, y]
 		O[x, y] = io + v * (ix - io)
 	end
@@ -67,7 +67,7 @@ kernel horizontal(I, dHdx, O, S, h)
 	for x = O.x - 2, 0, -1 do
 		var io = O[x, y]
 		var ix = O[x+1, y]
-		var a = exp( -sqrt(2.0) / (S[x+1, y]*h) )
+		var a = exp( -sqrt(2.0) / (S[x+1, y]^2*h) )
 		var v = a ^ dHdx[x+1, y]
 		O[x, y] = io + v * (ix - io)
 	end
@@ -80,7 +80,7 @@ kernel vertical(I, dVdy, O, S, h)
 	for y = 1, O.y-1 do
 		var io = I[x, y]
 		var iy = O[x, y-1]
-		var a = exp( -sqrt(2.0) / (S[x, y]*h) )
+		var a = exp( -sqrt(2.0) / (S[x, y]^2*h) )
 		var v = a ^ dVdy[x, y]
 		O[x, y] = io + v * (iy - io)
 	end
@@ -88,7 +88,7 @@ kernel vertical(I, dVdy, O, S, h)
 	for y = O.y - 2, 0, -1 do
 		var io = O[x, y]
 		var iy = O[x, y+1]
-		var a = exp( -sqrt(2.0) / (S[x, y+1]*h) )
+		var a = exp( -sqrt(2.0) / (S[x, y+1]^2*h) )
 		var v = a ^ dVdy[x, y+1]
     O[x, y] = io + v * (iy - io)
 	end
@@ -114,9 +114,9 @@ local function execute()
 		-- vertical pass optimizes the slower initial copy from I to O better (memory locality?)
 		-- read from input buffer in first pass of first iteration
 		-- in-place transform for all subsequent passes
-    proc:setWorkgroupSize({16, 1, 1}) -- dynamically optimize these?
+    proc:setWorkgroupSize({64, 1, 1}) -- dynamically optimize these?
 		proc:executeKernel("vertical", {x, 1}, {i==1 and I or O, dVdy, O, S, h})
-    proc:setWorkgroupSize({1, 16, 1})
+    proc:setWorkgroupSize({1, 64, 1})
 		proc:executeKernel("horizontal", {1, y}, {O, dHdx, O, S, h})
     proc:clearWorkgroupSize()
 	end

@@ -50,8 +50,8 @@ local function execute()
 				proc:executeKernel("vertical", proc:size2D(O), {T2, T1, K})
 				proc:executeKernel("accumulate", proc:size2D(O), {I, T1, T3, T4, W, p1, p2, ox, oy})
 			end
-			messageCh:push{"info", ("[Denoise]: %.1f%%"):format((x-1)/r*100)}
 			proc.queue:finish()
+			messageCh:push{"info", ("[Denoise]: %.1f%%"):format((x-1)/r*100)}
 		end
 		local x = 0
 		ox[0] = x

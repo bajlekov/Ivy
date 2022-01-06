@@ -98,6 +98,7 @@ return function(ops)
 			require "ui.graph".curveView(n)
 
 			n.process = process
+
 			n:setPos(x, y)
 			return n
 		end

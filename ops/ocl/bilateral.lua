@@ -28,11 +28,11 @@ kernel bilateral(I, D, S, O)
 	var o = vec(0.0)
 
 	var i = I[x, y]
-	var df = max(D[x, y, 0], eps)^2*5.0
-	var sf = max(S[x, y, 0], eps)^2*0.01
+	var df = max(D[x, y, 0], eps)^2*7.0
+	var sf = max(S[x, y, 0], eps)^2*0.1
 
-	for ox = -9, 9 do
-		for oy = -9, 9 do
+	for ox = -15, 15 do
+		for oy = -15, 15 do
 			var j = I[x+ox, y+oy]
 
 			var d = ox^2 + oy^2

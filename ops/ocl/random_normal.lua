@@ -41,7 +41,6 @@ end
 
 local function execute()
 	local I, W, P, O = proc:getAllBuffers(4)
-  debug.see(P)
   local seed = ffi.new("int[1]", math.random( -2147483648, 2147483647))
 	proc:executeKernel("random", proc:size3D(O), {I, W, P, O, seed})
 end
