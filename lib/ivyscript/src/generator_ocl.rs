@@ -23,7 +23,7 @@ use crate::ast::{
 };
 use crate::function_id::function_id;
 
-use crate::inference::{GenFunction, Inference, VarType, PRIVATE, LOCAL};
+use crate::inference::{GenFunction, Inference, VarType, LOCAL, PRIVATE};
 
 pub struct Generator<'a> {
     inference: RefCell<Inference<'a>>,
@@ -120,7 +120,7 @@ impl<'a> Generator<'a> {
                     VarType::BoolArray(dim, address, i1, i2, i3, i4) => {
                         format!(
                             "{}bool {}{}",
-                            if address==LOCAL { "local " } else { "" },
+                            if address == LOCAL { "local " } else { "" },
                             arg,
                             idx4(dim, i1, i2, i3, i4)?
                         )
@@ -128,7 +128,7 @@ impl<'a> Generator<'a> {
                     VarType::IntArray(dim, address, i1, i2, i3, i4) => {
                         format!(
                             "{}int {}{}",
-                            if address==LOCAL { "local " } else { "" },
+                            if address == LOCAL { "local " } else { "" },
                             arg,
                             idx4(dim, i1, i2, i3, i4)?
                         )
@@ -136,7 +136,7 @@ impl<'a> Generator<'a> {
                     VarType::FloatArray(dim, address, i1, i2, i3, i4) => {
                         format!(
                             "{}float {}{}",
-                            if address==LOCAL { "local " } else { "" },
+                            if address == LOCAL { "local " } else { "" },
                             arg,
                             idx4(dim, i1, i2, i3, i4)?
                         )
@@ -144,7 +144,7 @@ impl<'a> Generator<'a> {
                     VarType::VecArray(dim, address, i1, i2, i3, i4) => {
                         format!(
                             "{}float3 {}{}",
-                            if address==LOCAL { "local " } else { "" },
+                            if address == LOCAL { "local " } else { "" },
                             arg,
                             idx4(dim, i1, i2, i3, i4)?
                         )
@@ -577,7 +577,7 @@ impl<'a> Generator<'a> {
             VarType::BoolArray(dim, address, i1, i2, i3, i4) => {
                 format!(
                     "{}bool {} {}{};\n",
-                    if address==LOCAL { "local " } else { "" },
+                    if address == LOCAL { "local " } else { "" },
                     id,
                     idx4(dim, i1, i2, i3, i4)?,
                     expr_str
@@ -586,7 +586,7 @@ impl<'a> Generator<'a> {
             VarType::IntArray(dim, address, i1, i2, i3, i4) => {
                 format!(
                     "{}int {} {}{};\n",
-                    if address==LOCAL { "local " } else { "" },
+                    if address == LOCAL { "local " } else { "" },
                     id,
                     idx4(dim, i1, i2, i3, i4)?,
                     expr_str
@@ -595,7 +595,7 @@ impl<'a> Generator<'a> {
             VarType::FloatArray(dim, address, i1, i2, i3, i4) => {
                 format!(
                     "{}float {} {}{};\n",
-                    if address==LOCAL { "local " } else { "" },
+                    if address == LOCAL { "local " } else { "" },
                     id,
                     idx4(dim, i1, i2, i3, i4)?,
                     expr_str
@@ -604,7 +604,7 @@ impl<'a> Generator<'a> {
             VarType::VecArray(dim, address, i1, i2, i3, i4) => {
                 format!(
                     "{}float3 {} {}{};\n",
-                    if address==LOCAL { "local " } else { "" },
+                    if address == LOCAL { "local " } else { "" },
                     id,
                     idx4(dim, i1, i2, i3, i4)?,
                     expr_str

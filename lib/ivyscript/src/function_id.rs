@@ -16,7 +16,7 @@
 */
 
 use crate::ast::ColorSpace;
-use crate::inference::{VarType, PRIVATE, LOCAL};
+use crate::inference::{VarType, LOCAL, PRIVATE};
 
 pub fn function_id(name: &str, input: &[VarType]) -> String {
     let mut id = format!("___{}_", input.len());

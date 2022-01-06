@@ -27,7 +27,7 @@ use crate::scope::Tree;
 pub enum AddressSpace {
     Local,
     Private,
-} 
+}
 
 #[derive(Debug, Eq, PartialEq, Copy, Clone)]
 pub enum VarType {
@@ -68,22 +68,32 @@ impl std::fmt::Display for VarType {
                     f,
                     "{}D {}BoolArray",
                     dim,
-                    if *address==LOCAL { "local " } else { "" }
+                    if *address == LOCAL { "local " } else { "" }
                 )
             }
             VarType::IntArray(dim, local, ..) => {
-                write!(f, "{}D {}IntArray", dim, if *local==LOCAL { "local " } else { "" })
+                write!(
+                    f,
+                    "{}D {}IntArray",
+                    dim,
+                    if *local == LOCAL { "local " } else { "" }
+                )
             }
             VarType::FloatArray(dim, local, ..) => {
                 write!(
                     f,
                     "{}D {}FloatArray",
                     dim,
-                    if *local==LOCAL { "local " } else { "" }
+                    if *local == LOCAL { "local " } else { "" }
                 )
             }
             VarType::VecArray(dim, local, ..) => {
-                write!(f, "{}D {}VecArray", dim, if *local==LOCAL { "local " } else { "" })
+                write!(
+                    f,
+                    "{}D {}VecArray",
+                    dim,
+                    if *local == LOCAL { "local " } else { "" }
+                )
             }
             VarType::Buffer { z, cs, x1y1: true } => write!(f, "{}ch {} x1y1 Buffer", z, cs),
             VarType::Buffer { z, cs, x1y1: false } => write!(f, "{}ch {} Buffer", z, cs),

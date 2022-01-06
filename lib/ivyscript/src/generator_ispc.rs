@@ -23,7 +23,7 @@ use crate::ast::{
 };
 use crate::function_id::function_id;
 
-use crate::inference::{GenFunction, Inference, VarType, PRIVATE, LOCAL};
+use crate::inference::{GenFunction, Inference, VarType, LOCAL, PRIVATE};
 
 pub struct Generator<'a> {
     inference: RefCell<Inference<'a>>,
@@ -123,7 +123,7 @@ impl<'a> Generator<'a> {
                     VarType::BoolArray(dim, address, i1, i2, i3, i4) => {
                         format!(
                             "{}bool {}{}",
-                            if address==LOCAL { "uniform " } else { "" },
+                            if address == LOCAL { "uniform " } else { "" },
                             arg,
                             idx4(dim, i1, i2, i3, i4)?
                         )
@@ -131,7 +131,7 @@ impl<'a> Generator<'a> {
                     VarType::IntArray(dim, address, i1, i2, i3, i4) => {
                         format!(
                             "{}int {}{}",
-                            if address==LOCAL { "uniform " } else { "" },
+                            if address == LOCAL { "uniform " } else { "" },
                             arg,
                             idx4(dim, i1, i2, i3, i4)?
                         )
@@ -139,7 +139,7 @@ impl<'a> Generator<'a> {
                     VarType::FloatArray(dim, address, i1, i2, i3, i4) => {
                         format!(
                             "{}float {}{}",
-                            if address==LOCAL { "uniform " } else { "" },
+                            if address == LOCAL { "uniform " } else { "" },
                             arg,
                             idx4(dim, i1, i2, i3, i4)?
                         )
@@ -147,7 +147,7 @@ impl<'a> Generator<'a> {
                     VarType::VecArray(dim, address, i1, i2, i3, i4) => {
                         format!(
                             "{}float<3> {}{}",
-                            if address==LOCAL { "uniform " } else { "" },
+                            if address == LOCAL { "uniform " } else { "" },
                             arg,
                             idx4(dim, i1, i2, i3, i4)?
                         )
@@ -646,7 +646,7 @@ uniform int _nz = ceil((uniform float)_dim[5]/_dim[8]);
             VarType::BoolArray(dim, address, i1, i2, i3, i4) => {
                 format!(
                     "{}bool {} {}{};\n",
-                    if address==LOCAL { "uniform " } else { "" },
+                    if address == LOCAL { "uniform " } else { "" },
                     id,
                     idx4(dim, i1, i2, i3, i4)?,
                     expr_str
@@ -655,7 +655,7 @@ uniform int _nz = ceil((uniform float)_dim[5]/_dim[8]);
             VarType::IntArray(dim, address, i1, i2, i3, i4) => {
                 format!(
                     "{}int {} {}{};\n",
-                    if address==LOCAL { "uniform " } else { "" },
+                    if address == LOCAL { "uniform " } else { "" },
                     id,
                     idx4(dim, i1, i2, i3, i4)?,
                     expr_str
@@ -664,7 +664,7 @@ uniform int _nz = ceil((uniform float)_dim[5]/_dim[8]);
             VarType::FloatArray(dim, address, i1, i2, i3, i4) => {
                 format!(
                     "{}float {} {}{};\n",
-                    if address==LOCAL { "uniform " } else { "" },
+                    if address == LOCAL { "uniform " } else { "" },
                     id,
                     idx4(dim, i1, i2, i3, i4)?,
                     expr_str
@@ -673,7 +673,7 @@ uniform int _nz = ceil((uniform float)_dim[5]/_dim[8]);
             VarType::VecArray(dim, address, i1, i2, i3, i4) => {
                 format!(
                     "{}float<3> {} {}{};\n",
-                    if address==LOCAL { "uniform " } else { "" },
+                    if address == LOCAL { "uniform " } else { "" },
                     id,
                     idx4(dim, i1, i2, i3, i4)?,
                     expr_str
