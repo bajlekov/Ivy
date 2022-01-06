@@ -23,7 +23,8 @@ do local _={
   },
   scaleUI=1,
   scaleUIpreference="auto",
-  schedulerProfile=false
+  schedulerProfile=false,
+  splineType="bezier"
 }
 return _
 end

@@ -35,7 +35,7 @@ function curve:new(a, b, cyclic)
 
 	-- cyclic curve
 	o.cyclic = cyclic
-	o.type = "bezier"
+	o.type = settings.splineType or "bezier" 
 
 	-- cached cubic spline coefficients
 	o.a = {}
