@@ -26,7 +26,7 @@ function getColor(LUT, r, g, b)
 	g = clamp(g, 0, Q-1)
   b = clamp(b, 0, Q-1)
 
-	var gf = floor(g/F)
+	var gf = int((g+0.1)/F) -- fix for division bug on AMD where "((float)g)/F" => 0 when g == F for integer g, F
 	var x = r + (g - gf*F)*Q
 	var y = b*F + gf
 
