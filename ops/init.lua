@@ -1201,9 +1201,9 @@ ops.mergeLCH = genMerge("LCH")
 
 local function mixRGBProcess(self)
 	self.procType = "dev"
-	local r = t.autoTempBuffer(self, 2, 1, 1, 3)
-	local g = t.autoTempBuffer(self, 5, 1, 1, 3)
-	local b = t.autoTempBuffer(self, 8, 1, 1, 3)
+	local r = t.autoTempBuffer(self, 1, 1, 1, 3)
+	local g = t.autoTempBuffer(self, 2, 1, 1, 3)
+	local b = t.autoTempBuffer(self, 3, 1, 1, 3)
 	r:set(0, 0, 0, self.elem[1].value)
 	r:set(0, 0, 1, self.elem[2].value)
 	r:set(0, 0, 2, self.elem[3].value)
@@ -1215,9 +1215,9 @@ local function mixRGBProcess(self)
 	b:set(0, 0, 2, self.elem[9].value)
 	local i, o, r, g, b
 	i = t.inputSourceBlack(self, 0)
-	r = t.inputData(self, 2)
-	g = t.inputData(self, 5)
-	b = t.inputData(self, 8)
+	r = t.inputData(self, 1)
+	g = t.inputData(self, 2)
+	b = t.inputData(self, 3)
 	o = t.autoOutput(self, 0, data.superSize(i, r, g, b))
 	thread.ops.mixrgb({i, o, r, g, b}, self)
 end
@@ -1225,13 +1225,13 @@ end
 function ops.mixRGB(x, y)
 	local n = node:new("Mix RGB")
 	n:addPortIn(0, "LRGB")
+	n:addPortIn(1, "LRGB")
 	n:addPortIn(2, "LRGB")
-	n:addPortIn(5, "LRGB")
-	n:addPortIn(8, "LRGB")
+	n:addPortIn(3, "LRGB")
 	n:addPortOut(0, "LRGB")
-	n.portIn[2].toggle = {[1] = false, [2] = false, [3] = false}
-	n.portIn[5].toggle = {[4] = false, [5] = false, [6] = false}
-	n.portIn[8].toggle = {[7] = false, [8] = false, [9] = false}
+	n.portIn[1].toggle = {[1] = false, [2] = false, [3] = false}
+	n.portIn[2].toggle = {[4] = false, [5] = false, [6] = false}
+	n.portIn[3].toggle = {[7] = false, [8] = false, [9] = false}
 
 	n:addElem("float", 1, "R(r)", - 2, 3, 1)
 	n:addElem("float", 2, "R(g)", - 2, 3, 0)
@@ -1243,7 +1243,11 @@ function ops.mixRGB(x, y)
 	n:addElem("float", 8, "B(g)", - 2, 3, 0)
 	n:addElem("float", 9, "B(b)", - 2, 3, 1)
 	n.process = mixRGBProcess
+
+	n.elem.cols = 3
+	n.w = 200
 	n:setPos(x, y)
+
 	return n
 end
 

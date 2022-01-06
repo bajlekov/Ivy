@@ -23,7 +23,7 @@ local event = require "ui.node.event"
 
 local function draw(self, element)
 	local nodeWidth = self.w or style.nodeWidth
-	local nodeHeight = style.titleHeight + style.elemHeight * self.elem.n - (self.elem.n == 0 and style.nodeBorder or style.elemBorder)
+	local nodeHeight = style.titleHeight + style.elemHeight * math.ceil(self.elem.n / self.elem.cols) - (self.elem.n == 0 and style.nodeBorder or style.elemBorder)
 
 	do
 		local nodeHeight = nodeHeight + (self.graph and self.graph.h + 1 or 0)
@@ -125,25 +125,30 @@ local function draw(self, element)
 	for i = 1, self.elem.n do
 		if self.portIn[i] then
 
-			-- toggle matching elements
-			if self.portIn[i].link then
-				self.elem[i].disabled = true
-				love.graphics.setColor(tint(style.portOnColor, self.tint))
-			else
-				self.elem[i].disabled = false
-				love.graphics.setColor(tint(style.portOffColor, self.tint))
-			end
 			-- override elem toggles with toggle table
 			if self.portIn[i].toggle then
 				for k, v in pairs(self.portIn[i].toggle) do
 					if self.elem[k] then
 						if v then
-							self.elem[k].disabled = not self.portIn[i].link
+							self.elem[k].disabled = self.portIn[i].link==nil
 						else
-							self.elem[k].disabled = self.portIn[i].link
+							self.elem[k].disabled = self.portIn[i].link~=nil
 						end
 					end
 				end
+			else
+				-- toggle matching elements
+				if self.portIn[i].link then
+					self.elem[i].disabled = true
+				else
+					self.elem[i].disabled = false
+				end
+			end
+
+			if self.portIn[i].link then
+				love.graphics.setColor(tint(style.portOnColor, self.tint))
+			else
+				love.graphics.setColor(tint(style.portOffColor, self.tint))
 			end
 
 			love.graphics.rectangle("fill", x - style.nodeBorder - (style.elemHeight) / 2, y + style.titleHeight + style.elemHeight * (i - 1), (style.elemHeight) / 2, style.elemHeight - style.elemBorder, 3, 3)
@@ -172,17 +177,46 @@ local function draw(self, element)
 		end
 	end
 
-	for i = 1, self.elem.n do
-		if self.elem[i] then
-			if not (self.elem[i - 1] and self.elem[i - 1].type == self.elem[i].type) then self.elem[i].first = true end
-			if not (self.elem[i + 1] and self.elem[i + 1].type == self.elem[i].type) then self.elem[i].last = true end
+	if self.elem.cols == 1 then
+		local w = nodeWidth
+		local h = style.elemHeight - style.elemBorder
+		for i = 1, self.elem.n do
+			if self.elem[i] then
+				self.elem[i].first = self.elem[i].first~=nil and self.elem[i].first or not (self.elem[i - 1] and self.elem[i - 1].type == self.elem[i].type)
+				self.elem[i].last = self.elem[i].last~=nil and self.elem[i].last or not (self.elem[i + 1] and self.elem[i + 1].type == self.elem[i].type)
 
-			local x = x
-			local y = y + style.titleHeight + style.elemHeight * (i - 1)
-			local w = nodeWidth
-			local h = style.elemHeight - style.elemBorder
+				local y = y + style.titleHeight + style.elemHeight * (i - 1)
 
-			self.elem[i]:draw(x, y, w, h)
+				self.elem[i]:draw(x, y, w, h)
+			end
+		end
+	else
+		assert(self.elem.cols > 1)
+
+		local h = style.elemHeight - style.elemBorder
+		for i = 1, self.elem.n do
+			local i_h = (i - 1) % self.elem.cols
+			local i_v = math.floor((i - 1) / self.elem.cols)
+
+			if self.elem[i] then
+				local y = y + style.titleHeight + style.elemHeight * i_v
+				local w = nodeWidth/self.elem.cols
+				local xmin = math.floor(x + w * i_h + 1)
+				local xmax = math.floor(x + w * (i_h + 1))
+
+				if i_h==0 then
+					self.elem[i].first = true
+					xmin = x
+				elseif i_h==self.elem.cols-1 then
+					self.elem[i].last = true
+					xmax = x + nodeWidth
+				else
+					self.elem[i].first = self.elem[i].first~=nil and self.elem[i].first or not (self.elem[i - 1] and self.elem[i - 1].type == self.elem[i].type)
+					self.elem[i].last = self.elem[i].last~=nil and self.elem[i].last or not (self.elem[i + 1] and self.elem[i + 1].type == self.elem[i].type)
+				end
+
+				self.elem[i]:draw(xmin, y, xmax - xmin, h)
+			end
 		end
 	end
 

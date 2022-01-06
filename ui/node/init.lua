@@ -29,17 +29,18 @@ node.list = {}
 setmetatable(node.list, {__mode="v"})
 
 
-
+local function none() end
 
 function node:new(title)
   local node = {
     title = title,      -- node title
     portIn = {},        -- incoming connections
     portOut = {},       -- outgoing connections
-    elem = {           -- ui elemenets
-      n = 0,
+    elem = {            -- ui elemenets
+      n = 0,            -- number of elems
+      cols = 1,         -- number of columns
     },
-    process = function() end,  -- function to run for processing
+    process = none,     -- function to run for processing
     ui = {              -- store UI related stuff (redraw images etc.)
       x = math.huge,
       y = math.huge,
@@ -52,7 +53,7 @@ function node:new(title)
     profile = {},       -- store profile data on each run
     storage = {},       -- local storage for each node
     data    = {},       -- image data for processing
-		dirty = true,			-- indicates whether processing is needed
+		dirty = true,			  -- indicates whether processing is needed
   }
 
   node.id = tonumber(tostring(node):match("0x[0-9a-f]+"))

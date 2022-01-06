@@ -27,7 +27,7 @@ local function mouseOverNode(node, x, y)
 	local right = next(node.portOut) and true
 	local w = node.w or style.nodeWidth
 
-	nodeHeight = style.titleHeight + style.elemHeight * node.elem.n - (node.elem.n == 0 and style.nodeBorder or style.elemBorder)
+	nodeHeight = style.titleHeight + style.elemHeight * math.ceil(node.elem.n / node.elem.cols) - (node.elem.n == 0 and style.nodeBorder or style.elemBorder)
 	local xmin = node.ui.x - style.nodeBorder - (left and style.elemHeight / 2 or 0)
 	local xmax = xmin + w + style.nodeBorder * 2 + (left and style.elemHeight / 2 or 0) + (right and style.elemHeight / 2 or 0)
 	local ymin = node.ui.y - style.nodeBorder
@@ -66,19 +66,49 @@ local function mouseOverElem(node, x, y)
 	local xmax = xmin + (node.w or style.nodeWidth)
 
 	if x >= xmin and x < xmax then
-		local i = math.floor((y - node.ui.y - style.titleHeight) / style.elemHeight) + 1
-		if node.elem[i] then
+		if node.elem.cols == 1 then
+			local i = math.floor((y - node.ui.y - style.titleHeight) / style.elemHeight) + 1
+			if node.elem[i] then
 
-			local ymin = node.ui.y + style.titleHeight + style.elemHeight * (i - 1)
-			local ymax = ymin + style.elemHeight - style.elemBorder
+				local ymin = node.ui.y + style.titleHeight + style.elemHeight * (i - 1)
+				local ymax = ymin + style.elemHeight - style.elemBorder
 
-			if y >= ymin and y < ymax then
-				return node.elem[i], xmin, ymin
+				if y >= ymin and y < ymax then
+					return node.elem[i], xmin, ymin
+				end
+
 			end
+		else
+			assert(node.elem.cols > 1)
 
+			local i_h = math.floor((x-xmin) * node.elem.cols / (node.w or style.nodeWidth))
+			local i_v = math.floor((y - node.ui.y - style.titleHeight) / style.elemHeight)
+			local i_n = i_v*node.elem.cols + i_h + 1
+
+			if node.elem[i_n] then
+
+				local w = (node.w or style.nodeWidth)/node.elem.cols
+				local lxmin = math.floor(xmin + w * i_h + 1)
+				local lxmax = math.floor(xmin + w * (i_h + 1))
+				if i_h==0 then
+					lxmin = xmin
+				elseif i_h==node.elem.cols-1 then
+					lxmax = xmax
+				end
+
+				local lymin = node.ui.y + style.titleHeight + style.elemHeight * i_v
+				local lymax = lymin + style.elemHeight - style.elemBorder
+
+				-- check for column xmin, xmax
+
+				if y >= lymin and y < lymax and x >= lxmin and x < lxmax then
+					return node.elem[i_n], lxmin, lymin
+				end
+
+			end
 		end
-		
 	end
+
 	return false, nil, nil
 end
 

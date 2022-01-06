@@ -438,6 +438,8 @@ return function(ops)
 		n.process = curveYProcess
 		n.data.curve = data:new(256, 1, 1)
 		require "ui.graph".curve(n)
+
+		n.elem.cols = 2
 		n:setPos(x, y)
 		return n
 	end
@@ -473,6 +475,8 @@ return function(ops)
 		b.action = n.graph.setB
 
 		n.process = curveRGBProcess
+
+		n.elem.cols = 3
 		n:setPos(x, y)
 		return n
 	end
