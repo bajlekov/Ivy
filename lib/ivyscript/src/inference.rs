@@ -187,6 +187,8 @@ impl<'a> Inference<'a> {
                         Inference::promote(Inference::promote(left, right)?, F)?
                     }
 
+                    (BinaryOp::DivInt, _, _) => I,
+
                     (
                         BinaryOp::Add | BinaryOp::Sub | BinaryOp::Mul | BinaryOp::Mod,
                         left,

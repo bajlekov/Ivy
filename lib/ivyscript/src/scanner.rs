@@ -217,6 +217,13 @@ impl Scanner {
                     TokenType::Slash
                 }
             }
+            '\\' => {
+                if self.match_advance('=') {
+                    TokenType::BackSlashEqual
+                } else {
+                    TokenType::BackSlash
+                }
+            }
             '*' => {
                 if self.match_advance('=') {
                     TokenType::StarEqual

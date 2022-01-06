@@ -716,6 +716,11 @@ impl<'a> Generator<'a> {
                     )
                 }
             }
+            BinaryOp::DivInt => format!(
+                "((int){})/((int){})",
+                self.gen_expr(&expr.left)?,
+                self.gen_expr(&expr.right)?,
+            ),
             BinaryOp::Mul => format!(
                 "{}*{}",
                 self.gen_expr(&expr.left)?,

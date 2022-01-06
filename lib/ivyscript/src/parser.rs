@@ -652,6 +652,7 @@ impl Parser {
         let (mut left, line) = self.unary()?;
         while let Some(op) = match self.peek() {
             TokenType::Slash => Some(BinaryOp::Div),
+            TokenType::BackSlash => Some(BinaryOp::DivInt),
             TokenType::Star => Some(BinaryOp::Mul),
             TokenType::Percent => Some(BinaryOp::Mod),
             _ => None,
