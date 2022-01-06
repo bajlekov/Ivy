@@ -20,37 +20,33 @@ local draw = {}
 local style = require("ui.style")
 local tint = style.tint
 
-local function drawRoundedVertical(x, y, w, h, top, bottom)
-	if top then
-		love.graphics.rectangle("fill", x, y, w, h - 3, 3, 3)
-	else
-		love.graphics.rectangle("fill", x, y, w, h - 3)
+local function drawRoundedVertical(x, y, w, h, first, last)
+	love.graphics.rectangle("fill", x, y, w, h, 3, 3)
+	if not first then
+		love.graphics.rectangle("fill", x, y, w, 3)
 	end
-	if bottom then
-		love.graphics.rectangle("fill", x, y + 3, w, h - 3, 3, 3)
-	else
-		love.graphics.rectangle("fill", x, y + 3, w, h - 3)
+	if not last then
+		love.graphics.rectangle("fill", x, y + h - 3, w, 3)
 	end
 end
 
-local function drawRoundedHorizontal(x, y, w, h, top, bottom)
-	if top then
-		love.graphics.rectangle("fill", x, y, w - 3, h, 3, 3)
-	else
-		love.graphics.rectangle("fill", x, y, w - 3, h)
+local function drawRoundedHorizontal(x, y, w, h, last, first)
+	love.graphics.rectangle("fill", x, y, w, h, 3, 3)
+	if not last then
+		love.graphics.rectangle("fill", x, y, 3, h)
 	end
-	if bottom then
-		love.graphics.rectangle("fill", x + 3, y, w - 3, h, 3, 3)
-	else
-		love.graphics.rectangle("fill", x + 3, y, w - 3, h)
+	if not first then
+		love.graphics.rectangle("fill", x + w - 3, y, 3, h)
 	end
 end
 
-local function drawRounded(x, y, w, h, top, bottom, horizontal)
+local function drawRounded(x, y, w, h, elem)
+	local cols = elem.parent.elem.cols or 1
+	local horizontal = elem.parent.style=="toolbar" or cols > 1
 	if horizontal then
-		drawRoundedHorizontal(x, y, w, h, top, bottom)
+		drawRoundedHorizontal(x, y, w, h, elem.first, elem.last)
 	else
-		drawRoundedVertical(x, y, w, h, top, bottom)
+		drawRoundedVertical(x, y, w, h, elem.first, elem.last)
 	end
 end
 
@@ -72,7 +68,7 @@ end
 
 function draw.textinput(elem, x, y, w, h)
 	love.graphics.setColor(tint(style.elemColor, elem.tint))
-	drawRounded(x, y, w, h, elem.first, elem.last, elem.parent.style=="toolbar")
+	drawRounded(x, y, w, h, elem)
 
 	love.graphics.setColor(style.elemFontColor)
 	love.graphics.setFont(style.elemFont)
@@ -86,10 +82,10 @@ end
 
 function draw.button(elem, x, y, w, h)
 	love.graphics.setColor(style.elemColor)
-	drawRounded(x, y, w, h, elem.first, elem.last, elem.parent.style=="toolbar")
+	drawRounded(x, y, w, h, elem)
 	if elem.tint then
 		love.graphics.setColor(tint(style.elemColor, elem.tint))
-		drawRounded(x, y, w, h, elem.first, elem.last, elem.parent.style=="toolbar")
+		drawRounded(x, y, w, h, elem)
 	end
 	love.graphics.setColor(style.elemFontColor)
 	love.graphics.setFont(style.elemFont)
@@ -102,7 +98,7 @@ function draw.button(elem, x, y, w, h)
 		local y3 = y1 + (h - 6) * 0.5
 		love.graphics.setLineWidth(0.65)
 		love.graphics.setLineJoin("none")
-		-- arror
+		-- arrow
 		love.graphics.line(x1 + 0.5, y1 + 0.5, x2 - 0.5, y3, x1 + 0.5, y2 - 0.5)
 		love.graphics.setLineWidth(1)
 	end
@@ -131,17 +127,17 @@ end
 function draw.float(elem, x, y, w, h)
 	if elem.disabled then
 		love.graphics.setColor(style.elemHighlightColor)
-		drawRounded(x, y, w, h, elem.first, elem.last, elem.parent.style=="toolbar")
+		drawRounded(x, y, w, h, elem)
 		love.graphics.setColor(style.elemFontColor)
 		love.graphics.setFont(style.elemFont)
 		love.graphics.printf(elem.name, x + 2, y + 2, w - 4, "left")
 	else
 		love.graphics.setColor(style.elemColor)
-		drawRounded(x, y, w, h, elem.first, elem.last, elem.parent.style=="toolbar")
+		drawRounded(x, y, w, h, elem)
 		local p = (elem.value - elem.min) / (elem.max - elem.min)
 		love.graphics.setColor(tint(style.elemHighlightColor, elem.tint))
 		love.graphics.setScissor( x, y, math.max(w * p, 0), h)
-		drawRounded(x, y, w, h, elem.first, elem.last, elem.parent.style=="toolbar")
+		drawRounded(x, y, w, h, elem)
 		love.graphics.setScissor( )
 
 		love.graphics.setColor(style.elemFontColor)
@@ -153,11 +149,11 @@ end
 
 function draw.int(elem, x, y, w, h)
 	love.graphics.setColor(style.elemColor)
-	drawRounded(x, y, w, h, elem.first, elem.last, elem.parent.style=="toolbar")
+	drawRounded(x, y, w, h, elem)
 	local p = (elem.value - elem.min) / (elem.max - elem.min)
 	love.graphics.setColor(tint(style.elemHighlightColor, elem.tint))
 	love.graphics.setScissor( x, y, w * p, h)
-	drawRounded(x, y, w, h, elem.first, elem.last, elem.parent.style=="toolbar")
+	drawRounded(x, y, w, h, elem)
 	love.graphics.setScissor( )
 
 	love.graphics.setColor(style.elemFontColor)
@@ -187,17 +183,17 @@ end
 
 function draw.bool(elem, x, y, w, h)
 	love.graphics.setColor(style.elemColor)
-	drawRounded(x, y, w, h, elem.first, elem.last, elem.parent.style=="toolbar")
+	drawRounded(x, y, w, h, elem)
 	if elem.value then
 		love.graphics.setColor(tint(style.elemHighlightColor, elem.tint))
-		drawRounded(x, y, w, h, elem.first, elem.last, elem.parent.style=="toolbar")
+		drawRounded(x, y, w, h, elem)
 
 		love.graphics.setColor(style.elemFontColor)
 		love.graphics.rectangle("fill", x + w - h + 2, y + 2, h - 4, h - 4, 2, 2)
 	else
 		if elem.tint then
 			love.graphics.setColor(tint(style.elemHighlightColor, elem.tint))
-			drawRounded(x, y, w, h, elem.first, elem.last, elem.parent.style=="toolbar")
+			drawRounded(x, y, w, h, elem)
 		end
 
 		love.graphics.setColor(style.elemColor)
@@ -215,12 +211,12 @@ end
 
 function draw.enum(elem, x, y, w, h)
 	love.graphics.setColor(style.elemColor)
-	drawRounded(x, y, w, h, elem.first, elem.last, elem.parent.style=="toolbar")
+	drawRounded(x, y, w, h, elem)
 	local p1 = (elem.value - 1)/(#elem.enum)
 	local p2 = 1/(#elem.enum)
 	love.graphics.setColor(tint(style.elemHighlightColor, elem.tint))
 	love.graphics.setScissor( x + w*p1, y, math.ceil(w*p2), h)
-	drawRounded(x, y, w, h, elem.first, elem.last, elem.parent.style=="toolbar")
+	drawRounded(x, y, w, h, elem)
 	love.graphics.setScissor( )
 
 	love.graphics.setColor(style.elemFontColor)
