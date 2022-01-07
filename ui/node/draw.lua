@@ -210,10 +210,10 @@ local function draw(self, element)
 				elseif i_h==self.elem.cols-1 then
 					self.elem[i].last = true
 					xmax = x + nodeWidth
-				else
-					self.elem[i].first = self.elem[i].first~=nil and self.elem[i].first or not (self.elem[i - 1] and self.elem[i - 1].type == self.elem[i].type)
-					self.elem[i].last = self.elem[i].last~=nil and self.elem[i].last or not (self.elem[i + 1] and self.elem[i + 1].type == self.elem[i].type)
 				end
+
+				self.elem[i].first = self.elem[i].first~=nil and self.elem[i].first or not (self.elem[i - 1] and self.elem[i - 1].type == self.elem[i].type)
+				self.elem[i].last = self.elem[i].last~=nil and self.elem[i].last or not (self.elem[i + 1] and self.elem[i + 1].type == self.elem[i].type)
 
 				self.elem[i]:draw(xmin, y, xmax - xmin, h)
 			end

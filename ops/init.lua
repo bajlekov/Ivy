@@ -656,7 +656,10 @@ function ops.waveform(x, y)
 	require "ui.graph".plot(n)
 	n.graph.grid.horizontal = true
 	n.compute = true
+
+	n.elem.cols = 2
 	n:setPos(x, y)
+	
 	return n
 end
 
@@ -680,7 +683,10 @@ function ops.ABplot(x, y)
 	require "ui.graph".plot(n)
 	n.graph.grid.cross = true
 	n.compute = true
+
+	n.elem.cols = 2
 	n:setPos(x, y)
+	
 	return n
 end
 
