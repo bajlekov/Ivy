@@ -180,8 +180,7 @@ impl Parser {
             }
             loop {
                 match self.peek() {
-                    TokenType::ElseIf => continue,
-                    TokenType::Else | TokenType::End => break,
+                    TokenType::Else | TokenType::ElseIf | TokenType::End => break,
                     _ => {}
                 }
 
