@@ -74,7 +74,7 @@ local function mouseOverElem(node, x, y)
 				local ymax = ymin + style.elemHeight - style.elemBorder
 
 				if y >= ymin and y < ymax then
-					return node.elem[i], xmin, ymin
+					return node.elem[i], xmin, ymin, xmax-xmin-1, ymax-ymin-1
 				end
 
 			end
@@ -102,7 +102,7 @@ local function mouseOverElem(node, x, y)
 				-- check for column xmin, xmax
 
 				if y >= lymin and y < lymax and x >= lxmin and x < lxmax then
-					return node.elem[i_n], lxmin, lymin
+					return node.elem[i_n], lxmin, lymin, lxmax-lxmin-1, lymax-lymin-1
 				end
 
 			end
@@ -229,10 +229,12 @@ function input.press(mouse)
 				return true, n.graph:press(mouse.x - n.ui.x, mouse.y - n.ui.y - nodeHeight - style.nodeBorder, mouse)
 			end
 
-			local elem, ex, ey = mouseOverElem(n, mouse.x, mouse.y)
+			local elem, ex, ey, ew, eh = mouseOverElem(n, mouse.x, mouse.y)
 			if elem then
 				mouse.ex = ex
 				mouse.ey = ey
+				mouse.ew = ew
+				mouse.eh = eh
 				return true, elemInput.press(elem, mouse)
 			end
 

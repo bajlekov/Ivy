@@ -44,7 +44,7 @@ end
 function event.move.float(elem, mouse)
 	if mouse.button==1 and not elem.disabled then
 		local dx, dy = mouse.x - mouse.ox, mouse.y - mouse.oy
-		local change = dx / (elem.parent.w or style.nodeWidth) -- FIXME: parameters in UI have different width
+		local change = dx / mouse.ew -- FIXME: parameters in UI have different width
 		local size = elem.max - elem.min
 		if mouse.ctrl then change = math.floor(change * 20) / 20 end
 		local value = originalElementValue + change * size * (mouse.shift and 0.1 or 1)
@@ -69,7 +69,7 @@ function event.press.int(elem, mouse)
 
 	if mouse.button == 1 then
 		local value = elem.value
-		if mouse.x - mouse.ex > (elem.parent.w or style.nodeWidth) / 2 then
+		if mouse.x - mouse.ex > mouse.ew / 2 then
 			value = value + elem.step
 		else
 			value = value - elem.step
@@ -124,7 +124,7 @@ function event.press.enum(elem, mouse)
 
 	if mouse.button == 1 then
 		local value = elem.value
-		if mouse.x - mouse.ex > (elem.parent.w or style.nodeWidth) / 2 then
+		if mouse.x - mouse.ex > mouse.ew / 2 then
 			value = value + 1
 		else
 			value = value - 1

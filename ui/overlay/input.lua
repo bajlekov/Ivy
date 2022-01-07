@@ -43,7 +43,7 @@ local function mouseOverElem(frame, x, y)
 			local ymin = frame.y + style.elemHeight * (i - 1)
 			local ymax = ymin + style.elemHeight - style.elemBorder
 			if y >= ymin and y < ymax then
-				return frame.elem[i], xmin, ymin
+				return frame.elem[i], xmin, ymin, xmax-xmin-1, ymax-ymin-1
 			end
 		end
 	end
@@ -55,10 +55,12 @@ local elemInput = require "ui.elem.input"
 function input.press(mouse) --FIXME: use event system!!!
 	if mouse.button == 1 and overlay.frame and overlay.frame.visible and mouseOverFrame(overlay.frame, mouse.x, mouse.y) then
 		
-		local elem, ex, ey = mouseOverElem(overlay.frame, mouse.x, mouse.y)
+		local elem, ex, ey, ew, eh = mouseOverElem(overlay.frame, mouse.x, mouse.y)
 		if elem then
 			mouse.ex = ex
 			mouse.ey = ey
+			mouse.ew = ew
+			mouse.eh = eh
 			return true, elemInput.press(elem, mouse)
 		end
 		
