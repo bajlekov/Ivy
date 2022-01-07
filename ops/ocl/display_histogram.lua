@@ -30,7 +30,43 @@ kernel clearHist(H)
   H[x, 0, z].int = 0
 end
 
-kernel display(I, O, P, H)
+function clamp_chroma(i)
+  var m = max(max(i.x, i.y), i.z)
+  var Y = LRGBtoY(i)
+  if Y<1.0 then
+    var d = i-Y
+    var f = (1.0-Y)/(m-Y)
+    return Y + d*f
+  else
+    return 1.0
+  end
+end
+
+function clamp_lightness(i)
+  var m = max(max(i.x, i.y), i.z)
+  return i/m
+end
+
+function clamp_color(i)
+  var m = max(max(i.x, i.y), i.z)
+  var Y = LRGBtoY(i)
+  if Y<1.0 then
+    for n = 1, 15 do
+      i = min(i, 1.0)
+      var Y_new = LRGBtoY(i)
+      i = i * Y/Y_new
+    end
+  else
+    i = 1.0
+  end
+  return i
+end
+
+function clamp_channels(i)
+  return min(i, 1.0)
+end
+
+kernel display(I, O, G, C, H)
   const x = get_global_id(0)
   const y = get_global_id(1)
 
@@ -41,7 +77,7 @@ kernel display(I, O, P, H)
   var t2 = (x + O.y - y - 1)*0.125
   t2 = t2 - floor(t2)
 
-	if P[0]>0.5 and (i.x>hi or i.y>hi or i.z>hi) then
+	if G[0]>0.5 and (i.x>hi or i.y>hi or i.z>hi) then
     if t1 >= 0.25 then
       i = 0.0
     else
@@ -49,7 +85,7 @@ kernel display(I, O, P, H)
     end
 	end
 
-	if P[0]>0.5 and (i.x<lo or i.y<lo or i.z<lo) then
+	if G[0]>0.5 and (i.x<lo or i.y<lo or i.z<lo) then
     if t2 >= 0.25 then
       i = 1.0
     else
@@ -58,12 +94,15 @@ kernel display(I, O, P, H)
 	end
 
   var m = max(max(i.x, i.y), i.z)
-  if P[0]<0.5 and m>1.0 then
-    var Y = LRGBtoY(i)
-    if Y<1.0 then
-      var d = i-Y
-      var f = (1.0-Y)/(m-Y)
-      i = Y + d*f
+  if G[0]<0.5 and m>1.0 then
+    if C[0]==1.0 then
+      i = clamp_chroma(i)
+    elseif C[0]==2.0 then
+      i = clamp_color(i)
+    elseif C[0]==3.0 then
+      i = clamp_channels(i)
+    elseif C[0]==4.0 then
+      i = clamp_lightness(i)
     else
       i = 1.0
     end
@@ -112,11 +151,11 @@ end
 ]]
 
 local function execute()
-	local I, O, P, H = proc:getAllBuffers(4)
+	local I, O, G, C, H = proc:getAllBuffers(5)
 
   proc:setWorkgroupSize({256, 1, 1})
   proc:executeKernel("clearHist", {256, 1, 4}, {H})
-  proc:executeKernel("display", proc:size2D(O), {I, O, P, H})
+  proc:executeKernel("display", proc:size2D(O), {I, O, G, C, H})
 
   O:lock()
   O:devWritten()
