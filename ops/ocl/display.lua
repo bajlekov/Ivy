@@ -59,12 +59,13 @@ function clamp_channels(i)
   return min(i, 1.0)
 end
 
-kernel display(I, O, G, C)
+kernel display(I, O, G, C, D, seed)
   const x = get_global_id(0)
   const y = get_global_id(1)
 
   var i = I[x, y].LRGB
 
+  -- clipping indicator
   var t1 = (x + y)*0.125
   t1 = t1 - floor(t1)
   var t2 = (x + O.y - y - 1)*0.125
@@ -86,6 +87,7 @@ kernel display(I, O, G, C)
     end
   end
 
+  -- gamut projection
   var m = max(max(i.x, i.y), i.z)
   if G[0]<0.5 and m>1.0 then
     if C[0]==1.0 then
@@ -103,14 +105,35 @@ kernel display(I, O, G, C)
 
   i = LRGBtoSRGB(i)
 
+  -- dither
+  if D[0]>0.5 then
+    var rf = clamp(i.r*255.0, 0.0, 255.0)
+    var gf = clamp(i.g*255.0, 0.0, 255.0)
+    var bf = clamp(i.b*255.0, 0.0, 255.0)
+    var ri = int(rf)
+    var gi = int(gf)
+    var bi = int(bf)
+    if rf-ri>runif(seed, x, y) then
+      ri = ri + 1
+    end
+    if gf-gi>runif(seed, x, y) then
+      gi = gi + 1
+    end
+    if bf-bi>runif(seed, x, y) then
+      bi = bi + 1
+    end
+    i = vec(ri, gi, bi)/255.0
+  end
+  
   O[x, O.y-y-1] = RGBA(i, 1.0)
 end
 ]]
 
 local function execute()
-  local I, O, G, C = proc:getAllBuffers(4)
+  local I, O, G, C, D = proc:getAllBuffers(5)
 
-  proc:executeKernel("display", proc:size2D(O), {I, O, G, C})
+  local seed = ffi.new("int[1]", math.random( -2147483648, 2147483647))
+  proc:executeKernel("display", proc:size2D(O), {I, O, G, C, D, seed})
 
   O:lock()
   O:devWritten()
