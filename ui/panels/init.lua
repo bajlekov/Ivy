@@ -284,12 +284,15 @@ do
 end
 
 settingsMenu:addElem("text", 8, "")
-local cubicSpline = settingsMenu:addElem("bool", 9, "Cubic splines", false)
-cubicSpline.value = settings.cubicSpline or false
-cubicSpline.action = function(e, m) settings.cubicSpline = e.value end
+local splines_name = {"Curves: Linear", "Curves: Bezier", "Curves: Hermite", "Curves: Cubic"}
+local splines_val = {"linear", "bezier", "hermite", "cubic"}
+local splines_rev = {linear = 1, bezier = 2, hermite = 3, cubic = 4}
+local splineType = settingsMenu:addElem("enum", 9, "Splines", splines_name, 2)
+splineType.value = splines_rev[settings.splineType] or "bezier"
+splineType.action = function(e, m) settings.splineType = splines_val[e.value] end
 
 do
-	local scaleUI = settingsMenu:addElem("enum", 10, "Scale UI", {"UI: 100%", "UI: 200%", "UI: Auto", "UI: Manual"}, 3)
+	local scaleUI = settingsMenu:addElem("enum", 10, "Scale UI", {"UI scale: 100%", "UI scale: 200%", "UI scale: Auto", "UI scale: Manual"}, 3)
 	if settings.scaleUIpreference==100 then
 		scaleUI.value = 1
 	elseif settings.scaleUIpreference==200 then
