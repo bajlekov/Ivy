@@ -55,7 +55,7 @@ impl Scanner {
             token: TokenType::Eof,
             fragment: Fragment {
                 line: self.line + 1,
-                position: self.start - self.line_start + 1,
+                position: (self.start + 1) - self.line_start,
                 lexeme: "[End of file]".into(),
             },
         });
