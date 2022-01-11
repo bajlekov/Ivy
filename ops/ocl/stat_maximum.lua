@@ -20,7 +20,7 @@ local proc = require "lib.opencl.process.ivy".new()
 local source = [[
 kernel set_low(O)
 	const z = get_global_id(2)
-	O[z] = float(-INFINITY)
+	O[z] = - float(INFINITY)
 end
 
 kernel maximum(I, O)
