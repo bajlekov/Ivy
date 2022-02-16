@@ -26,19 +26,24 @@ kernel init(T3, T4, W)
   W[x, y] = vec(eps)
 end
 
-kernel dist(I, T1, p1, p2, p5, ox, oy)
+kernel dist(I, T1, p5, ox, oy)
   const x = get_global_id(0)
   const y = get_global_id(1)
 
-  var i1 = I[x, y]
-  var i2 = I[x+ox, y+oy]
+  --if (x+ox-SX)<0 or (x+ox+SX)>=I.x or (y+oy-SY)<0 or (y+oy+SY)>=I.y then
+  --  T1[x, y] = 1000000000
+  --  return
+  --end
+
+  var i1 = max(I[x, y], 0.0)
+  var i2 = max(I[x+ox, y+oy], 0.0)
 
   -- photon well depth for proper scaling of the poisson noise
   var depth = 25000.0
 
   -- anscombe transform from poisson noise to unit standard deviation noise
-  i1 = 2.0*sqrt(i1*depth + p5[0]*200.0^2)
-  i2 = 2.0*sqrt(i2*depth + p5[0]*200.0^2)
+  i1 = 2.0*sqrt(i1*depth + p5[0]*200.0^2 + eps)
+  i2 = 2.0*sqrt(i2*depth + p5[0]*200.0^2 + eps)
 
   var o = abs(i1 - i2)^2
   T1[x, y] = (o.x + o.y + o.z) -- r/g/b weight?
@@ -77,6 +82,14 @@ kernel accumulate(I, T1, T3, T4, W, p1, p2, ox, oy)
   var pf = exp(-T1[x, y]*sigma)
   var nf = exp(-T1[x-ox, y-oy]*sigma)
 
+  if (x+ox)<0 or (x+ox)>=I.x or (y+oy)<0 or (y+oy)>=I.y then
+    pf = 0
+  end
+
+  if (x-ox)<0 or (x-ox)>=I.x or (y-oy)<0 or (y-oy)>=I.y then
+    nf = 0
+  end
+
   var pi = I[x+ox, y+oy]
   pi.x = pi.x/max(pi.y, eps)
   pi.z = pi.z/max(pi.y, eps)
@@ -84,14 +97,13 @@ kernel accumulate(I, T1, T3, T4, W, p1, p2, ox, oy)
   ni.x = ni.x/max(ni.y, eps)
   ni.z = ni.z/max(ni.y, eps)
 
-  var o = T3[x, y] + pi*pf + ni*nf
-  var f = T4[x, y] + pf + nf
+  var t3 = T3[x, y] + pi*pf + ni*nf
+  var t4 = T4[x, y] + pf + nf
+  T3[x, y] = t3
+  T4[x, y] = t4
 
   var w = W[x, y]
   W[x, y] = max(w, max(pf, nf))
-
-  T3[x, y] = o
-  T4[x, y] = f
 end
 
 kernel norm(I, T3, T4, W, O, p3)
@@ -105,9 +117,10 @@ kernel norm(I, T3, T4, W, O, p3)
 
   var w = W[x, y]
   var o = (w*i + T3[x, y]) / (w + T4[x, y])
-  var f = p3[x, y, 0]
   o.x = o.x*o.y
   o.z = o.z*o.y
+
+  var f = p3[x, y, 0]
   o = j*(1-f) + o*f
 
   O[x, y] = o

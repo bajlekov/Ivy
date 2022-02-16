@@ -45,7 +45,7 @@ local function execute()
 			--local r = math.round(math.cos(math.abs(x) / r * math.pi / 2) * r)
 			for y = -r, r do
 				oy[0] = y
-				proc:executeKernel("dist", proc:size2D(O), {I, T1, p1, p2, p5, ox, oy})
+				proc:executeKernel("dist", proc:size2D(O), {I, T1, p5, ox, oy})
 				proc:executeKernel("horizontal", proc:size2D(O), {T1, T2, K})
 				proc:executeKernel("vertical", proc:size2D(O), {T2, T1, K})
 				proc:executeKernel("accumulate", proc:size2D(O), {I, T1, T3, T4, W, p1, p2, ox, oy})
@@ -57,7 +57,7 @@ local function execute()
 		ox[0] = x
 		for y = -r, -1 do
 			oy[0] = y
-			proc:executeKernel("dist", proc:size2D(O), {I, T1, p1, p2, p5, ox, oy})
+			proc:executeKernel("dist", proc:size2D(O), {I, T1, p5, ox, oy})
 			proc:executeKernel("horizontal", proc:size2D(O), {T1, T2, K})
 			proc:executeKernel("vertical", proc:size2D(O), {T2, T1, K})
 			proc:executeKernel("accumulate", proc:size2D(O), {I, T1, T3, T4, W, p1, p2, ox, oy})
@@ -70,7 +70,7 @@ local function execute()
 			ox[0] = rx*r
 			oy[0] = ry*r*2-r
 			if not (ox[0]==0 and oy[0]==0) then
-				proc:executeKernel("dist", proc:size2D(O), {I, T1, p1, p2, p5, ox, oy})
+				proc:executeKernel("dist", proc:size2D(O), {I, T1, p5, ox, oy})
 				proc:executeKernel("horizontal", proc:size2D(O), {T1, T2, K})
 				proc:executeKernel("vertical", proc:size2D(O), {T2, T1, K})
 				proc:executeKernel("accumulate", proc:size2D(O), {I, T1, T3, T4, W, p1, p2, ox, oy})
