@@ -448,6 +448,11 @@ uniform int _nz = ceil((uniform float)_dim[5]/_dim[8]);
                     format!("{};\n", Generator::gen_call(id, &args_str, &vars))
                 } else {
                     let id = self.function(id, &vars)?;
+                    self.dependencies
+                        .borrow_mut()
+                        .last_mut()
+                        .ok_or_else(|| "No dependency frame found!".to_string())?
+                        .insert(id.clone());
                     let mut args_str = args_str;
                     args_str.insert(0, "_x, _y, _z".into());
                     format!("{};\n", Generator::gen_call(&id, &args_str, &vars))

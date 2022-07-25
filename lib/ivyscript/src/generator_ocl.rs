@@ -381,6 +381,11 @@ impl<'a> Generator<'a> {
                     format!("{};\n", Generator::gen_call(id, &args_str, &vars))
                 } else {
                     let id = self.function(id, &vars)?;
+                    self.dependencies
+                        .borrow_mut()
+                        .last_mut()
+                        .ok_or_else(|| "No dependency frame found!".to_string())?
+                        .insert(id.clone());
                     format!("{};\n", Generator::gen_call(&id, &args_str, &vars))
                 }
             }
