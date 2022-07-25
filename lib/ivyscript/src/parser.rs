@@ -505,21 +505,28 @@ impl Parser {
                 self.advance(); // skip left parenthesis
 
                 let mut args = Vec::new();
-                loop {
-                    args.push(self.expression()?.0);
-                    match self.peek() {
-                        TokenType::Comma => self.advance(),
-                        TokenType::RightParen => {
-                            self.advance();
-                            break;
-                        }
-                        _ => {
-                            return Err(ParseError {
-                                error: "Expected ',' or ')' in function call argument list".into(),
-                                line,
-                            })
+
+                if self.peek()==&TokenType::RightParen {
+                    self.advance(); // skip right parenthesis
+                } else {
+
+                    loop {
+                        args.push(self.expression()?.0);
+                        match self.peek() {
+                            TokenType::Comma => self.advance(),
+                            TokenType::RightParen => {
+                                self.advance();
+                                break;
+                            }
+                            _ => {
+                                return Err(ParseError {
+                                    error: "Expected ',' or ')' in function call argument list".into(),
+                                    line,
+                                })
+                            }
                         }
                     }
+
                 }
 
                 Stmt::Call(id_str.clone(), args)
@@ -758,18 +765,23 @@ impl Parser {
             self.advance(); // skip left parenthesis
 
             let mut args = Vec::new();
-            loop {
-                args.push(self.expression()?.0);
-                match self.peek() {
-                    TokenType::Comma => self.advance(), // skip comma
-                    TokenType::RightParen => break,     // advanced in identifier
-                    _ => {
-                        return Err(ParseError {
-                            error: "Expected ',' or ')' in function call argument list".into(),
-                            line,
-                        })
+
+            if self.peek()!=&TokenType::RightParen {
+
+                loop {
+                    args.push(self.expression()?.0);
+                    match self.peek() {
+                        TokenType::Comma => self.advance(), // skip comma
+                        TokenType::RightParen => break,     // advanced in identifier
+                        _ => {
+                            return Err(ParseError {
+                                error: "Expected ',' or ')' in function call argument list".into(),
+                                line,
+                            })
+                        }
                     }
                 }
+
             }
 
             return Ok((Expr::Call(id, args), line));
