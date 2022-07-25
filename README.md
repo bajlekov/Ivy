@@ -1,6 +1,6 @@
 # Ivy
 
-![Ivy](https://raw.githubusercontent.com/bajlekov/Ivy/master/doc/source/preview.png)
+![Ivy](https://raw.githubusercontent.com/bajlekov/Ivy/main/doc/source/preview.png)
 
 Ivy is an image processing program aimed at general photography. At its core is a flexible processing pipeline, allowing easy operator arrangement and parameter tuning. The processing is fully configurable and easily extensible through Ivy Script, a domain specific language for image computation kernels. All image operations are GPU-accelerated.
 
