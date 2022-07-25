@@ -23,53 +23,53 @@ IvyScript's syntax is heavily inspired by Lua. The following constructs are supp
 Kernel definitions:
 ```
 kernel name(a, b)
-    ...
+  ...
 end
 ```
 
 Function definitions:
 ```
 function name(a, b)
-    ...
-    [return c]
+  ...
+  [return c]
 end
 ```
 
 Conditional execution:
 ```
 if condition then
-    ...
+  ...
 [elseif condition then]
-    ...
+  ...
 [else]
-    ...
+  ...
 end
 ```
 
 Loops within range:
 ```
 for var = start, end [, step] do
-    ...
-    [continue / break]
+  ...
+  [continue / break]
 end
 ```
 
 Loop with end condition:
 ```
 while condition do
-    ...
-    [continue / break]
+  ...
+  [continue / break]
 end
 ```
 
 Constants, variables, function calls:
 ```
-const a = ...
-var b = ...
+const a = 2
+var b = 3.6
 
-a = a + b
+b = a + b
 
-funcname(a, b)
+function_name(a, b)
 ```
 
 ## Variable types
@@ -118,9 +118,9 @@ The supported color spaces are:
 A color space conversion kernel that accepts a buffer `I` with any color space and stores CIELAB's `LCH` values in buffer `O` looks like this:
 ```
 kernel LCH(I, O)
-	const x = get_global_id(0)
-	const y = get_global_id(1)
-	O[x, y] = I[x, y].LCH
+  const x = get_global_id(0)
+  const y = get_global_id(1)
+  O[x, y] = I[x, y].LCH
 end
 ```
 
@@ -186,20 +186,20 @@ var lh = local_int_array(256, 3)
 
 -- check if the number of local workers matches the histogram size
 if int(get_local_size(0))==256 then
-  
+
   -- get index of current worker, initialize its local data to zero and wait for all workers to complete
   const lx = int(get_local_id(0))
   lh[lx, 0] = 0
   lh[lx, 1] = 0
   lh[lx, 2] = 0
   barrier(CLK_LOCAL_MEM_FENCE)
-  
+
   -- increment local data according to r, g, b indices and wait for all workers to complete
   atomic_inc(lh[r, 0].ptr)
   atomic_inc(lh[g, 1].ptr)
   atomic_inc(lh[b, 2].ptr)
   barrier(CLK_LOCAL_MEM_FENCE)
-  
+
   -- add local histogram data to histogram data buffer H
   atomic_add(H[lx, 0, 0].intptr, lh[lx, 0])
   atomic_add(H[lx, 0, 1].intptr, lh[lx, 1])
@@ -253,29 +253,29 @@ kernel pyrDown(I, G)
   const y = get_global_id(1)
   const z = get_global_id(2)
 
-	var h = array(5, 5)
-	for i = 0, 4 do
-		for j = 0, 4 do
-			h[i, j] = I[x*2+i-2, y*2+j-2, z]
+  var h = array(5, 5)
+  for i = 0, 4 do
+    for j = 0, 4 do
+      h[i, j] = I[x*2+i-2, y*2+j-2, z]
     end
   end
 
-	var v = array(5)
-	for i = 0, 4 do
-		v[i] = 0
-	end
-	for i = 0, 4 do
-		for j = 0, 4 do
-			v[i] = v[i] + h[i, j]*k[j]
-		end
+  var v = array(5)
+  for i = 0, 4 do
+    v[i] = 0
+  end
+  for i = 0, 4 do
+    for j = 0, 4 do
+      v[i] = v[i] + h[i, j]*k[j]
+    end
   end
 
-	var g = 0.0
-	for i = 0, 4 do
-		g = g + v[i]*k[i]
-	end
+  var g = 0.0
+  for i = 0, 4 do
+    g = g + v[i]*k[i]
+  end
 
-	G[x, y, z] = g
+  G[x, y, z] = g
 end
 ```
 
@@ -285,27 +285,27 @@ kernel bilateral(I, D, S, O)
   const x = get_global_id(0)
   const y = get_global_id(1)
 
-	var w = 0.0
-	var o = vec(0.0)
+  var w = 0.0
+  var o = vec(0.0)
 
-	var i = I[x, y]
-	var df = max(D[x, y, 0], eps)^2*7.0
-	var sf = max(S[x, y, 0], eps)^2*0.1
+  var i = I[x, y]
+  var df = max(D[x, y, 0], eps)^2*7.0
+  var sf = max(S[x, y, 0], eps)^2*0.1
 
-	for ox = -15, 15 do
-		for oy = -15, 15 do
-			var j = I[x+ox, y+oy]
+  for ox = -15, 15 do
+    for oy = -15, 15 do
+      var j = I[x+ox, y+oy]
 
-			var d = ox^2 + oy^2
-			var s = (i.x-j.x)^2 + (i.y-j.y)^2 + (i.z-j.z)^2
-			var f = exp(-d/df - s/sf)
+      var d = ox^2 + oy^2
+      var s = (i.x-j.x)^2 + (i.y-j.y)^2 + (i.z-j.z)^2
+      var f = exp(-d/df - s/sf)
 
-			o = o + f*j
-			w = w + f
-		end
+      o = o + f*j
+      w = w + f
+    end
   end
 
-	O[x, y] = o / w
+  O[x, y] = o / w
 end
 ```
 
@@ -346,4 +346,3 @@ kernel median(I, O)
   O[x, y, z] = pix[4]
 end
 ```
-
