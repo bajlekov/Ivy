@@ -85,7 +85,7 @@ The type system of IvyScript is reduced to fit its purpose. It supports:
   * Contain one of the above types
   * Have up to 4 dimensions
   * Use either private or local memory
-  * Arrays are initialized as `{ {1, 2, 3} {4, 5, 6} }` or as `array(3, 2)` defaulting to Float values, `bool_array(3, 10, 10)`, `local_int_array(3)`.
+  * Arrays are initialized as `{ {1, 2, 3} {4, 5, 6} }` or as `array(3, 2)` a 3x2 array defaulting to Float values, `bool_array(3, 10, 10)` for a Boolean array, `local_int_array(3)` for a local Integer array.
 
 * Buffers
   * Contain image data encoded as 32-bit floating point values
