@@ -21,6 +21,14 @@ local source = [==[
 const A = {1,4,7,0,3,6,1,4,7,0,5,4,3,1,2,4,4,6,4}
 const B = {2,5,8,1,4,7,2,5,8,3,8,7,6,4,5,7,2,4,2}
 
+function swap(pix, idx)
+  if pix[A[idx]] < pix[B[idx]] then
+    var t = pix[B[idx]]
+    pix[B[idx]] = pix[A[idx]]
+    pix[A[idx]] = t
+  end
+end
+
 kernel median(I, O)
   const x = get_global_id(0)
   const y = get_global_id(1)
@@ -38,12 +46,8 @@ kernel median(I, O)
   pix[7] = I[x + 0, y + 1, z]
   pix[8] = I[x + 1, y + 1, z]
 
-  for i = 0, 18 do
-    if pix[A[i]] < pix[B[i]] then
-      var t = pix[B[i]]
-      pix[B[i]] = pix[A[i]]
-      pix[A[i]] = t
-    end
+  for idx = 0, 18 do
+    swap(pix, idx)
   end
 
   O[x, y, z] = pix[4]
