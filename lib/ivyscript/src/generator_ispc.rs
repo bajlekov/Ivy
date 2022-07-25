@@ -108,6 +108,15 @@ impl<'a> Generator<'a> {
             let mut definition = "(varying int _x, varying int _y, varying int _z, \n".to_string();
             let mut declaration;
 
+            if args.len() != input.len() {
+                return Err(format!(
+                    "Function '{}' defined with {} arguments is called with {} arguments",
+                    name,
+                    args.len(),
+                    input.len()
+                ));
+            }
+
             // generate argument signatures
             for (idx, arg) in args.iter().enumerate() {
                 let arg_type = match input[idx] {
