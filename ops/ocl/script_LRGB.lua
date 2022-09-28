@@ -15,26 +15,28 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ]]
 
-local proc = require "lib.opencl.process".new()
+local proc = require "lib.opencl.process.ivy".new()
 
 local function getSource(r, g, b)
   local source = [[
-  kernel void script(global float *I, global float *O)
-  {
-    const int _x = get_global_id(0);
-    const int _y = get_global_id(1);
+  kernel script(I, O)
+    const internal_x = get_global_id(0)
+    const internal_y = get_global_id(1)
 
-    float r = $I[_x, _y, 0];
-    float g = $I[_x, _y, 1];
-    float b = $I[_x, _y, 2];
+    var i = I[internal_x, internal_y]
+    var r = i.r
+    var g = i.g
+    var b = i.b
 
-    float x = (float)(_x)/$$O.x$$;
-    float y = (float)(_y)/$$O.y$$;
+    var x = float(internal_x)/O.x
+    var y = float(internal_y)/O.y
 
-    $O[_x, _y, 0] = ]]..r..[[;
-    $O[_x, _y, 1] = ]]..g..[[;
-    $O[_x, _y, 2] = ]]..b..[[;
-  }
+    var out_r = ]]..r..[[
+    var out_g = ]]..g..[[
+    var out_b = ]]..b..[[ 
+
+    O[internal_x, internal_y] = vec(out_r, out_g, out_b)
+  end
   ]]
 
   return source
@@ -46,10 +48,7 @@ local scriptG = "g"
 local scriptB = "b"
 
 local function execute()
-	proc:getAllBuffers("I", "O")
-	proc.buffers.I.__write = false
-	proc.buffers.O.__read = false
-
+  local I, O = proc:getAllBuffers(2)
   local _r = dataCh:demand()
   local _g = dataCh:demand()
   local _b = dataCh:demand()
@@ -62,7 +61,7 @@ local function execute()
     proc:loadSourceString(getSource(scriptR, scriptG, scriptB))
   end
 
-	proc:executeKernel("script", proc:size2D("O"))
+	proc:executeKernel("script", proc:size2D(O), {I, O})
 end
 
 local function init(d, c, q)
