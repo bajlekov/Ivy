@@ -1471,22 +1471,42 @@ function ops.smartMix(x, y)
 	return n
 end
 
-local function blurProcess(self)
+local function lowpassProcess(self)
 	self.procType = "dev"
 	local i, o
 	i = t.inputSourceBlack(self, 0)
 	o = t.autoOutput(self, 0, i:shape())
 	local n = t.autoTempBuffer(self, -1, 1, 1, 1)
 	n:set(0, 0, 0, self.elem[1].value) -- CPU-only buffer, no sync!
-	thread.ops.blur({i, o, n}, self)
+	thread.ops.pyr_low({i, o, n}, self)
 end
 
-function ops.blur(x, y)
-	local n = node:new("Blur")
+function ops.lowpass(x, y)
+	local n = node:new("Low-pass")
 	n:addPortIn(0, "LRGB")
 	n:addPortOut(0, "LRGB")
 	n:addElem("int", 1, "Scale", 1, 15, 3, 1)
-	n.process = blurProcess
+	n.process = lowpassProcess
+	n:setPos(x, y)
+	return n
+end
+
+local function highpassProcess(self)
+	self.procType = "dev"
+	local i, o
+	i = t.inputSourceBlack(self, 0)
+	o = t.autoOutput(self, 0, i:shape())
+	local n = t.autoTempBuffer(self, -1, 1, 1, 1)
+	n:set(0, 0, 0, self.elem[1].value) -- CPU-only buffer, no sync!
+	thread.ops.pyr_high({i, o, n}, self)
+end
+
+function ops.highpass(x, y)
+	local n = node:new("High-pass")
+	n:addPortIn(0, "LRGB")
+	n:addPortOut(0, "LRGB")
+	n:addElem("int", 1, "Scale", 1, 15, 3, 1)
+	n.process = highpassProcess
 	n:setPos(x, y)
 	return n
 end
