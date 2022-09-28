@@ -705,6 +705,62 @@ function love.draw()
 
 	overlay:draw()
 
+	-- draw magnified view
+	if
+		love.keyboard.isDown("n") or
+		love.keyboard.isDown("m") or
+		love.keyboard.isDown(",") or
+		love.keyboard.isDown(".") or
+		love.keyboard.isDown("/")
+	then
+		local scale =
+			love.keyboard.isDown("n") and 0.5 or
+			love.keyboard.isDown("m") and 1 or
+			love.keyboard.isDown(",") and 2 or
+			love.keyboard.isDown(".") and 4 or
+			love.keyboard.isDown("/") and 8
+
+		if scale > previewImage.scale then
+			local mx = love.mouse.getX()
+			local my = love.mouse.getY()
+
+			local ox = (mx - previewImage.drawOffset.x - panels.image.x) / previewImage.scale
+			local oy = (my - previewImage.drawOffset.y - panels.image.y) / previewImage.scale
+			
+			love.graphics.setColor(style.shadowColor)
+			love.graphics.rectangle("fill", mx-253, my-253, 508, 508, 5, 5)
+			love.graphics.rectangle("fill", mx-253, my-253, 507, 507, 4, 4)
+			love.graphics.rectangle("fill", mx-253, my-253, 506, 506, 3, 3)
+
+			love.graphics.setColor(style.nodeColor)
+			love.graphics.rectangle("fill", mx-252, my-252, 504, 504, 3, 3)
+			love.graphics.setColor(style.backgroundColor)
+			love.graphics.rectangle("fill", mx-250, my-250, 500, 500)
+			love.graphics.setColor(1, 1, 1, 1)
+
+			love.graphics.setScissor(mx-250, my-250, 500, 500)
+			love.graphics.draw(previewImage.image,
+				mx,	my,
+				0,
+				scale, scale,
+				ox, oy
+			)
+			love.graphics.setScissor()
+
+			-- mini-cursor?
+			love.graphics.setColor({0, 0, 0, 0.3})
+			love.graphics.setLineWidth(3)
+			love.graphics.line(mx+6, my+0.5, mx-5, my+0.5)
+			love.graphics.line(mx+0.5, my+6, mx+0.5, my-5)
+
+			love.graphics.setColor(style.gray9)
+			love.graphics.setLineWidth(1)
+			love.graphics.line(mx+5, my+0.5, mx-4, my+0.5)
+			love.graphics.line(mx+0.5, my+5, mx+0.5, my-4)
+
+		end
+	end
+
 	-- draw notice
 	if not processReady then
 		--require "ui.notice".overlay(("Processing... [%d%%]"):format(processComplete / processTotal * 100))
