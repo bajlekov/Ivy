@@ -77,7 +77,7 @@ end
 
 local nodeAddOverlay = require "ui.panels.nodeAddMenu"
 toolbox:addElem("dropdown", 5, "Add node", nodeAddOverlay:copy())
-require "ops.custom"("node", true)
+
 
 
 -- TODO: move to menu
