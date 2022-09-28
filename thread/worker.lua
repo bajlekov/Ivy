@@ -122,7 +122,28 @@ function ops.init(device, context, queue)
 		syncCh:push("sync")
 	end
 
-	require "ops.custom"("ocl", device, context, queue)
+
+
+
+
+	-- load custom specifications
+	local f = io.open("ops/custom/custom.txt", "r")
+	if f then
+		for line in f:lines() do
+			local file = line:match("^%W*(.-)%W*$")
+			local name = file:gsub("%.lua$", "")
+
+			-- get spec
+			local spec = require("ops.custom.spec."..name)
+			local procName = "custom_"..spec.procName
+
+			-- register worker
+			local fun = require("ops.custom."..name)(device, context, queue)
+			ops.cache[procName] = function()
+				fun(demand, {size, size}, profile)
+			end
+		end
+	end
 end
 
 return ops

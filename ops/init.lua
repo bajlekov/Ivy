@@ -48,6 +48,20 @@ register(ops, "random_film")
 register(ops, "wiener")
 register(ops, "median")
 
+-- load custom specifications
+local f = io.open("ops/custom/custom.txt", "r")
+if f then
+	for line in f:lines() do
+		local file = line:match("^%W*(.-)%W*$")
+		local name = file:gsub("%.lua$", "")
+
+		-- load specs
+		local spec = require("ops.custom.spec."..name)
+		spec.procName = "custom_"..spec.procName
+		register(ops, spec)
+	end
+end
+
 t.imageShapeSet(1, 1, 1)
 
 local function inputProcess(self)
