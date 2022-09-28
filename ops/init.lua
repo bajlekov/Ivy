@@ -849,6 +849,32 @@ do
 
 end
 
+local function adjustProcess(self)
+	self.procType = "dev"
+	assert(self.portOut[0].link)
+	local i, e, b, c, v, o
+	i = t.inputSourceBlack(self, 0)
+	e = t.inputParam(self, 1)
+	b = t.inputParam(self, 2)
+	c = t.inputParam(self, 3)
+	v = t.inputParam(self, 4)
+	o = t.autoOutput(self, 0, data.superSize(i, e, b, c, v))
+	thread.ops.adjust_basic({i, e, b, c, v, o}, self)
+end
+
+function ops.adjust_basic(x, y)
+	local n = node:new("Adjust")
+	n:addPortIn(0, "LRGB")
+	n:addPortIn(1, "Y"):addElem("float", 1, "Exposure", -3.3333, 3.3333, 0)
+	n:addPortIn(2, "Y"):addElem("float", 2, "Brightness", 0, 2, 1)
+	n:addPortIn(3, "Y"):addElem("float", 3, "Contrast", 0, 2, 1)
+	n:addPortIn(4, "Y"):addElem("float", 4, "Vibrance", 0, 2, 1)
+	n:addPortOut(0, "LRGB")
+	n.process = adjustProcess
+	n:setPos(x, y)
+	return n
+end
+
 local function exposureProcess(self)
 	self.procType = "dev"
 	assert(self.portOut[0].link)
