@@ -28,23 +28,19 @@ kernel wiener(I, W, O)
   const z = get_global_id(2)
 
   var pix = array(15, 15)
-  for i = 0, 14 do
-    for j = 0, 14 do
-      pix[i, j] = I[x+i-7, y+j-7, z]
-    end
-  end
-
   var mean = 0.0
   for i = 0, 14 do
     for j = 0, 14 do
-      mean = mean +  pix[i, j]*G7[i]*G7[j]
+      pix[i, j] = I[x+i-7, y+j-7, z]
+      mean = mean + pix[i, j]*G7[i]*G7[j]
     end
   end
 
+  var meanL = YtoL(mean)
   var variance = 0.0
   for i = 0, 14 do
     for j = 0, 14 do
-      variance = variance + (pix[i, j] - mean)^2*G7[i]*G7[j]
+      variance = variance + (YtoL(pix[i, j]) - meanL)^2*G7[i]*G7[j]
     end
   end
 
