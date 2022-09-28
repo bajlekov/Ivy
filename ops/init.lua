@@ -1445,7 +1445,7 @@ local function RLdeconvolutionProcess(self)
 	it = t.plainParam(self, 5)
 	aa = t.plainParam(self, 6)
 	oc:set(0, 0, 0, oc_val):syncDev()
-	thread.ops.RLdeconvolution({i, o, w, f, d, oc, it, aa}, self)
+	thread.ops.sharpen_deconv({i, o, w, f, d, oc, it, aa}, self)
 end
 
 function ops.RLdeconvolution(x, y)
@@ -1488,23 +1488,20 @@ end
 
 local function sharpenProcess(self)
 	self.procType = "dev"
-	local i, f, s, c, o
+	local i, r, s, o
 	i = t.inputSourceBlack(self, 0)
-	f = t.inputParam(self, 1)
+	r = t.inputParam(self, 1)
 	s = t.inputParam(self, 2)
 	o = t.autoOutput(self, 0, i:shape())
-	thread.ops.diffuse({i, f, s, o}, self)
-	for i = 2, 5 do
-		thread.ops.diffuse({o, f, s, o}, self)
-	end
+	thread.ops.sharpen_usm({i, r, s, o}, self)
 end
 
 function ops.sharpen(x, y)
 	local n = node:new("Sharpen")
 	n:addPortIn(0, "LAB")
 	n:addPortOut(0, "LAB")
-	n:addPortIn(1, "Y"):addElem("float", 1, "Strength", 0, 1, 0.5)
-	n:addPortIn(2, "Y"):addElem("float", 2, "Reduce Noise", 0, 1, 0)
+	n:addPortIn(1, "Y"):addElem("float", 1, "Radius", 0, 2, 0.8)
+	n:addPortIn(2, "Y"):addElem("float", 2, "Strength", 0, 5, 1)
 	n.process = sharpenProcess
 	n.w = 100
 	n:setPos(x, y)
