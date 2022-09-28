@@ -94,10 +94,20 @@ kernel vertical(I, dVdy, O, S, h)
 	end
 end
 
+kernel unsharp_mask(I, S, O)
+	const x = get_global_id(0)
+	const y = get_global_id(1)
+
+	var i = I[x, y].LAB
+	var s = S[x, y].LAB
+
+	O[x, y].LAB = i + (i-s) 
+end
+
 ]]
 
 local function execute()
-	local I, J, S, R, O = proc:getAllBuffers(5)
+	local I, J, S, R, smooth, O = proc:getAllBuffers(6)
   if J.x==1 and J.y==1 then J = I end -- use input as guide if guide is missing
 
 	local x, y, z = O:shape()
@@ -122,6 +132,10 @@ local function execute()
 	end
 	dHdx:free()
 	dVdy:free()
+
+	if smooth:get(0, 0, 0)<0.5 then
+		proc:executeKernel("unsharp_mask", proc:size2D(O), {I, O, O})
+	end
 end
 
 local function init(d, c, q)
