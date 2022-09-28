@@ -1285,6 +1285,36 @@ function ops.mixRGB(x, y)
 	return n
 end
 
+local function mixBWProcess(self)
+	self.procType = "dev"
+	local r = t.inputParam(self, 1)
+	local g = t.inputParam(self, 2)
+	local b = t.inputParam(self, 3)
+	local i, o
+	i = t.inputSourceBlack(self, 0)
+	local x, y, z = data.superSize(i, r, g, b)
+	o = t.autoOutput(self, 0, x, y, 1)
+	o.cs = "Y"
+	thread.ops.mixbw({i, o, r, g, b}, self)
+end
+
+function ops.mixBW(x, y)
+	local n = node:new("Mix RGB")
+	n:addPortIn(0, "LRGB")
+	n:addPortIn(1, "Y")
+	n:addPortIn(2, "Y")
+	n:addPortIn(3, "Y")
+	n:addPortOut(0, "Y")
+
+	n:addElem("float", 1, "Red", - 2, 3, 1)
+	n:addElem("float", 2, "Green", - 2, 3, 1)
+	n:addElem("float", 3, "Blue", - 2, 3, 1)
+	n.process = mixBWProcess
+
+	n:setPos(x, y)
+	return n
+end
+
 local downsize = require "tools.downsize"
 
 -- TODO: allocate temporary buffers in scheduler only
