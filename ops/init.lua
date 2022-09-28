@@ -201,13 +201,14 @@ end
 local function outputProcess(self)
 	self.procType = "dev"
 	local i = t.inputSourceBlack(self, 0)
-	local g = t.plainParam(self, 2)
-	local c = t.plainParam(self, 3)
+	local d = t.plainParam(self, 2)
+	local g = t.plainParam(self, 3)
+	local c = t.plainParam(self, 4)
 	local h = self.data.histogram -- pre-allocated
 	if self.elem[1].value then
-		thread.ops.display_histogram({i, self.image, g, c, h}, self)
+		thread.ops.display_histogram({i, self.image, g, c, d, h}, self)
 	else
-		thread.ops.display({i, self.image, g, c}, self)
+		thread.ops.display({i, self.image, g, c, d}, self)
 	end
 end
 
@@ -215,8 +216,9 @@ function ops.output(x, y, img)
 	local n = node:new("Output")
 	n:addPortIn(0, "ANY")
 	n:addElem("bool", 1, "Histogram", true)
-	n:addElem("bool", 2, "Gamut clip", false)
-	n:addElem("enum", 3, "Method", {"Chroma", "Color", "Channels", "Lightness"}, 1)
+	n:addElem("bool", 2, "Dither", true)
+	n:addElem("bool", 3, "Gamut clip", false)
+	n:addElem("enum", 4, "Method", {"Chroma", "Color", "Channels", "Lightness"}, 1)
 	n.image = img
 	n.process = outputProcess
 	n.protected = true
