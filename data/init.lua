@@ -303,10 +303,10 @@ function data:sync(blocking)
   local d = self.buffer[0].dirtyDev==1
   assert(not (h and d))
   if h then
-    self:syncHost(true, blocking)
+    self:syncHost(blocking)
   end
   if d then
-    self:syncDev(true, blocking)
+    self:syncDev(blocking)
   end
   self:unlock()
   return self
