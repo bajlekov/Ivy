@@ -17,6 +17,7 @@
 
 local ffi = require "ffi"
 local data = require "data"
+local fs = require "lib.fs"
 
 local stb = {}
 
@@ -70,8 +71,17 @@ function stb.read(fileName)
 			fileName = "base/"..fileName
 		end
 	end
+	
+	-- load file data first as love.graphics.newImage can't access non-local resources
+	if type(fileName) ~= "string" then
+		fileName = fileName:getFilename()
+	end
+	local file = fs.open(fileName, "r")
+	local fileSize = file:attr("size")
+	local fileData = love.data.newByteData( fileSize )
+	file:read(fileData:getFFIPointer(), fileSize)
 
-	local status, image = pcall(love.graphics.newImage, fileName) --FIXME: use newImageData directly!
+	local status, image = pcall(love.graphics.newImage, fileData)
 
 	if status then
 		return format[image:getFormat()](image)

@@ -1104,8 +1104,12 @@ do
 end
 
 local function loadImage(image)
-	require "ui.notice".blocking("Loading image: "..(type(image) == "string" and image or image:getFilename()), true)
-	return require("io.im").read(image):syncDev()
+	if image then
+		require "ui.notice".blocking("Loading image: "..(type(image) == "string" and image or image:getFilename()), true)
+		return require("io.im").read(image):syncDev()
+	else
+		print("Failed to load image!")
+	end
 end
 
 local pool = require "tools.imagePool"
@@ -1135,8 +1139,10 @@ function ops.image(x, y, image)
 	do
 		local sx, sy = t.imageShape()
 		local image = loadImage(n.data.imageName)
-		pool.resize(sx, sy)
-		n.data.image = pool.add(image)
+		if image then
+			pool.resize(sx, sy)
+			n.data.image = pool.add(image)
+		end
 	end
 
 	n.data.imageName = image
@@ -1145,9 +1151,11 @@ function ops.image(x, y, image)
 	n:addElem("button", 2, "Open", function()
 		n.data.imageName = require "lib.fileDialog".fileOpen()
 		local image = loadImage(n.data.imageName)
-		n.data.image = pool.add(image)
-		n.elem[1].left = n.data.imageName:gsub("^.*[/\\]", "")
-		n.dirty = true
+		if image then
+			n.data.image = pool.add(image)
+			n.elem[1].left = n.data.imageName:gsub("^.*[/\\]", "")
+			n.dirty = true
+		end
 	end)
 
 	n.refresh = true
