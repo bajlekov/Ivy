@@ -36,10 +36,24 @@ function clamp_chroma(i)
   if Y<1.0 then
     var d = i-Y
     var f = (1.0-Y)/(m-Y)
-    return Y + d*f
+    i = Y + d*f
   else
-    return 1.0
+    i = 1.0
   end
+  return i
+end
+
+function clamp_chroma_negative(i)
+  var m = min(min(i.x, i.y), i.z)
+  var Y = LRGBtoY(i)
+  if Y>0.0 then
+    var d = i-Y
+    var f = (Y)/(Y-m)
+    i = Y + d*f
+  else
+    i = 0.0
+  end
+  return i
 end
 
 function clamp_lightness(i)
@@ -64,6 +78,10 @@ end
 
 function clamp_channels(i)
   return min(i, 1.0)
+end
+
+function clamp_channels_negative(i)
+  return max(i, 0.0)
 end
 
 kernel display(I, O, G, C, D, H, seed)
@@ -107,6 +125,17 @@ kernel display(I, O, G, C, D, H, seed)
       i = clamp_lightness(i)
     else
       i = 1.0
+    end
+  end
+
+  m = min(min(i.x, i.y), i.z)
+  if G[0]<0.5 and m<0.0 then
+    if C[0]==1.0 or C[0]==4.0 then
+      i = clamp_chroma_negative(i)
+    elseif C[0]==2.0 or C[0]==3.0 then
+      i = clamp_channels_negative(i)
+    else
+      i = 0.0
     end
   end
 
